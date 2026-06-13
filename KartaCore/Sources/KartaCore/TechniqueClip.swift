@@ -3,7 +3,7 @@ import Foundation
 /// A short (~6s), reusable technique clip (e.g. "how to dice an onion"). Shared
 /// across many recipes — steps reference it by `id` rather than owning bespoke
 /// per-recipe video.
-public struct TechniqueClip: Equatable, Identifiable, Sendable {
+public struct TechniqueClip: Codable, Equatable, Identifiable, Sendable {
     public let id: String
     public let title: String
     public let seconds: Int
@@ -29,5 +29,22 @@ public struct TechniqueClipLibrary: Equatable, Sendable {
     public func clip(for step: CookingStep) -> TechniqueClip? {
         guard let id = step.clipID else { return nil }
         return byID[id]
+    }
+
+    public enum Error: Swift.Error {
+        case seedResourceMissing
+    }
+
+    /// Decodes a clip library from raw JSON. Pure: no I/O, easy to unit test.
+    public static func decode(from data: Data) throws -> TechniqueClipLibrary {
+        TechniqueClipLibrary(clips: try JSONDecoder().decode([TechniqueClip].self, from: data))
+    }
+
+    /// Loads the bundled seed clip catalog that ships inside the package.
+    public static func seed() throws -> TechniqueClipLibrary {
+        guard let url = Bundle.module.url(forResource: "seed-clips", withExtension: "json") else {
+            throw Error.seedResourceMissing
+        }
+        return try decode(from: Data(contentsOf: url))
     }
 }

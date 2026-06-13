@@ -6,6 +6,8 @@
     "totalMinutes": 35,
     "difficulty": "easy",
     "tags": ["one-pan", "vegetariano", "clasico"],
+    "contains": ["egg"],
+    "popularity": 95,
     "ingredients": [
       { "name": "Papa", "quantity": "4 unidades medianas" },
       { "name": "Huevo", "quantity": "5 unidades" },
@@ -15,9 +17,19 @@
     ],
     "steps": [
       "Pelar y cortar las papas en rodajas finas y la cebolla en juliana.",
-      "Freir las papas y la cebolla a fuego medio hasta que esten tiernas.",
-      "Batir los huevos con sal y mezclar con las papas escurridas.",
-      "Cuajar la mezcla en la sarten, dar vuelta con un plato y dorar el otro lado."
+      {
+        "text": "Freir las papas y la cebolla a fuego medio hasta que esten tiernas.",
+        "ingredient": { "name": "Papa", "quantity": "4 unidades medianas" },
+        "timerSeconds": 720
+      },
+      {
+        "text": "Batir los huevos con sal y mezclar con las papas escurridas.",
+        "ingredient": { "name": "Huevo", "quantity": "5 unidades" }
+      },
+      {
+        "text": "Cuajar la mezcla en la sarten, dar vuelta con un plato y dorar el otro lado.",
+        "clipID": "cuajar-tortilla"
+      }
     ]
   },
   {
@@ -27,6 +39,8 @@
     "totalMinutes": 25,
     "difficulty": "easy",
     "tags": ["one-pan", "rapido"],
+    "contains": [],
+    "popularity": 88,
     "ingredients": [
       { "name": "Pechuga de pollo", "quantity": "500 g" },
       { "name": "Crema de coco", "quantity": "200 ml" },
@@ -36,9 +50,17 @@
     ],
     "steps": [
       "Cortar el pollo en cubos y la cebolla en pluma.",
-      "Sellar el pollo en una sarten caliente hasta dorar.",
+      {
+        "text": "Sellar el pollo en una sarten caliente hasta dorar.",
+        "ingredient": { "name": "Pechuga de pollo", "quantity": "500 g" },
+        "clipID": "sellar-pollo"
+      },
       "Agregar la cebolla y el curry, cocinar un minuto.",
-      "Sumar la crema de coco y cocinar 8 minutos. Servir con arroz."
+      {
+        "text": "Sumar la crema de coco y cocinar hasta espesar. Servir con arroz.",
+        "ingredient": { "name": "Crema de coco", "quantity": "200 ml" },
+        "timerSeconds": 480
+      }
     ]
   },
   {
@@ -48,6 +70,8 @@
     "totalMinutes": 20,
     "difficulty": "easy",
     "tags": ["fresco", "sin-coccion-parcial"],
+    "contains": ["gluten", "lactose", "egg", "fish"],
+    "popularity": 72,
     "ingredients": [
       { "name": "Lechuga romana", "quantity": "1 planta" },
       { "name": "Pan", "quantity": "2 rebanadas" },
@@ -68,6 +92,8 @@
     "totalMinutes": 20,
     "difficulty": "easy",
     "tags": ["rapido", "vegetariano"],
+    "contains": ["gluten", "lactose", "nuts"],
+    "popularity": 90,
     "ingredients": [
       { "name": "Fideos", "quantity": "320 g" },
       { "name": "Albahaca fresca", "quantity": "1 taza" },
@@ -76,7 +102,11 @@
       { "name": "Aceite de oliva", "quantity": "60 ml" }
     ],
     "steps": [
-      "Hervir los fideos en agua con sal segun el paquete.",
+      {
+        "text": "Hervir los fideos en agua con sal segun el paquete.",
+        "ingredient": { "name": "Fideos", "quantity": "320 g" },
+        "timerSeconds": 600
+      },
       "Procesar albahaca, nueces, parmesano y aceite hasta formar el pesto.",
       "Escurrir la pasta reservando un poco del agua de coccion.",
       "Mezclar la pasta con el pesto y ajustar con el agua reservada."
@@ -89,6 +119,8 @@
     "totalMinutes": 50,
     "difficulty": "medium",
     "tags": ["one-pan", "abundante", "invierno"],
+    "contains": [],
+    "popularity": 70,
     "ingredients": [
       { "name": "Lentejas", "quantity": "300 g" },
       { "name": "Chorizo colorado", "quantity": "1 unidad" },
@@ -101,7 +133,11 @@
       "Rehogar la cebolla, la zanahoria y el chorizo en una olla.",
       "Agregar el pimenton y las papas en cubos.",
       "Sumar las lentejas y cubrir con agua o caldo.",
-      "Cocinar a fuego bajo unos 40 minutos hasta que esten tiernas."
+      {
+        "text": "Cocinar a fuego bajo hasta que las lentejas esten tiernas.",
+        "ingredient": { "name": "Lentejas", "quantity": "300 g" },
+        "timerSeconds": 2400
+      }
     ]
   },
   {
@@ -111,6 +147,8 @@
     "totalMinutes": 30,
     "difficulty": "medium",
     "tags": ["saludable", "horno"],
+    "contains": ["fish"],
+    "popularity": 75,
     "ingredients": [
       { "name": "Filet de salmon", "quantity": "2 unidades" },
       { "name": "Limon", "quantity": "1 unidad" },
@@ -121,7 +159,12 @@
       "Precalentar el horno a 200 grados.",
       "Colocar el salmon en una fuente con aceite, sal y rodajas de limon.",
       "Espolvorear eneldo por encima.",
-      "Hornear 15 a 18 minutos hasta que se desmenuce facil."
+      {
+        "text": "Hornear hasta que el salmon se desmenuce facil.",
+        "ingredient": { "name": "Filet de salmon", "quantity": "2 unidades" },
+        "timerSeconds": 1020,
+        "clipID": "punto-salmon"
+      }
     ]
   },
   {
@@ -131,6 +174,8 @@
     "totalMinutes": 20,
     "difficulty": "easy",
     "tags": ["dulce", "desayuno", "vegetariano"],
+    "contains": ["gluten", "lactose", "egg"],
+    "popularity": 85,
     "ingredients": [
       { "name": "Banana", "quantity": "2 unidades" },
       { "name": "Huevo", "quantity": "2 unidades" },
@@ -152,6 +197,8 @@
     "totalMinutes": 25,
     "difficulty": "easy",
     "tags": ["one-pan", "vegetariano", "rapido"],
+    "contains": ["gluten"],
+    "popularity": 80,
     "ingredients": [
       { "name": "Fideos de arroz", "quantity": "250 g" },
       { "name": "Brocoli", "quantity": "1 planta" },
