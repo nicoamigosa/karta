@@ -1,0 +1,169 @@
+[
+  {
+    "id": "tortilla-de-papa",
+    "name": "Tortilla de papa",
+    "heroPhotoURL": "https://img.karta.app/tortilla-de-papa.jpg",
+    "totalMinutes": 35,
+    "difficulty": "easy",
+    "tags": ["one-pan", "vegetariano", "clasico"],
+    "ingredients": [
+      { "name": "Papa", "quantity": "4 unidades medianas" },
+      { "name": "Huevo", "quantity": "5 unidades" },
+      { "name": "Cebolla", "quantity": "1 unidad" },
+      { "name": "Aceite de oliva", "quantity": "c/n" },
+      { "name": "Sal", "quantity": "a gusto" }
+    ],
+    "steps": [
+      "Pelar y cortar las papas en rodajas finas y la cebolla en juliana.",
+      "Freir las papas y la cebolla a fuego medio hasta que esten tiernas.",
+      "Batir los huevos con sal y mezclar con las papas escurridas.",
+      "Cuajar la mezcla en la sarten, dar vuelta con un plato y dorar el otro lado."
+    ]
+  },
+  {
+    "id": "pollo-al-curry-rapido",
+    "name": "Pollo al curry rapido",
+    "heroPhotoURL": "https://img.karta.app/pollo-al-curry-rapido.jpg",
+    "totalMinutes": 25,
+    "difficulty": "easy",
+    "tags": ["one-pan", "rapido"],
+    "ingredients": [
+      { "name": "Pechuga de pollo", "quantity": "500 g" },
+      { "name": "Crema de coco", "quantity": "200 ml" },
+      { "name": "Curry en polvo", "quantity": "2 cucharadas" },
+      { "name": "Cebolla", "quantity": "1 unidad" },
+      { "name": "Arroz", "quantity": "2 tazas cocidas" }
+    ],
+    "steps": [
+      "Cortar el pollo en cubos y la cebolla en pluma.",
+      "Sellar el pollo en una sarten caliente hasta dorar.",
+      "Agregar la cebolla y el curry, cocinar un minuto.",
+      "Sumar la crema de coco y cocinar 8 minutos. Servir con arroz."
+    ]
+  },
+  {
+    "id": "ensalada-cesar",
+    "name": "Ensalada Cesar",
+    "heroPhotoURL": "https://img.karta.app/ensalada-cesar.jpg",
+    "totalMinutes": 20,
+    "difficulty": "easy",
+    "tags": ["fresco", "sin-coccion-parcial"],
+    "ingredients": [
+      { "name": "Lechuga romana", "quantity": "1 planta" },
+      { "name": "Pan", "quantity": "2 rebanadas" },
+      { "name": "Queso parmesano", "quantity": "50 g" },
+      { "name": "Aderezo Cesar", "quantity": "4 cucharadas" }
+    ],
+    "steps": [
+      "Cortar el pan en cubos y tostar hasta dorar para los croutones.",
+      "Lavar y cortar la lechuga en trozos grandes.",
+      "Mezclar la lechuga con el aderezo y los croutones.",
+      "Terminar con parmesano en escamas."
+    ]
+  },
+  {
+    "id": "pasta-al-pesto",
+    "name": "Pasta al pesto",
+    "heroPhotoURL": "https://img.karta.app/pasta-al-pesto.jpg",
+    "totalMinutes": 20,
+    "difficulty": "easy",
+    "tags": ["rapido", "vegetariano"],
+    "ingredients": [
+      { "name": "Fideos", "quantity": "320 g" },
+      { "name": "Albahaca fresca", "quantity": "1 taza" },
+      { "name": "Queso parmesano", "quantity": "40 g" },
+      { "name": "Nuez", "quantity": "30 g" },
+      { "name": "Aceite de oliva", "quantity": "60 ml" }
+    ],
+    "steps": [
+      "Hervir los fideos en agua con sal segun el paquete.",
+      "Procesar albahaca, nueces, parmesano y aceite hasta formar el pesto.",
+      "Escurrir la pasta reservando un poco del agua de coccion.",
+      "Mezclar la pasta con el pesto y ajustar con el agua reservada."
+    ]
+  },
+  {
+    "id": "guiso-de-lentejas",
+    "name": "Guiso de lentejas",
+    "heroPhotoURL": "https://img.karta.app/guiso-de-lentejas.jpg",
+    "totalMinutes": 50,
+    "difficulty": "medium",
+    "tags": ["one-pan", "abundante", "invierno"],
+    "ingredients": [
+      { "name": "Lentejas", "quantity": "300 g" },
+      { "name": "Chorizo colorado", "quantity": "1 unidad" },
+      { "name": "Zanahoria", "quantity": "2 unidades" },
+      { "name": "Papa", "quantity": "2 unidades" },
+      { "name": "Cebolla", "quantity": "1 unidad" },
+      { "name": "Pimenton", "quantity": "1 cucharadita" }
+    ],
+    "steps": [
+      "Rehogar la cebolla, la zanahoria y el chorizo en una olla.",
+      "Agregar el pimenton y las papas en cubos.",
+      "Sumar las lentejas y cubrir con agua o caldo.",
+      "Cocinar a fuego bajo unos 40 minutos hasta que esten tiernas."
+    ]
+  },
+  {
+    "id": "salmon-al-horno",
+    "name": "Salmon al horno con limon",
+    "heroPhotoURL": "https://img.karta.app/salmon-al-horno.jpg",
+    "totalMinutes": 30,
+    "difficulty": "medium",
+    "tags": ["saludable", "horno"],
+    "ingredients": [
+      { "name": "Filet de salmon", "quantity": "2 unidades" },
+      { "name": "Limon", "quantity": "1 unidad" },
+      { "name": "Eneldo", "quantity": "c/n" },
+      { "name": "Aceite de oliva", "quantity": "2 cucharadas" }
+    ],
+    "steps": [
+      "Precalentar el horno a 200 grados.",
+      "Colocar el salmon en una fuente con aceite, sal y rodajas de limon.",
+      "Espolvorear eneldo por encima.",
+      "Hornear 15 a 18 minutos hasta que se desmenuce facil."
+    ]
+  },
+  {
+    "id": "panqueques-de-banana",
+    "name": "Panqueques de banana",
+    "heroPhotoURL": "https://img.karta.app/panqueques-de-banana.jpg",
+    "totalMinutes": 20,
+    "difficulty": "easy",
+    "tags": ["dulce", "desayuno", "vegetariano"],
+    "ingredients": [
+      { "name": "Banana", "quantity": "2 unidades" },
+      { "name": "Huevo", "quantity": "2 unidades" },
+      { "name": "Harina", "quantity": "150 g" },
+      { "name": "Leche", "quantity": "200 ml" },
+      { "name": "Polvo de hornear", "quantity": "1 cucharadita" }
+    ],
+    "steps": [
+      "Pisar las bananas y mezclar con los huevos y la leche.",
+      "Incorporar la harina con el polvo de hornear hasta integrar.",
+      "Cocinar pequenas porciones en sarten caliente apenas aceitada.",
+      "Dar vuelta cuando aparezcan burbujas y dorar el otro lado."
+    ]
+  },
+  {
+    "id": "wok-de-vegetales",
+    "name": "Wok de vegetales y fideos",
+    "heroPhotoURL": "https://img.karta.app/wok-de-vegetales.jpg",
+    "totalMinutes": 25,
+    "difficulty": "easy",
+    "tags": ["one-pan", "vegetariano", "rapido"],
+    "ingredients": [
+      { "name": "Fideos de arroz", "quantity": "250 g" },
+      { "name": "Brocoli", "quantity": "1 planta" },
+      { "name": "Zanahoria", "quantity": "1 unidad" },
+      { "name": "Morron", "quantity": "1 unidad" },
+      { "name": "Salsa de soja", "quantity": "4 cucharadas" }
+    ],
+    "steps": [
+      "Hidratar los fideos de arroz segun el paquete.",
+      "Saltear a fuego fuerte la zanahoria, el brocoli y el morron en tiras.",
+      "Agregar los fideos escurridos al wok.",
+      "Sumar la salsa de soja y saltear un par de minutos mas."
+    ]
+  }
+]
