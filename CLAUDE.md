@@ -11,7 +11,7 @@ Process each open `agent-ready` issue, one at a time, lowest unblocked number fi
 1. **Branch.** From up-to-date `main`, open one branch per issue:
    `git switch main && git pull && git switch -c issue-<N>-<slug>`
    (e.g. `issue-4-cooking-state-machine`). Never commit issue work to `main`.
-2. **Build it with TDD.** One failing test → minimal code → green → refactor.
+2. **Build it with TDD (skill /tdd).** One failing test → minimal code → green → refactor.
    Vertical slices, one behavior at a time. Never write all tests up front.
 3. **Verify.** `swift test` must be fully green before committing. No green, no commit.
 4. **Commit.** One focused commit (or a few) on the issue branch. End the body with
