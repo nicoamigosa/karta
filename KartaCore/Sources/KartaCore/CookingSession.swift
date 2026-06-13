@@ -7,11 +7,21 @@ public struct CookingStep: Equatable, Sendable {
     public let ingredient: Ingredient?
     /// Optional countdown for a timed action ("simmer 10 min" → 600), in seconds.
     public let timerSeconds: Int?
+    /// Optional reference to a reusable technique clip, by id. Steps with no
+    /// useful clip stay text-only. The clip itself lives in a shared library so
+    /// many recipes reference the same clip without duplicating it.
+    public let clipID: String?
 
-    public init(text: String, ingredient: Ingredient? = nil, timerSeconds: Int? = nil) {
+    public init(
+        text: String,
+        ingredient: Ingredient? = nil,
+        timerSeconds: Int? = nil,
+        clipID: String? = nil
+    ) {
         self.text = text
         self.ingredient = ingredient
         self.timerSeconds = timerSeconds
+        self.clipID = clipID
     }
 }
 
