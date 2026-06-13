@@ -9,7 +9,10 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let difficulty: Difficulty
     public let tags: [String]
     public let ingredients: [Ingredient]
-    public let steps: [String]
+    /// Ordered, structured steps. Each step is self-contained and may carry the
+    /// exact ingredient it needs, a timer, and a reusable technique clip. Decodes
+    /// backward-compatibly from a bare string (text-only step).
+    public let steps: [CookingStep]
     /// Allergen / intolerance tags this recipe contains (e.g. "gluten", "lactose").
     /// Used by the feed engine to enforce intolerance safety filtering.
     public let contains: [String]
@@ -24,7 +27,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         difficulty: Difficulty,
         tags: [String],
         ingredients: [Ingredient],
-        steps: [String],
+        steps: [CookingStep],
         contains: [String] = [],
         popularity: Int = 0
     ) {
@@ -49,7 +52,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         difficulty = try c.decode(Difficulty.self, forKey: .difficulty)
         tags = try c.decode([String].self, forKey: .tags)
         ingredients = try c.decode([Ingredient].self, forKey: .ingredients)
-        steps = try c.decode([String].self, forKey: .steps)
+        steps = try c.decode([CookingStep].self, forKey: .steps)
         contains = try c.decodeIfPresent([String].self, forKey: .contains) ?? []
         popularity = try c.decodeIfPresent(Int.self, forKey: .popularity) ?? 0
     }

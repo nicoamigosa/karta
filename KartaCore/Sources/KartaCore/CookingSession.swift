@@ -2,7 +2,7 @@ import Foundation
 
 /// A single self-contained cooking step: instruction plus, optionally, the exact
 /// ingredient + quantity that step needs (so the cook never scrolls back).
-public struct CookingStep: Equatable, Sendable {
+public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLiteral {
     public let text: String
     public let ingredient: Ingredient?
     /// Optional countdown for a timed action ("simmer 10 min" → 600), in seconds.
@@ -22,6 +22,32 @@ public struct CookingStep: Equatable, Sendable {
         self.ingredient = ingredient
         self.timerSeconds = timerSeconds
         self.clipID = clipID
+    }
+
+    /// A string literal is a text-only step — keeps call sites and seed data terse.
+    public init(stringLiteral value: String) {
+        self.init(text: value)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case text, ingredient, timerSeconds, clipID
+    }
+
+    /// Decodes either a bare string (text-only step) or a full object, so the
+    /// seed catalog can mix simple and rich steps.
+    public init(from decoder: any Decoder) throws {
+        if let single = try? decoder.singleValueContainer(),
+           let text = try? single.decode(String.self) {
+            self.init(text: text)
+            return
+        }
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            text: try c.decode(String.self, forKey: .text),
+            ingredient: try c.decodeIfPresent(Ingredient.self, forKey: .ingredient),
+            timerSeconds: try c.decodeIfPresent(Int.self, forKey: .timerSeconds),
+            clipID: try c.decodeIfPresent(String.self, forKey: .clipID)
+        )
     }
 }
 
@@ -44,6 +70,15 @@ public struct StepTimer: Equatable, Sendable {
     /// Whether the countdown has reached zero by `now`.
     public func hasFired(at now: TimeInterval) -> Bool {
         now - startedAt >= duration
+    }
+}
+
+extension Recipe {
+    /// Open cooking mode for this recipe: a fresh `CookingSession` over its own
+    /// structured steps. This is the seam between the static recipe and the
+    /// runtime cooking state machine.
+    public func cookingSession() -> CookingSession {
+        CookingSession(recipeID: id, steps: steps)
     }
 }
 
