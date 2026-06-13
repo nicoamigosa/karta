@@ -5,10 +5,35 @@ import Foundation
 public struct CookingStep: Equatable, Sendable {
     public let text: String
     public let ingredient: Ingredient?
+    /// Optional countdown for a timed action ("simmer 10 min" → 600), in seconds.
+    public let timerSeconds: Int?
 
-    public init(text: String, ingredient: Ingredient? = nil) {
+    public init(text: String, ingredient: Ingredient? = nil, timerSeconds: Int? = nil) {
         self.text = text
         self.ingredient = ingredient
+        self.timerSeconds = timerSeconds
+    }
+}
+
+/// A running (or finished) in-step timer: when it was started and for how long.
+/// Pure data — elapsed/remaining are computed against an injected clock.
+public struct StepTimer: Equatable, Sendable {
+    public let startedAt: TimeInterval
+    public let duration: TimeInterval
+
+    public init(startedAt: TimeInterval, duration: TimeInterval) {
+        self.startedAt = startedAt
+        self.duration = duration
+    }
+
+    /// Seconds left at `now`, floored at zero.
+    public func remaining(at now: TimeInterval) -> TimeInterval {
+        max(duration - (now - startedAt), 0)
+    }
+
+    /// Whether the countdown has reached zero by `now`.
+    public func hasFired(at now: TimeInterval) -> Bool {
+        now - startedAt >= duration
     }
 }
 
@@ -47,6 +72,9 @@ public struct CookingSession: Equatable, Sendable {
     public private(set) var isExited: Bool
     /// The emitted success signal once the cook responds (or is inferred), else `nil`.
     public private(set) var cookedEvent: CookedEvent?
+    /// Running timers keyed by step index, so a timer survives navigating away
+    /// from and back to its step.
+    public private(set) var timers: [Int: StepTimer]
 
     public init(recipeID: String, steps: [CookingStep]) {
         self.recipeID = recipeID
@@ -54,6 +82,7 @@ public struct CookingSession: Equatable, Sendable {
         self.currentIndex = 0
         self.isExited = false
         self.cookedEvent = nil
+        self.timers = [:]
     }
 
     /// The step currently shown, or `nil` if there are no steps.
@@ -107,6 +136,24 @@ public struct CookingSession: Equatable, Sendable {
         let event = CookedEvent(recipeID: recipeID, outcome: nil, wasInferred: true)
         cookedEvent = event
         return event
+    }
+
+    // MARK: - In-step timers
+
+    /// Start the current step's timer at `now`, if that step declares one.
+    public mutating func startTimer(now: TimeInterval) {
+        guard let seconds = currentStep?.timerSeconds else { return }
+        timers[currentIndex] = StepTimer(startedAt: now, duration: TimeInterval(seconds))
+    }
+
+    /// Seconds left on the current step's running timer at `now`, or `nil` if none.
+    public func currentStepTimerRemaining(at now: TimeInterval) -> TimeInterval? {
+        timers[currentIndex]?.remaining(at: now)
+    }
+
+    /// Whether the current step's running timer has fired by `now` (false if none).
+    public func currentStepTimerHasFired(at now: TimeInterval) -> Bool {
+        timers[currentIndex]?.hasFired(at: now) ?? false
     }
 
     /// Leave cooking mode (swipe-down). Terminal: further navigation is ignored.
