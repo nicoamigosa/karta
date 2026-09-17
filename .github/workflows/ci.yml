@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  core:
+    name: KartaCore (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift test
+        working-directory: KartaCore
+        run: swift test
+
+  detect:
+    name: Detect iOS target
+    runs-on: ubuntu-latest
+    outputs:
+      ios: ${{ steps.check.outputs.ios }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ -f Karta/project.yml ] || ls Karta/*.xcodeproj >/dev/null 2>&1; then
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ios=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ios:
+    name: Karta app (iOS Simulator)
+    needs: detect
+    if: needs.detect.outputs.ios == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        if: hashFiles('Karta/project.yml') != ''
+        working-directory: Karta
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: xcodebuild test
+        working-directory: Karta
+        run: |
+          xcodebuild -scheme Karta \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            test | xcpretty && exit ${PIPESTATUS[0]}

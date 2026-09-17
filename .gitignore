@@ -11,3 +11,6 @@ Package.resolved
 # Xcode
 DerivedData/
 *.xcuserstate
+
+# Ralph
+ralph/last_run.md
