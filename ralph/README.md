@@ -15,8 +15,9 @@ PR en corridas posteriores.
 
 ## Es agnóstico al proyecto
 
-Copiá esta carpeta en cualquier repo con remoto de GitHub y funciona. No asume
-lenguaje, framework ni test runner: los agentes deducen los comandos de test,
+Instalá una release etiquetada como `ralph/` en cualquier repo con remoto de
+GitHub y funciona (ver [Distribución y versión](#distribución-y-versión)). No
+asume lenguaje, framework ni test runner: los agentes deducen los comandos de test,
 lint y tipos leyendo `AGENTS.md`, `CLAUDE.md`, `README`, `CONTRIBUTING.md` y el
 manifest del proyecto (`Makefile`, `package.json`, `pyproject.toml`,
 `Cargo.toml`, `go.mod`, `.github/workflows/`…). Si esos archivos y el manifest
@@ -30,15 +31,8 @@ RALPH_BASE_BRANCH=develop ./ralph/once.sh        # base explícita
 RALPH_MAX_ROUNDS=2 ./ralph/once.sh               # menos rondas, menos gasto
 ```
 
-En este repo (Karta) el comando habitual, con los defaults del proyecto:
-
-```bash
-./ralph/once.sh                                  # KartaCore: lógica, en WSL
-RALPH_ISSUE_ORDER="1 2 8" ./ralph/once.sh        # en la VM macOS: issues de UI
-```
-
 La base **nunca** es la rama en la que estés parado: es el trunk del repo,
-detectado con `gh repo view` (`main` aquí, `master` en un repo que lo use). Ahí
+detectado con `gh repo view` (`main` o `master`, según el repo). Ahí
 se mergea cada PR aprobado, y de ahí sale la rama del siguiente issue.
 
 Requisitos: `git`, `gh` (autenticado, scope `repo`), `codex`, `claude`, remoto
@@ -119,7 +113,28 @@ a "corregir" contra una revisión que nunca existió.
 | `prompt_review.md` | Claude: revisar el PR y emitir el veredicto |
 | `prompt_revise.md` | Codex: atender los comentarios de la revisión |
 | `prompt_conflicts.md` | Codex: resolver los conflictos al poner la rama al día con la base |
+| `VERSION` | Release instalada; la compara `update.sh --check` |
 | `last_run.md` | Checkpoint, generado al parar por tope semanal (no se versiona) |
+
+## Niveles de configuración
+
+`ralph/` es **común e idéntica** en todos los repos que la usan: nunca se edita
+en el proyecto. Lo que varía vive fuera de ella:
+
+| Nivel | Ubicación | Contenido |
+|---|---|---|
+| Común | `ralph/` | Script, prompts, contratos, tests, updater, `VERSION` |
+| Proyecto | `.ralph/config.env` | Base, labels, checks obligatorios, política de cierre, hook post-merge |
+| Proyecto | `.ralph/prompt_*.local.md` | Restricciones concretas de implementación/revisión, anexadas al prompt común |
+| Host | `~/.config/ralph/host.env` | Capacidad Linux/macOS, rutas (PATH de Homebrew, `gtimeout`), límites locales |
+| Credenciales | Login / keychain / entorno protegido | Autenticación de `gh`, `codex`, `claude`; nunca en config versionada |
+
+Precedencia: entorno explícito > host > proyecto > defaults. Los `.env` son
+código shell de confianza (se hacen `source`), no datos parseados.
+
+> Estado: la carga de `.ralph/` y `host.env` y la composición de prompts
+> locales están planificadas (issues del repo `nicoamigosa/ralph`); hoy todo
+> se configura por entorno.
 
 ## Configuración
 
@@ -141,13 +156,36 @@ Todo por entorno, todo opcional:
 | `RALPH_ISSUE_ORDER` | vacío (orden por número) |
 | `RALPH_POST_MERGE_CHECK` | vacío (sin verificación de producción) |
 
+## Distribución y versión
+
+`ralph/` se distribuye como **release etiquetada** del repo
+[`nicoamigosa/ralph`](https://github.com/nicoamigosa/ralph); `VERSION` dice
+cuál está instalada. No se usa subtree ni submodule ni copia desde `main`:
+ninguno fija ni verifica la versión que se ejecuta.
+
+- Instalar/actualizar: `ralph/update.sh <VERSION>` descarga esa release,
+  verifica su SHA-256, rechaza modificaciones locales en archivos comunes y
+  aplica sólo los archivos del manifiesto; preserva `runs/`, checkpoints y toda
+  `.ralph/`. Nunca se autoactualiza durante una corrida; el diff queda para un
+  PR normal.
+- Comprobar atraso: `ralph/update.sh --check` compara `VERSION` con la última
+  release estable y responde "actual", "actualización disponible" o "consulta
+  fallida" (una consulta fallida **no** significa estar al día).
+
+> Estado: `update.sh` está planificado (issues del repo `nicoamigosa/ralph`).
+> Hasta que exista, instalar es copiar el contenido del tag `v<VERSION>`.
+
 ## Notas de diseño
 
-- **Claude comenta, el script mergea.** GitHub rechaza `approve` y
-  `request-changes` sobre un PR abierto por la misma cuenta, así que el revisor
-  usa `gh pr comment` y el veredicto viaja en la última línea de su salida. El
-  merge lo ejecuta el script, y sólo ante un `PASS` bien formado: así la
-  invariante "no hay merge sin aprobación" vive en un único lugar.
+- **Claude comenta, el script mergea ("modo comentario").** GitHub rechaza
+  `approve` y `request-changes` sobre un PR abierto por la misma cuenta, así
+  que el revisor usa `gh pr comment` y el veredicto viaja en la última línea de
+  su salida. El merge lo ejecuta el script, y sólo ante un `PASS` bien formado.
+  Este modo **no equivale a una required review de GitHub**: el servidor no
+  garantiza el PASS, sólo el script. Para que lo garantice hace falta una
+  identidad de revisión/merge distinta del implementador y un ruleset sin
+  bypass en la base; mientras no exista, el ruleset sólo puede exigir status
+  checks.
 - **El issue lo cierra el script, no el agente.** `Closes #N` sólo autocierra
   cuando el PR va contra la rama por defecto; acá la base es configurable.
 - **Codex corre con `network_access=true`** dentro del sandbox `workspace-write`,

@@ -5,6 +5,14 @@ Work is tracked as GitHub issues on `nicoamigosa/karta` and resolved by the
 unattended loop in `ralph/` (see `ralph/README.md`). This file is the single
 source of truth for agents; `CLAUDE.md` and `CODEX.md` only point here.
 
+`ralph/` is an **installed release** of [`nicoamigosa/ralph`](https://github.com/nicoamigosa/ralph)
+(`ralph/VERSION` says which). Never edit it here: fix it upstream, cut a
+release and update the copy. Project-specific overrides go in `.ralph/`
+(see "Niveles de configuración" in `ralph/README.md`). The hardening backlog
+from the 2026-09 review lives in that repo's issues; do not run the loop
+unattended until its P0 issues are closed
+(`docs/reviews/2026-09-astra-ralph.md`).
+
 ## Architecture — keep logic in KartaCore
 
 The repo has two targets with two different build environments:
@@ -69,6 +77,16 @@ expectations.
   `Open decisions`, `Acceptance criteria`).
 - The loop merges (`--squash`) and closes the issue. Agents never merge, never
   approve, never close issues themselves.
+
+### Running ralph in Karta
+
+```bash
+./ralph/once.sh                                  # WSL: KartaCore issues
+RALPH_ISSUE_ORDER="1 2 8" ./ralph/once.sh        # macOS VM: UI issues first
+```
+
+`RALPH_ISSUE_ORDER` only orders; host routing (`ralph-host:*` labels) is
+pending upstream.
 
 ## Pipeline
 

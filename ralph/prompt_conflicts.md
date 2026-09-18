@@ -8,17 +8,14 @@ complete list of what blocks the merge.
 
 # Rules
 
-- Resolve every conflict. Keep both sides: do not discard your own changes, do
-  not discard what the base branch brought in.
+- Resolve every conflict. Preserve the intended behavior of both branches, not
+  necessarily both texts.
 - Do not expand scope. Do not refactor, do not fix unrelated problems you notice
   along the way. The only diff you add is the resolution of the conflicts.
-- Files that hold a numeric state (a test-count floor in the agent
-  instructions, a version number, a counter): the right value is the **real
-  total after the merge**. Run the command that produces it and put that number
-  in. Never add the two sides by hand.
-- Sequentially numbered files that collide (a migration, a fixture, an ADR with
-  the same prefix on both sides): renumber the one from YOUR branch to the next
-  free number and update every reference to it.
+- Apply the repository's documented policy for versions, migrations and IDs.
+  Never renumber an applied migration.
+- If the repository does not define a safe resolution for a conflict, stop and
+  report the conflict instead of guessing.
 - Stay on your branch. Never force-push, never rewrite history, never abort the
   merge.
 

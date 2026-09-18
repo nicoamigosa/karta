@@ -28,6 +28,10 @@ Read the full diff of the PR. Then, independently:
 
 - Run the project's test suite, linter and type-checker yourself, using the
   commands the project declares. Do not take the PR description's word for it.
+- Gates are split between this host and CI. Run every gate assigned to this
+  host. Verify every CI-only gate against the exact PR head SHA (the commit you
+  have checked out); a check that ran on an older commit proves nothing.
+- Do not modify tracked files or create commits while reviewing.
 - Check that the new tests actually fail without the change when that is cheap to
   establish. A test that passes against an empty implementation is not a test.
 - Walk each acceptance criterion in the issue and confirm where it is satisfied.
@@ -49,8 +53,10 @@ Request changes only for things that genuinely block a merge:
 Do NOT block on: style you merely prefer, speculative future needs,
 optimizations nobody asked for, or rewrites of code the PR did not touch.
 
-If a gate was already failing before this change, that is not this PR's fault.
-Say so and do not block on it.
+A missing, failing, skipped, or unverifiable required gate prevents PASS,
+including failures that predate this change. Say clearly which gate and why;
+do not block on the diff itself when the gate failure is pre-existing, but do
+not emit PASS either.
 
 # 4. Deliver the review
 
