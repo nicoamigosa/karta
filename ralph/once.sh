@@ -43,6 +43,9 @@
 #   RALPH_CLAUDE_MODEL   modelo del revisor              (default: opus)
 #   RALPH_MERGE_METHOD   método de merge del PR          (default: --squash)
 #   RALPH_MAX_INFRA_RETRIES  reintentos ante caída del revisor (default: 3)
+#   RALPH_CI_POLICY          required o none explícito       (default: required)
+#   RALPH_CI_TIMEOUT_SECONDS espera de CI requerido         (default: 1800)
+#   RALPH_REQUIRED_CHECKS_JSON lista JSON de checks obligatorios (default: vacío)
 #   RALPH_POST_MERGE_CHECK   script que certifica producción tras cada merge;
 #                            recibe el SHA mergeado, ≠0 para toda la corrida
 #                            (default: vacío = desactivado)
@@ -67,6 +70,10 @@ NEEDS_HUMAN_LABEL="${RALPH_NEEDS_HUMAN_LABEL:-ralph-needs-human}"
 MAX_INFRA_RETRIES="${RALPH_MAX_INFRA_RETRIES:-3}"
 ISSUE_ORDER="${RALPH_ISSUE_ORDER:-}"
 POST_MERGE_CHECK="${RALPH_POST_MERGE_CHECK:-}"
+CI_POLICY="${RALPH_CI_POLICY:-required}"
+CI_TIMEOUT_SECONDS="${RALPH_CI_TIMEOUT_SECONDS:-1800}"
+REQUIRED_CHECKS_JSON="${RALPH_REQUIRED_CHECKS_JSON:-}"
+DRY_RUN="${RALPH_DRY_RUN:-0}"
 
 CHECKPOINT_FILE="$SCRIPT_DIR/last_run.md"
 AGENT_LOG="$(mktemp -t ralph-agent.XXXXXX)"
@@ -81,9 +88,59 @@ RESET_EPOCH=""
 
 fail() { echo "❌ $*" >&2; exit 1; }
 
-for cmd in git gh codex claude; do
+case "$MERGE_METHOD" in
+  --squash|--merge|--rebase) ;;
+  *) fail "RALPH_MERGE_METHOD debe ser exactamente --squash, --merge o --rebase." ;;
+esac
+
+case "$CI_POLICY" in
+  required|none) ;;
+  *) fail "RALPH_CI_POLICY debe ser exactamente required o none." ;;
+esac
+case "$CI_TIMEOUT_SECONDS" in
+  ''|*[!0-9]*) fail "RALPH_CI_TIMEOUT_SECONDS debe ser un entero no negativo." ;;
+esac
+
+repo_host() {
+  local remote
+  remote="$(git remote get-url origin 2>/dev/null || true)"
+  case "$remote" in
+    http://*|https://*)
+      remote="${remote#*://}"
+      printf '%s\n' "${remote%%/*}"
+      ;;
+    git@*:*)
+      remote="${remote#git@}"
+      printf '%s\n' "${remote%%:*}"
+      ;;
+    ssh://*)
+      remote="${remote#ssh://}"
+      remote="${remote#*@}"
+      printf '%s\n' "${remote%%/*}"
+      ;;
+    *)
+      printf '%s\n' "github.com"
+      ;;
+  esac
+}
+
+for cmd in git gh; do
   command -v "$cmd" >/dev/null 2>&1 || fail "Falta '$cmd' en el PATH."
 done
+if [ "$DRY_RUN" != "1" ]; then
+  command -v jq >/dev/null 2>&1 || fail "Falta 'jq' en el PATH para leer los resultados de CI."
+fi
+if [ -n "$REQUIRED_CHECKS_JSON" ]; then
+  if ! jq -e 'type == "array" and all(.[]; type == "string" and length > 0)' \
+      >/dev/null 2>&1 <<<"$REQUIRED_CHECKS_JSON"; then
+    fail "RALPH_REQUIRED_CHECKS_JSON debe ser una lista JSON de nombres no vacíos."
+  fi
+fi
+if [ "$DRY_RUN" != "1" ]; then
+  for cmd in codex claude; do
+    command -v "$cmd" >/dev/null 2>&1 || fail "Falta '$cmd' en el PATH."
+  done
+fi
 for f in prompt_implement.md prompt_review.md prompt_revise.md prompt_conflicts.md; do
   [ -f "$SCRIPT_DIR/$f" ] || fail "Falta $SCRIPT_DIR/$f."
 done
@@ -97,9 +154,10 @@ git remote get-url origin >/dev/null 2>&1 || fail "No hay remoto 'origin'."
 gh auth status >/dev/null 2>&1 || fail "gh no está autenticado (corré 'gh auth login')."
 REPO_SLUG="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"
 [ -n "$REPO_SLUG" ] || fail "No pude resolver el repo de GitHub."
+REPO_HOST="$(repo_host)"
 
 # El working tree debe estar limpio: vamos a saltar entre branches y mergear.
-if [ -n "$(git status --porcelain)" ]; then
+if [ "$DRY_RUN" != "1" ] && [ -n "$(git status --porcelain)" ]; then
   fail "Working tree sucio. Commiteá o stasheá antes de correr ralph."
 fi
 
@@ -110,13 +168,19 @@ PROMPT_CONFLICTS="$(cat "$SCRIPT_DIR/prompt_conflicts.md")"
 
 # Un PR necesita que su base exista en el remoto.
 if ! git ls-remote --exit-code --heads origin "$BASE_BRANCH" >/dev/null 2>&1; then
-  echo "📤 La base '$BASE_BRANCH' no existe en origin; la publico."
-  git push -u origin "$BASE_BRANCH" >/dev/null 2>&1 || fail "No pude publicar '$BASE_BRANCH'."
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "⚠️  La base '$BASE_BRANCH' no existe en origin; dry-run continúa sin publicar."
+  else
+    echo "📤 La base '$BASE_BRANCH' no existe en origin; la publico."
+    git push -u origin "$BASE_BRANCH" >/dev/null 2>&1 || fail "No pude publicar '$BASE_BRANCH'."
+  fi
 fi
 
 # Label con el que marcamos los PRs que agotaron las rondas.
-gh label create "$NEEDS_HUMAN_LABEL" --color B60205 \
-  --description "Ralph agotó las rondas de revisión; necesita un humano" >/dev/null 2>&1 || true
+if [ "$DRY_RUN" != "1" ]; then
+  gh label create "$NEEDS_HUMAN_LABEL" --color B60205 \
+    --description "Ralph agotó las rondas de revisión; necesita un humano" >/dev/null 2>&1 || true
+fi
 
 echo "🔧 base=$BASE_BRANCH · label=$LABEL · rondas=$MAX_ROUNDS · $CODEX_MODEL($CODEX_EFFORT) → $CLAUDE_MODEL"
 
@@ -128,16 +192,36 @@ echo "🔧 base=$BASE_BRANCH · label=$LABEL · rondas=$MAX_ROUNDS · $CODEX_MOD
 # lista es una preferencia de orden, nunca una fuente de trabajo.
 # Lee los números por stdin, uno por línea; los imprime igual.
 apply_issue_order() {
-  local all first rest n
+  local all rest n candidate is_first
+  local -a first=()
   all="$(cat)"
   [ -z "$ISSUE_ORDER" ] && { printf '%s\n' "$all"; return 0; }
-  first=""
   for n in $ISSUE_ORDER; do
-    printf '%s\n' "$all" | grep -qx "$n" && first="$first$n "
+    while IFS= read -r candidate; do
+      if [ "$candidate" = "$n" ]; then
+        first+=("$n")
+        break
+      fi
+    done <<EOF
+$all
+EOF
   done
-  rest="$(printf '%s\n' "$all" | grep -vxF "$(printf '%s\n' $first)" || true)"
-  printf '%s\n' $first
-  [ -n "$rest" ] && printf '%s\n' "$rest"
+  rest=""
+  while IFS= read -r n; do
+    [ -z "$n" ] && continue
+    is_first=0
+    for candidate in "${first[@]}"; do
+      if [ "$candidate" = "$n" ]; then
+        is_first=1
+        break
+      fi
+    done
+    [ "$is_first" -eq 1 ] || rest="${rest}${n}"$'\n'
+  done <<EOF
+$all
+EOF
+  [ "${#first[@]}" -gt 0 ] && printf '%s\n' "${first[@]}"
+  [ -n "$rest" ] && printf '%s' "$rest"
   return 0
 }
 
@@ -231,9 +315,11 @@ write_checkpoint() {
   echo "💾 Contexto guardado en $CHECKPOINT_FILE"
 }
 
-# Corre Codex sobre el repo. Devuelve 0 · 8 · 9 (ver classify_limit).
+# Corre Codex sobre el repo. Devuelve el exit code del agente, 8 · 9 por límites
+# o 70 si falla tee.
 run_codex() {
-  local prompt="$1"
+  local prompt="$1" limit_rc agent_rc tee_rc
+  local -a pipeline_status
   : > "$AGENT_LOG"; : > "$LAST_MSG"
   codex exec \
     --model "$CODEX_MODEL" \
@@ -243,19 +329,35 @@ run_codex() {
     --skip-git-repo-check \
     -o "$LAST_MSG" \
     "$prompt" 2>&1 | tee "$AGENT_LOG"
+  pipeline_status=("${PIPESTATUS[@]}")
+  agent_rc="${pipeline_status[0]}"
+  tee_rc="${pipeline_status[1]}"
+  [ "$tee_rc" -eq 0 ] || return 70
   classify_limit
+  limit_rc=$?
+  [ "$limit_rc" -eq 0 ] || return "$limit_rc"
+  return "$agent_rc"
 }
 
-# Corre Claude en modo headless. Devuelve 0 · 8 · 9 (ver classify_limit).
+# Corre Claude en modo headless. Devuelve el exit code del agente, 8 · 9 por
+# límites o 70 si falla tee.
 run_claude() {
-  local prompt="$1"
-  : > "$AGENT_LOG"
+  local prompt="$1" limit_rc agent_rc tee_rc
+  local -a pipeline_status
+  : > "$AGENT_LOG"; : > "$LAST_MSG"
   claude \
     --model "$CLAUDE_MODEL" \
     --dangerously-skip-permissions \
     --print \
-    "$prompt" 2>&1 | tee "$AGENT_LOG"
+    "$prompt" 2>&1 | tee "$LAST_MSG" "$AGENT_LOG"
+  pipeline_status=("${PIPESTATUS[@]}")
+  agent_rc="${pipeline_status[0]}"
+  tee_rc="${pipeline_status[1]}"
+  [ "$tee_rc" -eq 0 ] || return 70
   classify_limit
+  limit_rc=$?
+  [ "$limit_rc" -eq 0 ] || return "$limit_rc"
+  return "$agent_rc"
 }
 
 # 'gh pr edit --add-label' revienta en versiones de gh que aún consultan
@@ -269,21 +371,65 @@ pr_for_branch() {
   gh pr list --head "$1" --state open --json number --jq '.[0].number // empty' 2>/dev/null
 }
 
+checkout_or_fail() {
+  local branch="$1"
+  if git checkout "$branch" >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "❌ No pude hacer checkout de '$branch'; detengo la corrida."
+  return 70
+}
+
+verify_reviewed_head() {
+  local pr="$1" expected_sha="$2" local_sha remote_sha
+  local_sha="$(git rev-parse HEAD 2>/dev/null)" || {
+    echo "❌ No pude leer HEAD local; detengo la corrida."
+    return 70
+  }
+  remote_sha="$(gh pr view "$pr" --json headRefOid --jq .headRefOid 2>/dev/null)" || {
+    echo "❌ No pude leer headRefOid del PR #$pr; detengo la corrida."
+    return 70
+  }
+  if [ "$local_sha" != "$expected_sha" ] || [ "$remote_sha" != "$expected_sha" ]; then
+    echo "❌ head_changed: el SHA revisado ya no coincide con HEAD local o headRefOid."
+    return 70
+  fi
+  return 0
+}
+
 # Pone la rama al día con la base antes de cada revisión, para que el revisor
 # vea lo que de verdad se va a mergear. Siempre con merge, nunca rebase: Codex
 # trabaja sobre esta rama y el merge final es --squash. Si hay conflictos los
 # resuelve Codex (sin consumir ronda de revisión); si no lo logra, el PR queda
-# para un humano. Devuelve: 0 al día · 1 conflicto sin resolver · 8/9 tope de uso.
+# para un humano. Devuelve: 0 al día · 70 fallo fatal · 8/9 tope de uso.
 update_branch_with_base() {
   local branch="$1" pr="$2" rc conflicted
-  git fetch -q origin "$BASE_BRANCH" >/dev/null 2>&1
-  git merge-base --is-ancestor "origin/$BASE_BRANCH" HEAD && return 0
+  if ! git fetch -q origin "$BASE_BRANCH" >/dev/null 2>&1; then
+    echo "❌ No pude traer '$BASE_BRANCH'; conservo el estado y detengo la corrida."
+    return 70
+  fi
+  if git merge-base --is-ancestor "origin/$BASE_BRANCH" HEAD; then
+    return 0
+  else
+    rc=$?
+    if [ "$rc" -ne 1 ]; then
+      echo "❌ No pude comprobar la relación entre '$branch' y '$BASE_BRANCH'; detengo la corrida."
+      return 70
+    fi
+  fi
   echo "🔄 Pongo $branch al día con $BASE_BRANCH..."
   if git merge --no-edit "origin/$BASE_BRANCH" >/dev/null 2>&1; then
-    git push -q origin "$branch" >/dev/null 2>&1 || true
+    if ! git push -q origin "$branch" >/dev/null 2>&1; then
+      echo "❌ No pude publicar $branch; conservo el estado y detengo la corrida."
+      return 70
+    fi
     return 0
   fi
   conflicted="$(git diff --name-only --diff-filter=U | tr '\n' ' ')"
+  if [ -z "$conflicted" ]; then
+    echo "❌ El merge de '$BASE_BRANCH' falló sin dejar conflictos identificables; conservo el estado y detengo la corrida."
+    return 70
+  fi
   echo "⚔️  Conflictos con $BASE_BRANCH en: $conflicted. Codex los resuelve..."
   run_codex "Your branch has a merge in progress from the base branch, with conflicts.
 
@@ -298,39 +444,209 @@ $conflicted
 $PROMPT_CONFLICTS"
   rc=$?
   if [ "$rc" -ne 0 ]; then
-    git merge --abort >/dev/null 2>&1 || git reset -q --hard
+    if ! git merge --abort >/dev/null 2>&1; then
+      echo "⚠️  No pude abortar el merge; conservo el árbol en conflicto para recuperación manual."
+    fi
+    if [ "$rc" -ne 8 ] && [ "$rc" -ne 9 ]; then
+      add_label "$pr" "$NEEDS_HUMAN_LABEL"
+      gh pr comment "$pr" --body "🤖 Ralph no pudo resolver los conflictos con \`$BASE_BRANCH\`: el PR queda para un humano." >/dev/null 2>&1 || true
+    fi
     return "$rc"
   fi
   if [ -n "$(git status --porcelain)" ] || ! git merge-base --is-ancestor "origin/$BASE_BRANCH" HEAD; then
-    git merge --abort >/dev/null 2>&1 || git reset -q --hard
+    if ! git merge --abort >/dev/null 2>&1; then
+      echo "⚠️  No pude abortar el merge; conservo el árbol en conflicto para recuperación manual."
+    fi
     echo "🙋 Codex no resolvió los conflictos con $BASE_BRANCH. PR #$pr queda para un humano."
     add_label "$pr" "$NEEDS_HUMAN_LABEL"
     gh pr comment "$pr" --body "🤖 Ralph no pudo poner la rama al día con \`$BASE_BRANCH\`: conflictos sin resolver en $conflicted. Necesita un humano." >/dev/null 2>&1 || true
+    return 70
+  fi
+  if ! git push -q origin "$branch" >/dev/null 2>&1; then
+    echo "❌ No pude publicar $branch; conservo el estado y detengo la corrida."
+    return 70
+  fi
+  return 0
+}
+
+# Revisa todos los checks obligatorios del SHA exacto que Claude vio. Devuelve
+# 0 si cada uno terminó en success, 1 si alguno terminó en un estado distinto,
+# y 2 si alguno está ausente, pendiente o la API no responde. Los estados
+# auxiliares quedan en variables globales para distinguir rechazo de espera.
+check_required_checks() {
+  local reviewed_sha="$1"
+  local check_runs_pages statuses_pages check_runs statuses results_json
+  local required state failed pending missing
+
+  REQUIRED_CHECKS_STATE="infrastructure"
+  REQUIRED_CHECKS_FAILURES=""
+  check_runs_pages="$(gh api --paginate \
+    "repos/$REPO_SLUG/commits/$reviewed_sha/check-runs" 2>/dev/null | \
+    jq -s -c '[.[] | .check_runs[]?]' 2>/dev/null)" || return 2
+  statuses_pages="$(gh api --paginate \
+    "repos/$REPO_SLUG/commits/$reviewed_sha/statuses" 2>/dev/null | \
+    jq -s -c '
+      [.[][]?] |
+      reduce .[] as $status
+        ([];
+         if any(.[]; .context == $status.context) then .
+         else . + [$status]
+         end)
+    ' 2>/dev/null)" || return 2
+  check_runs="$check_runs_pages"
+  statuses="$statuses_pages"
+  results_json="$(jq -cn --argjson check_runs "$check_runs" --argjson statuses "$statuses" \
+    '{check_runs: $check_runs, statuses: $statuses}' 2>/dev/null)" || return 2
+
+  if [ -z "$REQUIRED_CHECKS_JSON" ]; then
+    state="$(jq -r --arg sha "$reviewed_sha" '
+      ([.check_runs[]? | select(.head_sha == $sha) |
+        {state: ((.conclusion // "") | ascii_downcase)}] +
+       [.statuses[]? | select(.sha == $sha) |
+        {state: ((.state // "") | ascii_downcase)}]) as $results |
+      if ($results | length) == 0 then
+        "missing"
+      elif any($results[]; .state == "" or .state == "queued" or
+               .state == "in_progress" or .state == "pending") then
+        "pending"
+      elif all($results[]; .state == "success") then
+        "success"
+      else
+        "failure"
+      end
+    ' <<<"$results_json" 2>/dev/null)" || return 2
+    case "$state" in
+      success)
+        REQUIRED_CHECKS_STATE="success"
+        return 0
+        ;;
+      failure)
+        REQUIRED_CHECKS_STATE="failure"
+        REQUIRED_CHECKS_FAILURES="check reportado sin éxito"
+        return 1
+        ;;
+      pending)
+        REQUIRED_CHECKS_STATE="pending"
+        return 2
+        ;;
+      missing)
+        REQUIRED_CHECKS_STATE="missing"
+        return 2
+        ;;
+      *) return 2 ;;
+    esac
+  fi
+
+  failed=0
+  pending=0
+  missing=0
+  while IFS= read -r required; do
+    [ -n "$required" ] || continue
+    state="$(jq -r --arg name "$required" --arg sha "$reviewed_sha" '
+      ([.check_runs[]? | select(.name == $name and .head_sha == $sha)]) as $runs |
+      ([.statuses[]? | select(.context == $name and .sha == $sha)]) as $statuses |
+      if any($runs[]?; ((.conclusion // "") | ascii_downcase) == "success") or
+         any($statuses[]?; ((.state // "") | ascii_downcase) == "success") then
+        "success"
+      elif any($runs[]?; ((.conclusion // "") | ascii_downcase) != "") or
+           any($statuses[]?; ((.state // "") | ascii_downcase) != "") then
+        "failure"
+      elif ($runs | length) > 0 or ($statuses | length) > 0 then
+        "pending"
+      else
+        "missing"
+      end
+    ' <<<"$results_json" 2>/dev/null)" || return 2
+    case "$state" in
+      success) ;;
+      failure)
+        failed=1
+        REQUIRED_CHECKS_FAILURES="${REQUIRED_CHECKS_FAILURES}${REQUIRED_CHECKS_FAILURES:+, }$required"
+        ;;
+      pending) pending=1 ;;
+      missing) missing=1 ;;
+      *) return 2 ;;
+    esac
+  done < <(jq -r '.[]' <<<"$REQUIRED_CHECKS_JSON")
+
+  if [ "$failed" -eq 1 ]; then
+    REQUIRED_CHECKS_STATE="failure"
     return 1
   fi
-  git push -q origin "$branch" >/dev/null 2>&1 || true
+  if [ "$missing" -eq 1 ]; then
+    REQUIRED_CHECKS_STATE="missing"
+    return 2
+  fi
+  if [ "$pending" -eq 1 ]; then
+    REQUIRED_CHECKS_STATE="pending"
+    return 2
+  fi
+  REQUIRED_CHECKS_STATE="success"
   return 0
 }
 
 # CI verde es condición de merge además del PASS. Devuelve 0 si los checks
-# pasan (o si el repo no tiene ninguno: avisa y no bloquea); 1 si están en
-# rojo, tras dejar en el PR el ítem que Codex debe corregir.
+# pasan, 1 si hay un fallo real (tras dejar en el PR el ítem que Codex debe
+# corregir), y 2 si la ausencia o el estado de CI sigue pendiente.
 wait_for_ci() {
-  local pr="$1" branch="$2" out run_url
-  out="$(gh pr checks "$pr" --watch --fail-fast 2>&1)" && return 0
-  if printf '%s' "$out" | grep -q "no checks reported"; then
-    # Puede ser que el run aún no se registró tras el último push.
-    sleep 30
-    out="$(gh pr checks "$pr" --watch --fail-fast 2>&1)" && return 0
-    if printf '%s' "$out" | grep -q "no checks reported"; then
-      echo "⚠️  PR #$pr no tiene checks de CI; mergeo sin esa garantía."
-      return 0
-    fi
+  local pr="$1" branch="$2" reviewed_sha="${3:-}" run_url started now deadline checks_rc pending_reason remaining
+
+  if [ "$CI_POLICY" = "none" ]; then
+    echo "⚠️  CI sin checks: política RALPH_CI_POLICY=none explícita; continúo sin esa garantía."
+    return 0
   fi
-  run_url="$(gh run list --branch "$branch" --limit 1 --json url --jq '.[0].url' 2>/dev/null)"
-  echo "🔴 CI en rojo en PR #$pr: ${run_url:-sin URL del run}"
-  gh pr comment "$pr" --body "1. CI en rojo: ${run_url:-ver la pestaña Checks del PR}; reproducir con la suite en base virgen y corregir." >/dev/null 2>&1 || true
-  return 1
+
+  started="$(date +%s 2>/dev/null)" || return 2
+  deadline=$((started + CI_TIMEOUT_SECONDS))
+  while :; do
+    check_required_checks "$reviewed_sha"
+    checks_rc=$?
+    if [ "$checks_rc" -eq 0 ]; then
+      return 0
+    elif [ "$checks_rc" -eq 1 ]; then
+      run_url="$(gh run list --branch "$branch" --limit 1 --json url --jq '.[0].url' 2>/dev/null)"
+      if [ -n "$REQUIRED_CHECKS_JSON" ]; then
+        echo "🔴 CI obligatorio en rojo en PR #$pr: ${REQUIRED_CHECKS_FAILURES:-check sin éxito} (${run_url:-sin URL del run})"
+        gh pr comment "$pr" --body "1. CI obligatorio en rojo: ${REQUIRED_CHECKS_FAILURES:-check sin éxito}; reproducir con la suite en base virgen y corregir." >/dev/null 2>&1 || true
+      else
+        echo "🔴 CI en rojo en PR #$pr: ${run_url:-sin URL del run}"
+        gh pr comment "$pr" --body "1. CI en rojo: ${run_url:-ver la pestaña Checks del PR}; reproducir con la suite en base virgen y corregir." >/dev/null 2>&1 || true
+      fi
+      return 1
+    else
+      case "$REQUIRED_CHECKS_STATE" in
+        missing)
+          if [ -n "$REQUIRED_CHECKS_JSON" ]; then
+            pending_reason="CI obligatorio ausente"
+          else
+            pending_reason="CI ausente"
+          fi
+          ;;
+        pending)
+          if [ -n "$REQUIRED_CHECKS_JSON" ]; then
+            pending_reason="CI obligatorio pendiente"
+          else
+            pending_reason="CI pendiente"
+          fi
+          ;;
+        *)
+          if [ -n "$REQUIRED_CHECKS_JSON" ]; then
+            pending_reason="CI obligatorio pendiente por infraestructura"
+          else
+            pending_reason="CI pendiente por infraestructura"
+          fi
+          ;;
+      esac
+    fi
+
+    now="$(date +%s 2>/dev/null)" || return 2
+    if [ "$now" -ge "$deadline" ]; then
+      echo "⚠️  $pending_reason en PR #$pr; estado ci_pending, sin merge."
+      return 2
+    fi
+    remaining=$((deadline - now))
+    sleep $(( remaining > 30 ? 30 : remaining ))
+  done
 }
 
 # ------------------------------------------------------------ ciclo por issue --
@@ -340,8 +656,8 @@ wait_for_ci() {
 process_issue() {
   local num="$1"
   local branch="${BRANCH_PREFIX}${num}"
-  local rc issue_ctx commits pr round verdict comments prior_work
-  local infra_retries comments_before comments_after backoff merged_sha ci_ok
+  local rc issue_ctx commits pr round verdict comments prior_work reviewed_sha
+  local infra_retries comments_before comments_after backoff merged_sha ci_ok ci_rc
 
   echo ""
   echo "════ Issue #$num ($branch) ════"
@@ -349,10 +665,13 @@ process_issue() {
   # Idempotencia: si la rama ya existe (corrida anterior interrumpida) la
   # reutilizamos. Recrearla con 'checkout -B' descartaría ese trabajo.
   if git show-ref --verify --quiet "refs/heads/$branch"; then
-    git checkout "$branch" >/dev/null 2>&1 || return 0
+    checkout_or_fail "$branch" || return 70
     prior_work="$(git log --oneline "$BASE_BRANCH..$branch" 2>/dev/null)"
   else
-    git checkout -b "$branch" "$BASE_BRANCH" >/dev/null 2>&1 || return 0
+    if ! git checkout -b "$branch" "$BASE_BRANCH" >/dev/null 2>&1; then
+      echo "❌ No pude crear y hacer checkout de '$branch'; detengo la corrida."
+      return 70
+    fi
     prior_work=""
   fi
 
@@ -362,7 +681,7 @@ process_issue() {
   if [ -n "$pr" ] && gh pr view "$pr" --json labels --jq '.labels[].name' 2>/dev/null \
        | grep -qx "$NEEDS_HUMAN_LABEL"; then
     echo "🙋 PR #$pr espera revisión humana; no lo toco."
-    git checkout "$BASE_BRANCH" >/dev/null 2>&1
+    checkout_or_fail "$BASE_BRANCH" || return 70
     return 0
   fi
 
@@ -398,16 +717,17 @@ $PROMPT_IMPLEMENT"
     rc=$?
     [ "$rc" -ne 0 ] && return "$rc"
 
-    # Red de seguridad: si el agente dejó cambios sin commitear, los persistimos.
+    # El agente debe dejar el trabajo commiteado. Preservamos el árbol para
+    # recuperación manual, pero nunca fabricamos un commit por él.
     if [ -n "$(git status --porcelain)" ]; then
-      git add -A
-      git commit -q -m "ralph: progreso sin commitear en issue #$num"
+      echo "❌ Codex dejó cambios sin commitear; conservo el estado y detengo la corrida."
+      return 70
     fi
 
     pr="$(pr_for_branch "$branch")"
     if [ -z "$pr" ]; then
       echo "⚠️  Codex no dejó PR abierto para #$num. Branch preservado, sin merge."
-      git checkout "$BASE_BRANCH" >/dev/null 2>&1
+      checkout_or_fail "$BASE_BRANCH" || return 70
       return 0
     fi
     echo "📬 PR #$pr abierto."
@@ -421,10 +741,14 @@ $PROMPT_IMPLEMENT"
   while [ "$round" -le "$MAX_ROUNDS" ]; do
     update_branch_with_base "$branch" "$pr"
     rc=$?
-    if [ "$rc" -eq 1 ]; then
-      git checkout "$BASE_BRANCH" >/dev/null 2>&1
-      return 0
-    fi
+    [ "$rc" -ne 0 ] && return "$rc"
+
+    reviewed_sha="$(git rev-parse HEAD 2>/dev/null)" || {
+      echo "❌ No pude capturar el SHA a revisar; detengo la corrida."
+      return 70
+    }
+    verify_reviewed_head "$pr" "$reviewed_sha"
+    rc=$?
     [ "$rc" -ne 0 ] && return "$rc"
 
     echo "🔍 Claude revisa PR #$pr (ronda $round/$MAX_ROUNDS)..."
@@ -443,29 +767,50 @@ $PROMPT_REVIEW"
     rc=$?
 
     # Fail-closed: sin PASS explícito y bien formado, no se mergea.
-    verdict="$(grep -oE '<verdict>(PASS|CHANGES_REQUESTED)</verdict>' "$AGENT_LOG" | tail -1)"
+    verdict="$(tail -n 1 "$LAST_MSG" | grep -xE '<verdict>(PASS|CHANGES_REQUESTED)</verdict>' || true)"
 
-    # Un veredicto bien formado prueba que la revisión terminó: descarta un
-    # falso positivo de classify_limit (el código revisado puede hablar de
-    # "rate limit" y contaminar el log).
-    [ -n "$verdict" ] && rc=0
-    [ "$rc" -ne 0 ] && return "$rc"
+    if [ "$rc" -ne 0 ]; then
+      if [ "$rc" -ne 8 ] && [ "$rc" -ne 9 ]; then
+        echo "❌ Claude terminó con rc=$rc; #$num queda abierto sin merge."
+      fi
+      return "$rc"
+    fi
     # PASS con CI en rojo no mergea: wait_for_ci deja el ítem en el PR y se
     # cae a la Fase 3 como con cualquier CHANGES_REQUESTED.
     ci_ok=0
     if [ "$verdict" = "<verdict>PASS</verdict>" ]; then
+      verify_reviewed_head "$pr" "$reviewed_sha"
+      rc=$?
+      [ "$rc" -ne 0 ] && return "$rc"
       echo "✅ PASS en la ronda $round. Espero CI de PR #$pr..."
-      wait_for_ci "$pr" "$branch" && ci_ok=1
+      wait_for_ci "$pr" "$branch" "$reviewed_sha"
+      ci_rc=$?
+      if [ "$ci_rc" -eq 0 ]; then
+        ci_ok=1
+      elif [ "$ci_rc" -eq 2 ]; then
+        checkout_or_fail "$BASE_BRANCH" || return 70
+        return 0
+      fi
     fi
     if [ "$ci_ok" -eq 1 ]; then
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "❌ El árbol cambió después de la revisión; detengo la corrida."
+        return 70
+      fi
+      verify_reviewed_head "$pr" "$reviewed_sha"
+      rc=$?
+      [ "$rc" -ne 0 ] && return "$rc"
       echo "🟢 CI verde. Mergeo PR #$pr."
-      git checkout "$BASE_BRANCH" >/dev/null 2>&1
-      if gh pr merge "$pr" $MERGE_METHOD --delete-branch >/dev/null 2>&1; then
+      checkout_or_fail "$BASE_BRANCH" || return 70
+      if gh pr merge "$pr" "$MERGE_METHOD" \
+          --match-head-commit "$reviewed_sha" --delete-branch >/dev/null 2>&1; then
         git branch -D "$branch" >/dev/null 2>&1 || true
         merged_sha="$(gh pr view "$pr" --json mergeCommit --jq .mergeCommit.oid 2>/dev/null)"
         # La base local debe traer el merge: los issues dependientes heredan ese código.
-        git pull --ff-only origin "$BASE_BRANCH" >/dev/null 2>&1 \
-          || echo "⚠️  No pude actualizar '$BASE_BRANCH' local con --ff-only; revisá a mano."
+        if ! git pull --ff-only origin "$BASE_BRANCH" >/dev/null 2>&1; then
+          echo "❌ No pude actualizar '$BASE_BRANCH' local con --ff-only; conservo el estado y detengo la corrida."
+          return 70
+        fi
         # Producción rota no admite otro despliegue encima: si el hook falla, para toda la corrida.
         if [ -n "$POST_MERGE_CHECK" ]; then
           echo "🩺 Verifico producción con $POST_MERGE_CHECK $merged_sha..."
@@ -496,7 +841,7 @@ $PROMPT_REVIEW"
         if [ "$infra_retries" -gt "$MAX_INFRA_RETRIES" ]; then
           echo "⚠️  El revisor no arrancó en $MAX_INFRA_RETRIES intentos (fallo de infraestructura, no del código)."
           echo "🔸 #$num queda sin revisar; PR #$pr abierto y SIN label: un rerun lo retoma."
-          git checkout "$BASE_BRANCH" >/dev/null 2>&1
+          checkout_or_fail "$BASE_BRANCH" || return 70
           return 0
         fi
         backoff=$((60 * 3 ** (infra_retries - 1)))
@@ -512,7 +857,7 @@ $PROMPT_REVIEW"
       echo "🙋 #$num agotó las $MAX_ROUNDS rondas sin PASS. PR #$pr queda abierto para revisión humana."
       add_label "$pr" "$NEEDS_HUMAN_LABEL"
       gh pr comment "$pr" --body "🤖 Ralph agotó las $MAX_ROUNDS rondas de revisión sin alcanzar PASS. Sin merge: necesita un humano." >/dev/null 2>&1 || true
-      git checkout "$BASE_BRANCH" >/dev/null 2>&1
+      checkout_or_fail "$BASE_BRANCH" || return 70
       return 0
     fi
 
@@ -536,91 +881,174 @@ $PROMPT_REVISE"
     rc=$?
     [ "$rc" -ne 0 ] && return "$rc"
 
+    # Las correcciones también deben llegar commiteadas por Codex; preservar
+    # cambios sin commit es preferible a inventar historia o perderlos.
     if [ -n "$(git status --porcelain)" ]; then
-      git add -A
-      git commit -q -m "ralph: correcciones sin commitear en issue #$num"
+      echo "❌ Codex dejó cambios sin commitear; conservo el estado y detengo la corrida."
+      return 70
     fi
-    git push -q origin "$branch" >/dev/null 2>&1 || true
+    if ! git push -q origin "$branch" >/dev/null 2>&1; then
+      echo "❌ No pude publicar $branch; conservo el estado y detengo la corrida."
+      return 70
+    fi
 
     round=$((round + 1))
   done
 
-  git checkout "$BASE_BRANCH" >/dev/null 2>&1
+  checkout_or_fail "$BASE_BRANCH" || return 70
   return 0
+}
+
+# --------------------------------------------------------------- selector --
+
+refs_csv() {
+  local refs="${1:-}" ref result=""
+  while IFS= read -r ref; do
+    [ -z "$ref" ] && continue
+    [ -n "$result" ] && result="$result,"
+    result="$result$ref"
+  done <<EOF
+$refs
+EOF
+  [ -n "$result" ] && printf '%s' "$result" || printf '%s' "none"
+}
+
+pr_needs_human() {
+  local pr="$1" labels
+  [ -z "$pr" ] && return 1
+  labels="$(gh pr view "$pr" --json labels --jq '.labels[].name' 2>/dev/null || true)"
+  printf '%s\n' "$labels" | grep -Fqx "$NEEDS_HUMAN_LABEL"
+}
+
+print_plan_issue() {
+  local num="$1" priority="$2" parents="$3" blockers="$4" needs_human="$5" pr="$6" exclusion="$7"
+  local pr_text="${pr:-none}"
+  printf '#%s priority=%s host=%s parents=%s blockers=%s needs-human=%s pr=%s' \
+    "$num" "$priority" "$REPO_HOST" "$(refs_csv "$parents")" \
+    "$(refs_csv "$blockers")" "$needs_human" "$pr_text"
+  [ -n "$exclusion" ] && printf ' excluded=%s' "$exclusion"
+  printf '\n'
+}
+
+# Selecciona issues y, en modo plan, describe exactamente las mismas decisiones
+# sin checkout, agentes, labels, push ni merge. El modo normal conserva el ciclo
+# de pasadas para que un blocker cerrado durante la corrida desbloquee a otro.
+select_issues() {
+  local mode="$1"
+  local attempted=" " progress=1 numbers n num priority parents blockers open_blockers
+  local epics p b state pr needs_human exclusion rc
+
+  while [ "$progress" -eq 1 ]; do
+    progress=0
+    numbers="$(gh issue list --state open --label "$LABEL" --json number \
+      --jq 'sort_by(.number) | .[].number' | apply_issue_order)"
+    [ -z "$numbers" ] && break
+
+    # Cachear bodies de la pasada (una llamada por issue) para detectar épicos y blockers.
+    unset BODY; declare -A BODY
+    # Blockers ya confirmados cerrados. Sólo cacheamos CLOSED: es un estado final,
+    # mientras que OPEN puede dejar de serlo dentro de esta misma pasada.
+    unset CLOSED_BLOCKER; declare -A CLOSED_BLOCKER
+    epics=" "
+    for n in $numbers; do
+      BODY[$n]="$(gh issue view "$n" --json body --jq '.body')"
+      for p in $(printf '%s' "${BODY[$n]}" | section_refs 'Parent'); do
+        epics="$epics$p "
+      done
+    done
+
+    priority=0
+    for num in $numbers; do
+      priority=$((priority + 1))
+      parents="$(printf '%s' "${BODY[$num]}" | section_refs 'Parent')"
+      blockers="$(printf '%s' "${BODY[$num]}" | section_refs 'Blocked by')"
+      open_blockers=""
+      for b in $blockers; do
+        [ -n "${CLOSED_BLOCKER[$b]:-}" ] && continue
+        state="$(gh issue view "$b" --json state --jq '.state' 2>/dev/null || echo OPEN)"
+        if [ "$state" = "CLOSED" ]; then
+          CLOSED_BLOCKER[$b]=1
+        else
+          [ -n "$open_blockers" ] && open_blockers="$open_blockers"$'\n'
+          open_blockers="${open_blockers}${b}"
+        fi
+      done
+
+      pr="$(pr_for_branch "${BRANCH_PREFIX}${num}")"
+      needs_human=no
+      pr_needs_human "$pr" && needs_human=yes
+
+      if [ "$mode" = "plan" ]; then
+        exclusion=""
+        case "$epics" in *" $num "*) exclusion="parent";; esac
+        [ -n "$exclusion" ] || if [ -n "$open_blockers" ]; then
+          exclusion="blocked-by:$(refs_csv "$open_blockers")"
+        fi
+        [ -n "$exclusion" ] || if [ "$needs_human" = yes ]; then
+          exclusion="needs-human"
+        fi
+        print_plan_issue "$num" "$priority" "$parents" "$blockers" \
+          "$needs_human" "$pr" "$exclusion"
+        continue
+      fi
+
+      # Ya intentado en esta corrida: no reprocesar.
+      case "$attempted" in *" $num "*) continue;; esac
+      # Es un épico/padre (lo referencia otro issue): no se implementa.
+      case "$epics" in *" $num "*) echo "↪️  #$num es épico/padre, lo omito."; continue;; esac
+
+      # ¿Tiene blockers todavía abiertos? Si sí, lo dejamos para la próxima pasada.
+      # El listado de la pasada no sirve para decidir esto: la API de GitHub es
+      # eventualmente consistente, así que justo después de cerrar un issue todavía
+      # lo devuelve abierto y sus dependientes quedan bloqueados de mentira. Peor,
+      # si esa pasada no llega a intentar nada el bucle termina por falta de
+      # progreso. Consultamos el estado real de cada blocker al evaluarlo, lo que
+      # además desbloquea en la misma pasada a los que dependían de un issue que
+      # acabamos de cerrar.
+      if [ -n "$open_blockers" ]; then
+        echo "⏭️  #$num bloqueado por dependencias abiertas, lo salto por ahora."
+        continue
+      fi
+      if [ "$needs_human" = yes ]; then
+        echo "🙋 PR #$pr espera revisión humana; no lo toco."
+        continue
+      fi
+
+      # Reintenta automáticamente ante el tope de sesión; ante el tope semanal,
+      # para y deja contexto para reanudar a mano.
+      while :; do
+        process_issue "$num"
+        rc=$?
+        if [ "$rc" -eq 9 ]; then
+          echo "🛑 Tope semanal alcanzado. Paro y guardo contexto."
+          write_checkpoint
+          exit 0
+        elif [ "$rc" -eq 8 ]; then
+          wait_for_reset "$num"
+          continue   # reintenta el MISMO issue en la ventana nueva
+        elif [ "$rc" -ne 0 ]; then
+          echo "🛑 Fallo fatal (rc=$rc). Detengo la corrida."
+          exit "$rc"
+        fi
+        break
+      done
+
+      attempted="$attempted$num "
+      progress=1
+    done
+  done
+}
+
+print_plan() {
+  echo "Ralph dry-run plan (read-only)"
+  select_issues plan
 }
 
 # ------------------------------------------------------------------- bucle --
 
-# Repetimos pasadas mientras haya progreso, para que los issues que se
-# desbloquean al cerrarse sus blockers se procesen en la misma corrida.
-attempted=" "
-progress=1
-while [ "$progress" -eq 1 ]; do
-  progress=0
-
-  numbers="$(gh issue list --state open --label "$LABEL" --json number \
-    --jq 'sort_by(.number) | .[].number' | apply_issue_order)"
-  [ -z "$numbers" ] && break
-  # Cachear bodies de la pasada (una llamada por issue) para detectar épicos y blockers.
-  unset BODY; declare -A BODY
-  # Blockers ya confirmados cerrados. Sólo cacheamos CLOSED: es un estado final,
-  # mientras que OPEN puede dejar de serlo dentro de esta misma pasada.
-  unset CLOSED_BLOCKER; declare -A CLOSED_BLOCKER
-  epics=" "
-  for n in $numbers; do
-    BODY[$n]="$(gh issue view "$n" --json body --jq '.body')"
-    for p in $(printf '%s' "${BODY[$n]}" | section_refs 'Parent'); do
-      epics="$epics$p "
-    done
-  done
-
-  for num in $numbers; do
-    # Ya intentado en esta corrida: no reprocesar.
-    case "$attempted" in *" $num "*) continue;; esac
-    # Es un épico/padre (lo referencia otro issue): no se implementa.
-    case "$epics" in *" $num "*) echo "↪️  #$num es épico/padre, lo omito."; continue;; esac
-
-    # ¿Tiene blockers todavía abiertos? Si sí, lo dejamos para la próxima pasada.
-    # El listado de la pasada no sirve para decidir esto: la API de GitHub es
-    # eventualmente consistente, así que justo después de cerrar un issue todavía
-    # lo devuelve abierto y sus dependientes quedan bloqueados de mentira. Peor,
-    # si esa pasada no llega a intentar nada el bucle termina por falta de
-    # progreso. Consultamos el estado real de cada blocker al evaluarlo, lo que
-    # además desbloquea en la misma pasada a los que dependían de un issue que
-    # acabamos de cerrar.
-    blocked=0
-    for b in $(printf '%s' "${BODY[$num]}" | section_refs 'Blocked by'); do
-      [ -n "${CLOSED_BLOCKER[$b]:-}" ] && continue
-      if [ "$(gh issue view "$b" --json state --jq '.state' 2>/dev/null || echo OPEN)" = "CLOSED" ]; then
-        CLOSED_BLOCKER[$b]=1
-      else
-        blocked=1; break
-      fi
-    done
-    if [ "$blocked" -eq 1 ]; then
-      echo "⏭️  #$num bloqueado por dependencias abiertas, lo salto por ahora."
-      continue
-    fi
-
-    # Reintenta automáticamente ante el tope de sesión; ante el tope semanal,
-    # para y deja contexto para reanudar a mano.
-    while :; do
-      process_issue "$num"
-      rc=$?
-      if [ "$rc" -eq 9 ]; then
-        echo "🛑 Tope semanal alcanzado. Paro y guardo contexto."
-        write_checkpoint
-        exit 0
-      elif [ "$rc" -eq 8 ]; then
-        wait_for_reset "$num"
-        continue   # reintenta el MISMO issue en la ventana nueva
-      fi
-      break
-    done
-
-    attempted="$attempted$num "
-    progress=1
-  done
-done
-
-echo "🏁 No quedan issues '$LABEL' listos para procesar."
+if [ "$DRY_RUN" = "1" ]; then
+  print_plan
+else
+  select_issues run
+  echo "🏁 No quedan issues '$LABEL' listos para procesar."
+fi
