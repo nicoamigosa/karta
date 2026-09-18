@@ -13,6 +13,30 @@ Codex                        corrige sobre la misma rama  →  Claude vuelve a r
 `ralph-needs-human`: el loop nunca mergea por cansancio, y no vuelve a tocar ese
 PR en corridas posteriores.
 
+El exit code real de cada agente se conserva antes de pasar su salida por `tee`:
+un agente que termina con error nunca puede convertirse en PASS. El veredicto se
+acepta únicamente cuando es la última línea de la salida final de Claude; un
+fallo de `tee` devuelve 70 y detiene la corrida.
+
+La revisión, los checks y el merge quedan ligados al mismo SHA: Ralph compara el
+`HEAD` local con `headRefOid` antes y después de revisar, exige un árbol limpio y
+usa `--match-head-commit` al mergear. `RALPH_MERGE_METHOD` sólo admite
+`--squash`, `--merge` o `--rebase`; cualquier otro valor detiene el preflight.
+
+La política de CI es `required` por defecto. Si GitHub todavía no reporta checks,
+Ralph espera hasta `RALPH_CI_TIMEOUT_SECONDS` (30 minutos por defecto), deja el
+issue en estado `ci_pending` y no manda una corrección a Codex ni mergea. Un
+fallo explícito de un check sí se comenta en el PR para Codex. Para repos sin CI,
+`RALPH_CI_POLICY=none` es una excepción explícita y queda avisada en la salida.
+
+El proyecto puede declarar sus gates con
+`RALPH_REQUIRED_CHECKS_JSON='["CI / test","ShellCheck"]'`. Ralph consulta los
+`check-runs` y `statuses` del SHA exacto que revisó Claude: cada nombre declarado
+debe terminar en `success`; `skipped`, `neutral`, `cancelled`, `pending` y los
+resultados ausentes no habilitan el merge. Los checks exitosos adicionales no
+reemplazan uno obligatorio. Si no se declara la lista, todos los resultados del
+SHA deben ser exitosos y al menos uno debe existir.
+
 ## Es agnóstico al proyecto
 
 Instalá una release etiquetada como `ralph/` en cualquier repo con remoto de
@@ -29,14 +53,22 @@ discrepan, mandan las instrucciones de agente.
 ./ralph/once.sh                                  # base = trunk del repo (main/master)
 RALPH_BASE_BRANCH=develop ./ralph/once.sh        # base explícita
 RALPH_MAX_ROUNDS=2 ./ralph/once.sh               # menos rondas, menos gasto
+RALPH_DRY_RUN=1 ./ralph/once.sh                  # plan de solo lectura
 ```
 
 La base **nunca** es la rama en la que estés parado: es el trunk del repo,
 detectado con `gh repo view` (`main` o `master`, según el repo). Ahí
 se mergea cada PR aprobado, y de ahí sale la rama del siguiente issue.
 
-Requisitos: `git`, `gh` (autenticado, scope `repo`), `codex`, `claude`, remoto
-`origin`, y **working tree limpio** — el script salta entre ramas y mergea.
+`RALPH_DRY_RUN=1` imprime el plan del selector —prioridad, host, padres,
+blockers, exclusión por revisión humana y PR existente— y termina antes de
+checkout, agentes, labels, push o merge. Sirve para inspeccionar una corrida
+sin modificar el repositorio ni GitHub.
+
+Requisitos para una corrida completa: `git`, `gh` (autenticado, scope `repo`),
+`jq`, `codex`, `claude`, remoto `origin`, y **working tree limpio** — el script salta
+entre ramas y mergea. El dry-run sólo necesita las herramientas de lectura
+(`git` y `gh`).
 
 ## Cómo elige los issues
 
@@ -85,6 +117,12 @@ El formato esperado en el cuerpo del issue:
 Si una corrida se corta (Ctrl-C, tope de uso, caída), la siguiente **reutiliza**
 la rama y el PR existentes en vez de recrearlos, y salta lo ya mergeado. Volver
 a correr `./ralph/once.sh` siempre es seguro.
+
+Ralph nunca crea commits para tapar trabajo que Codex dejó sin commitear: conserva
+el árbol y detiene la corrida con código 70 para que el estado pueda recuperarse
+manualmente. También detiene la corrida ante fallos de `checkout`, `fetch`,
+`push` o `pull --ff-only`; un conflicto que Codex no resuelve se aborta cuando
+es posible, conserva el árbol si no lo es y deja el PR etiquetado para un humano.
 
 ## Fallos del revisor vs. rechazos
 
@@ -153,6 +191,9 @@ Todo por entorno, todo opcional:
 | `RALPH_MERGE_METHOD` | `--squash` |
 | `RALPH_NEEDS_HUMAN_LABEL` | `ralph-needs-human` |
 | `RALPH_MAX_INFRA_RETRIES` | `3` |
+| `RALPH_CI_POLICY` | `required` |
+| `RALPH_CI_TIMEOUT_SECONDS` | `1800` |
+| `RALPH_REQUIRED_CHECKS_JSON` | vacío (usa todos los checks reportados) |
 | `RALPH_ISSUE_ORDER` | vacío (orden por número) |
 | `RALPH_POST_MERGE_CHECK` | vacío (sin verificación de producción) |
 

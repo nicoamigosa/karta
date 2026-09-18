@@ -9,9 +9,10 @@ source of truth for agents; `CLAUDE.md` and `CODEX.md` only point here.
 (`ralph/VERSION` says which). Never edit it here: fix it upstream, cut a
 release and update the copy. Project-specific overrides go in `.ralph/`
 (see "Niveles de configuración" in `ralph/README.md`). The hardening backlog
-from the 2026-09 review lives in that repo's issues; do not run the loop
-unattended until its P0 issues are closed
-(`docs/reviews/2026-09-astra-ralph.md`).
+from the 2026-09 review (`docs/reviews/2026-09-astra-ralph.md`) lives in that
+repo's issues; its P0s are closed as of v1.1.0, so the loop may run unattended.
+Still open: #12 (`RALPH_REQUIRE_PROTECTION`), which needs decision D1 (review
+identity + ruleset without bypass).
 
 ## Architecture — keep logic in KartaCore
 
