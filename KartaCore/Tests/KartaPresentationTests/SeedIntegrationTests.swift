@@ -1,5 +1,6 @@
 import Testing
-@testable import KartaCore
+import KartaCore
+import KartaPresentation
 
 /// End-to-end checks against the real bundled seed catalog — the data the app
 /// actually ships. Guards the critical intolerance-safety guarantee on real data
@@ -9,7 +10,7 @@ struct SeedIntegrationTests {
 
     @Test("Filtering an intolerance excludes every violating seed recipe")
     func intoleranceFilterOnRealCatalog() throws {
-        let catalog = try RecipeCatalog.seed()
+        let catalog = try SeedResourceAdapter().loadRecipes()
 
         // The test is only meaningful if the catalog actually contains the allergen.
         let glutenRecipes = catalog.filter { $0.contains.contains("gluten") }
@@ -25,7 +26,7 @@ struct SeedIntegrationTests {
 
     @Test("The feed orders the seed by popularity, most popular first")
     func feedOrdersByPopularity() throws {
-        let catalog = try RecipeCatalog.seed()
+        let catalog = try SeedResourceAdapter().loadRecipes()
 
         let feed = FeedQuery.feed(recipes: catalog, seen: [], filters: FeedFilters())
         let scores = feed.map(\.popularity)
@@ -35,7 +36,7 @@ struct SeedIntegrationTests {
 
     @Test("Seed recipes carry structured steps that feed cooking mode")
     func structuredStepsFeedCooking() throws {
-        let catalog = try RecipeCatalog.seed()
+        let catalog = try SeedResourceAdapter().loadRecipes()
 
         // At least one step somewhere declares a timer and at least one a clip.
         let allSteps = catalog.flatMap(\.steps)
@@ -49,8 +50,8 @@ struct SeedIntegrationTests {
 
     @Test("Every clip referenced by a seed step resolves in the seed clip library")
     func noDanglingClipReferences() throws {
-        let catalog = try RecipeCatalog.seed()
-        let library = try TechniqueClipLibrary.seed()
+        let catalog = try SeedResourceAdapter().loadRecipes()
+        let library = try SeedResourceAdapter().loadTechniqueClips()
 
         for step in catalog.flatMap(\.steps) where step.clipID != nil {
             #expect(library.clip(for: step) != nil, "dangling clip id: \(step.clipID!)")

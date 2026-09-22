@@ -1,6 +1,7 @@
 import Testing
 import Foundation
-@testable import KartaCore
+import KartaCore
+import KartaPresentation
 
 @Suite("Seed recipe catalog")
 struct RecipeCatalogTests {
@@ -10,7 +11,7 @@ struct RecipeCatalogTests {
     /// every recipe must carry at least one ingredient and at least one step.
     @Test("The seed catalog decodes into valid, fully-populated recipes")
     func seedCatalogIsValid() throws {
-        let recipes = try RecipeCatalog.seed()
+        let recipes = try SeedResourceAdapter().loadRecipes()
 
         #expect(!recipes.isEmpty)
 
@@ -24,7 +25,7 @@ struct RecipeCatalogTests {
     /// duplicate id in the seed would silently corrupt that bookkeeping.
     @Test("Seed recipe ids are unique")
     func seedIdsAreUnique() throws {
-        let recipes = try RecipeCatalog.seed()
+        let recipes = try SeedResourceAdapter().loadRecipes()
         let ids = Set(recipes.map(\.id))
         #expect(ids.count == recipes.count)
     }
