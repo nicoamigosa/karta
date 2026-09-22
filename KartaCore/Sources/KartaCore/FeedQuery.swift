@@ -37,22 +37,33 @@ public struct FeedFilters: Equatable, Sendable {
     }
 }
 
-/// The feed recommendation as a pure function over a recipe set, the seen
-/// history, and the active filters. No I/O, no ML — deterministic and testable.
+/// The feed recommendation as a pure function over a recipe set, dated view
+/// history, an explicit recency window, and the active filters. No I/O, no ML
+/// — deterministic and testable.
 public enum FeedQuery {
 
     public static func feed(
         recipes: [Recipe],
-        seen: Set<String>,
+        views: [ViewEntry],
+        recentWindow: TimeInterval,
+        clock: any KartaClock,
         filters: FeedFilters
     ) -> [Recipe] {
         // Apply every hard constraint, including the intolerance safety guarantee.
         let eligible = recipes.filter(filters.allows)
 
-        // Don't-repeat: hold back recently-seen recipes — but never let that
-        // empty the feed. Once history is exhausted, fall back to the full set.
-        let unseen = eligible.filter { !seen.contains($0.id) }
-        let visible = unseen.isEmpty ? eligible : unseen
+        let now = clock.now
+        let lowerBound = now.addingTimeInterval(-recentWindow)
+        let recentlyViewedIDs = Set(
+            views
+                .filter { $0.date >= lowerBound && $0.date <= now }
+                .map(\.recipeID)
+        )
+
+        // Don't-repeat: hold back recently-viewed recipes — but never let that
+        // empty the feed. Expired history naturally returns to the feed.
+        let notRecentlyViewed = eligible.filter { !recentlyViewedIDs.contains($0.id) }
+        let visible = notRecentlyViewed.isEmpty ? eligible : notRecentlyViewed
 
         // Most popular first; ties keep their original order (stable & deterministic).
         return visible

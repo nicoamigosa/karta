@@ -33,7 +33,9 @@ struct FeedQueryFilterTests {
 
         let feed = FeedQuery.feed(
             recipes: recipes,
-            seen: [],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters(maxMinutes: 30)
         )
 
@@ -51,7 +53,9 @@ struct FeedQueryFilterTests {
 
         let feed = FeedQuery.feed(
             recipes: recipes,
-            seen: [],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters(maxDifficulty: .medium)
         )
 
@@ -67,7 +71,9 @@ struct FeedQueryFilterTests {
 
         let feed = FeedQuery.feed(
             recipes: recipes,
-            seen: [],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters(requireOnePan: true)
         )
 
@@ -85,7 +91,9 @@ struct FeedQueryFilterTests {
 
         let feed = FeedQuery.feed(
             recipes: recipes,
-            seen: [],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters(maxMinutes: 30, maxDifficulty: .medium, requireOnePan: true)
         )
 

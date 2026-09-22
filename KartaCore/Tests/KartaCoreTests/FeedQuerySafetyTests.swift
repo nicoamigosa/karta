@@ -38,7 +38,9 @@ struct FeedQuerySafetyTests {
 
             let feed = FeedQuery.feed(
                 recipes: recipes,
-                seen: [],
+                views: [],
+                recentWindow: testRecentWindow,
+                clock: testClock,
                 filters: FeedFilters(intolerances: active)
             )
 
@@ -58,7 +60,9 @@ struct FeedQuerySafetyTests {
     func emptyRecipesYieldEmptyFeed() {
         let feed = FeedQuery.feed(
             recipes: [],
-            seen: [],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters(intolerances: [.gluten])
         )
         #expect(feed.isEmpty)
@@ -68,7 +72,13 @@ struct FeedQuerySafetyTests {
     @Test("No active intolerances keeps every recipe")
     func noIntolerancesKeepsAll() {
         let recipes = [recipe("a", contains: [.gluten]), recipe("b", contains: [.nuts])]
-        let feed = FeedQuery.feed(recipes: recipes, seen: [], filters: FeedFilters())
+        let feed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
         #expect(Set(feed.map(\.id)) == ["a", "b"])
     }
 }

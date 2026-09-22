@@ -18,7 +18,13 @@ struct OnboardingFeedSeedTests {
         let recipes = [recipe("safe"), recipe("glutenous", contains: [.gluten])]
         let profile = OnboardingProfile(intolerances: [.gluten], householdSize: 2)
 
-        let firstFeed = FeedQuery.feed(recipes: recipes, seen: [], filters: profile.feedFilters)
+        let firstFeed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: profile.feedFilters
+        )
 
         // Non-generic: the intolerance-violating recipe is filtered out from the start.
         #expect(firstFeed.map(\.id) == ["safe"])

@@ -28,7 +28,9 @@ struct LeftoversQueryTests {
 
         let result = LeftoversQuery.suggestions(
             recipes: all,
-            cookedRecipeIDs: ["cooked"],
+            cooks: cookEntries(for: ["cooked"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters()
         )
 
@@ -48,7 +50,9 @@ struct LeftoversQueryTests {
 
         let result = LeftoversQuery.suggestions(
             recipes: all,
-            cookedRecipeIDs: ["cooked"],
+            cooks: cookEntries(for: ["cooked"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters(intolerances: [active])
         )
 
@@ -61,9 +65,14 @@ struct LeftoversQueryTests {
         let all = [recipe("a", ingredients: ["onion"]), recipe("b", ingredients: ["rice"])]
 
         let result = LeftoversQuery.suggestions(
-            recipes: all, cookedRecipeIDs: [], filters: FeedFilters()
+            recipes: all,
+            cooks: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
         )
 
         #expect(result.isEmpty)
     }
+
 }

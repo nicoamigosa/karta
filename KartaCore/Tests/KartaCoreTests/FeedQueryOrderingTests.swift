@@ -28,7 +28,13 @@ struct FeedQueryOrderingTests {
             recipe("low", popularity: 10),
         ]
 
-        let feed = FeedQuery.feed(recipes: recipes, seen: [], filters: FeedFilters())
+        let feed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
 
         #expect(feed.map(\.id) == ["top", "mid", "low"])
     }

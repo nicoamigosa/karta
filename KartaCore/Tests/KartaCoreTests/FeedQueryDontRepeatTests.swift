@@ -26,7 +26,9 @@ struct FeedQueryDontRepeatTests {
 
         let feed = FeedQuery.feed(
             recipes: recipes,
-            seen: ["b"],
+            views: viewEntries(for: ["b"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters()
         )
 
@@ -42,7 +44,9 @@ struct FeedQueryDontRepeatTests {
 
         let feed = FeedQuery.feed(
             recipes: recipes,
-            seen: ["a", "b"],
+            views: viewEntries(for: ["a", "b"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
             filters: FeedFilters()
         )
 
@@ -54,16 +58,22 @@ struct FeedQueryDontRepeatTests {
     @Test("Progressive consumption never repeats until history is exhausted")
     func neverRepeatsUntilExhausted() {
         let recipes = (1...5).map { recipe("r\($0)", popularity: $0) }
-        var seen: Set<String> = []
+        var views: [ViewEntry] = []
 
         // Consume the top recipe five times; each pick must be brand new.
         for _ in 0..<recipes.count {
-            let feed = FeedQuery.feed(recipes: recipes, seen: seen, filters: FeedFilters())
+            let feed = FeedQuery.feed(
+                recipes: recipes,
+                views: views,
+                recentWindow: testRecentWindow,
+                clock: testClock,
+                filters: FeedFilters()
+            )
             let next = try! #require(feed.first)
-            #expect(!seen.contains(next.id), "\(next.id) repeated before exhaustion")
-            seen.insert(next.id)
+            #expect(!views.contains { $0.recipeID == next.id }, "\(next.id) repeated before exhaustion")
+            views.append(ViewEntry(recipeID: next.id, date: testClock.now))
         }
 
-        #expect(seen.count == recipes.count)
+        #expect(views.count == recipes.count)
     }
 }
