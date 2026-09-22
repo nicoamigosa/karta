@@ -19,7 +19,7 @@ public enum LeftoversQuery {
         let now = clock.now
         let lowerBound = now.addingTimeInterval(-recentWindow)
         let recentCooks = cooks.filter {
-            !$0.wasInferred && $0.date >= lowerBound && $0.date <= now
+            $0.date >= lowerBound && $0.date <= now
         }
         let cookedRecipeIDs = Set(recentCooks.map(\.recipeID))
 

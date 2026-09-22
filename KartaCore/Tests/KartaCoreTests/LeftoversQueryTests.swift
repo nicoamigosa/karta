@@ -75,19 +75,4 @@ struct LeftoversQueryTests {
         #expect(result.isEmpty)
     }
 
-    @Test("Inferred cooks do not feed Leftovers")
-    func inferredCooksAreIgnored() {
-        let cooked = recipe("cooked", ingredients: ["onion"])
-        let match = recipe("match", ingredients: ["onion"])
-
-        let result = LeftoversQuery.suggestions(
-            recipes: [cooked, match],
-            cooks: [CookEntry(recipeID: "cooked", date: testClock.now, wasInferred: true)],
-            recentWindow: testRecentWindow,
-            clock: testClock,
-            filters: FeedFilters()
-        )
-
-        #expect(result.isEmpty)
-    }
 }
