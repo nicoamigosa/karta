@@ -28,6 +28,12 @@ Presentation no puede leer recursos declarados en Core. Por eso los dos JSON del
 `KartaPresentation`. `KartaCore` conserva sólo la conversión pura de datos a modelos y sus
 reglas de validación, sin `Bundle` ni acceso a archivos.
 
+## Mínimos de plataforma
+
+El paquete declara iOS 17 y macOS 14. Son los mínimos del estado observable que vive en
+`KartaPresentation` y que consume el shell SwiftUI; Linux sigue siendo una plataforma de
+compilación y pruebas para ambos targets, pero no cambia esos mínimos del producto Apple.
+
 ## Consequences
 
 - `AGENTS.md` afirma que toda la lógica vive en `KartaCore`; ralph lee ese archivo en cada

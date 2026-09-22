@@ -31,20 +31,8 @@ public struct TechniqueClipLibrary: Equatable, Sendable {
         return byID[id]
     }
 
-    public enum Error: Swift.Error {
-        case seedResourceMissing
-    }
-
     /// Decodes a clip library from raw JSON. Pure: no I/O, easy to unit test.
     public static func decode(from data: Data) throws -> TechniqueClipLibrary {
         TechniqueClipLibrary(clips: try JSONDecoder().decode([TechniqueClip].self, from: data))
-    }
-
-    /// Loads the bundled seed clip catalog that ships inside the package.
-    public static func seed() throws -> TechniqueClipLibrary {
-        guard let url = Bundle.module.url(forResource: "seed-clips", withExtension: "json") else {
-            throw Error.seedResourceMissing
-        }
-        return try decode(from: Data(contentsOf: url))
     }
 }
