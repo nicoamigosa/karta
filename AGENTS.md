@@ -6,13 +6,17 @@ unattended loop in `ralph/` (see `ralph/README.md`). This file is the single
 source of truth for agents; `CLAUDE.md` and `CODEX.md` only point here.
 
 `ralph/` is an **installed release** of [`nicoamigosa/ralph`](https://github.com/nicoamigosa/ralph)
-(`ralph/VERSION` says which). Never edit it here: fix it upstream, cut a
-release and update the copy. Project-specific overrides go in `.ralph/`
-(see "Niveles de configuración" in `ralph/README.md`). The hardening backlog
-from the 2026-09 review (`docs/reviews/2026-09-astra-ralph.md`) lives in that
-repo's issues; its P0s are closed as of v1.1.0, so the loop may run unattended.
-Still open: #12 (`RALPH_REQUIRE_PROTECTION`), which needs decision D1 (review
-identity + ruleset without bypass).
+(`ralph/VERSION` says which; `ralph/MANIFEST` lists the distributed paths).
+Never edit it here: fix it upstream, cut a release and run
+`ralph/update.sh <VERSION>` (verifies the tarball against `SHA256SUMS` and
+refuses local edits). Project-specific overrides go in `.ralph/` (see
+"Niveles de configuración" in `ralph/README.md`). The hardening backlog from
+the 2026-09 review (`docs/reviews/2026-09-astra-ralph.md`) is fully closed as
+of v1.2.0. Since v1.2.0 the loop requires a ruleset without bypass on the base
+branch and a read-only reviewer token (`RALPH_REVIEWER_GH_TOKEN`); this repo
+has neither yet, so until decision D1 is taken it must run with
+`RALPH_REQUIRE_PROTECTION=0 RALPH_REQUIRE_REVIEWER_TOKEN=0` and
+`RALPH_TDD_SKILL` pointing at a `SKILL.md`.
 
 ## Architecture — keep logic in KartaCore
 
