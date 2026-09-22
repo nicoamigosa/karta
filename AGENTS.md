@@ -144,6 +144,9 @@ simulator, gestures, media playback or accessibility is handed to **Devin**,
 which does **not** run ralph: it receives an already-verified contract and
 builds the shell against it. Devin never merges and never closes issues.
 
+The step-by-step procedure (states, review, merge, and what to do when Devin
+needs contract or a ralph PR breaks the app) is `docs/devin-playbook.md`.
+
 Devin works issue by issue, as soon as its Linux blockers are merged (the
 `## Blocked by` of every macOS issue lists them). To see which macOS issues are
 free:
@@ -159,8 +162,9 @@ done
 
 Devin uses the same branch (`ralph/issue-<N>`), PR sections and
 `Closes`/`Part of` rules as the loop. Its PR is reviewed with the ralph
-reviewer (`once.sh --review-pr <N>`, nicoamigosa/ralph#81; until it exists,
-run the review by hand with `ralph/prompt_review.md`) and merged by Nico.
+reviewer (`scripts/devin-review.sh <PR>` until `once.sh --review-pr <N>`,
+nicoamigosa/ralph#81, exists) and merged by Nico. Devin only changes `Karta/`
+(plus the CI workflow in #1); ralph never touches `Karta/`.
 
 That is the reason for the `KartaCore` / `KartaPresentation` split: the state
 and the rules have to be verifiable here, on Linux, because we cannot check
