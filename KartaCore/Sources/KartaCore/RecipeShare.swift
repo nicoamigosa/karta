@@ -14,15 +14,33 @@ public struct SharePayload: Equatable, Sendable {
 
 /// Assembles the share payload for a recipe. The presentation of the iOS share
 /// sheet itself lives in the UI shell; this is just the payload.
-public enum RecipeShare {
+public struct RecipeShare: Sendable {
 
-    /// Base for the stable per-recipe reference link.
-    public static let referenceBase = "https://karta.app/r/"
+    public let baseURL: URL?
 
-    public static func payload(for recipe: Recipe) -> SharePayload {
+    public init(baseURL: URL? = nil) {
+        self.baseURL = baseURL
+    }
+
+    public func payload(for recipe: Recipe) -> SharePayload {
         SharePayload(
             text: "Check out \(recipe.name) on Karta",
-            url: URL(string: referenceBase + recipe.id)
+            url: referenceURL(for: recipe.id)
         )
+    }
+
+    private func referenceURL(for recipeID: String) -> URL? {
+        guard let baseURL,
+              var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+        else { return nil }
+
+        let allowedCharacters = CharacterSet(
+            charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+        )
+        let encodedID = recipeID.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? ""
+        let basePath = components.percentEncodedPath
+        let separator = basePath.hasSuffix("/") ? "" : "/"
+        components.percentEncodedPath = basePath + separator + encodedID
+        return components.url
     }
 }
