@@ -140,16 +140,19 @@ public struct CookingSession: Equatable, Sendable {
         !steps.isEmpty && currentIndex == steps.count - 1
     }
 
-    /// Whether the "How did it turn out?" prompt should be shown.
+    /// Whether the "How did it turn out?" prompt should be shown. An inferred
+    /// cook leaves the prompt open so an explicit outcome can enrich it.
     public var showsOutcomePrompt: Bool {
-        isOnLastStep && !isExited
+        isOnLastStep && !isExited && (cookedEvent?.wasInferred ?? true)
     }
 
     /// Record the cook's response to the outcome prompt. Only valid on the last
-    /// step; returns the emitted `cooked` event (or `nil` if not applicable).
+    /// step; repeated explicit responses are ignored, while an inferred event
+    /// is enriched in place. Returns the new or updated event.
     @discardableResult
     public mutating func respond(_ outcome: CookOutcome) -> CookedEvent? {
         guard isOnLastStep, !isExited else { return nil }
+        guard cookedEvent?.wasInferred ?? true else { return nil }
         let event = CookedEvent(recipeID: recipeID, outcome: outcome, wasInferred: false)
         cookedEvent = event
         return event
@@ -169,7 +172,7 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Dwell long enough on the last step (without tapping) to infer the cook
     /// probably finished. Default threshold: 20s. Won't override an explicit
-    /// response and only fires on the last step.
+    /// response, only fires on the last step, and is ignored after exit.
     public static let probablyCookedDwellSeconds: TimeInterval = 20
 
     @discardableResult
@@ -177,7 +180,7 @@ public struct CookingSession: Equatable, Sendable {
         dwellSeconds: TimeInterval,
         threshold: TimeInterval = CookingSession.probablyCookedDwellSeconds
     ) -> CookedEvent? {
-        guard isOnLastStep, cookedEvent == nil, dwellSeconds >= threshold else { return nil }
+        guard isOnLastStep, !isExited, cookedEvent == nil, dwellSeconds >= threshold else { return nil }
         let event = CookedEvent(recipeID: recipeID, outcome: nil, wasInferred: true)
         cookedEvent = event
         return event
@@ -186,8 +189,10 @@ public struct CookingSession: Equatable, Sendable {
     // MARK: - In-step timers
 
     /// Start the current step's timer at `now`, if that step declares one.
+    /// Starting a timer after exit is ignored; timers already running continue
+    /// to be readable.
     public mutating func startTimer(now: TimeInterval) {
-        guard let seconds = currentStep?.timerSeconds else { return }
+        guard !isExited, let seconds = currentStep?.timerSeconds else { return }
         timers[currentIndex] = StepTimer(startedAt: now, duration: TimeInterval(seconds))
     }
 

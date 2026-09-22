@@ -32,6 +32,17 @@ struct StepTimerTests {
         #expect(session.currentStepTimerRemaining(at: 1_000) == nil)
     }
 
+    @Test("Starting a timer after exit is ignored")
+    func noTimerAfterExit() {
+        var session = CookingSession(recipeID: "r1", steps: steps)
+        session.next()
+        session.exit()
+
+        session.startTimer(now: 1_000)
+
+        #expect(session.currentStepTimerRemaining(at: 1_000) == nil)
+    }
+
     @Test("A timer fires once the countdown reaches zero")
     func timerFires() {
         var session = CookingSession(recipeID: "r1", steps: steps)
@@ -54,5 +65,16 @@ struct StepTimerTests {
         session.previous()                                // return to it
 
         #expect(session.currentStepTimerRemaining(at: 1_100) == 500) // kept counting
+    }
+
+    @Test("A timer that was running at exit keeps counting")
+    func timerSurvivesExit() {
+        var session = CookingSession(recipeID: "r1", steps: steps)
+        session.next()
+        session.startTimer(now: 1_000)
+        session.exit()
+
+        #expect(session.currentStepTimerRemaining(at: 1_100) == 500)
+        #expect(session.currentStepTimerHasFired(at: 1_600))
     }
 }
