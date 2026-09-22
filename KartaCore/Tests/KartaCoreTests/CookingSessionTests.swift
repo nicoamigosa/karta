@@ -88,6 +88,43 @@ struct CookingSessionCookedEventTests {
         #expect(session.cookedEvent == event)
     }
 
+    @Test("An explicit response closes the outcome prompt")
+    func responseClosesPrompt() {
+        var session = CookingSession(recipeID: "r1", steps: steps)
+        session.next(); session.next() // reach last step
+
+        session.respond(.thumbsUp)
+
+        #expect(session.showsOutcomePrompt == false)
+    }
+
+    @Test("Responding twice emits only one cooked event")
+    func responseIsIdempotent() {
+        var session = CookingSession(recipeID: "r1", steps: steps)
+        session.next(); session.next() // reach last step
+
+        let first = session.respond(.thumbsUp)
+        let second = session.respond(.thumbsUp)
+
+        #expect(first == CookedEvent(recipeID: "r1", outcome: .thumbsUp, wasInferred: false))
+        #expect(second == nil)
+        #expect(session.cookedEvent == first)
+    }
+
+    @Test("An explicit response enriches an inferred cook")
+    func explicitResponseEnrichesInference() {
+        var session = CookingSession(recipeID: "r1", steps: steps)
+        session.next(); session.next() // reach last step
+
+        let inferred = session.inferProbablyCooked(dwellSeconds: 30)
+        let explicit = session.respond(.thumbsDown)
+
+        #expect(inferred == CookedEvent(recipeID: "r1", outcome: nil, wasInferred: true))
+        #expect(explicit == CookedEvent(recipeID: "r1", outcome: .thumbsDown, wasInferred: false))
+        #expect(session.cookedEvent == explicit)
+        #expect(session.showsOutcomePrompt == false)
+    }
+
     @Test("Responding before the last step emits nothing")
     func noEventBeforeLastStep() {
         var session = CookingSession(recipeID: "r1", steps: steps)
@@ -120,5 +157,15 @@ struct CookingSessionCookedEventTests {
         answered.respond(.thumbsDown)
         #expect(answered.inferProbablyCooked(dwellSeconds: 999) == nil) // already recorded
         #expect(answered.cookedEvent?.outcome == .thumbsDown)
+    }
+
+    @Test("Inference does nothing after the session exits")
+    func inferenceIsIgnoredAfterExit() {
+        var session = CookingSession(recipeID: "r1", steps: steps)
+        session.next(); session.next()
+        session.exit()
+
+        #expect(session.inferProbablyCooked(dwellSeconds: 999) == nil)
+        #expect(session.cookedEvent == nil)
     }
 }
