@@ -5,55 +5,37 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  # Linux jobs run on the self-hosted runner (~/actions-runner-karta on
-  # wsl-nico): GitHub-hosted minutes are blocked on this private repo. The
-  # runner needs Docker up for the swift container. If the runner is down,
-  # jobs stay "Queued" instead of failing. Every Linux job runs inside the
-  # same container so the shared workspace has one owner (root); a job
-  # outside the container could not clean the files the container left.
   core:
     name: KartaCore (Linux)
-    runs-on: self-hosted
+    runs-on: ubuntu-24.04
     container: swift:6.3
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: swift test
-        working-directory: KartaCore
-        run: swift test
+        run: swift test --package-path KartaCore
 
-  detect:
-    name: Detect iOS target
-    runs-on: self-hosted
-    container: swift:6.3
-    outputs:
-      ios: ${{ steps.check.outputs.ios }}
+  # The only check that the ruleset and ralph require. It fails unless every
+  # required job succeeded. Issue #1 adds detect + ios to its needs.
+  gate:
+    name: gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    needs: [core]
+    if: always()
     steps:
-      - uses: actions/checkout@v4
-      - id: check
-        run: |
-          if [ -f Karta/project.yml ] || ls Karta/*.xcodeproj >/dev/null 2>&1; then
-            echo "ios=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ios=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  ios:
-    name: Karta app (iOS Simulator)
-    needs: detect
-    if: needs.detect.outputs.ios == 'true'
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Generate Xcode project
-        if: hashFiles('Karta/project.yml') != ''
-        working-directory: Karta
-        run: |
-          brew install xcodegen
-          xcodegen generate
-      - name: xcodebuild test
-        working-directory: Karta
-        run: |
-          xcodebuild -scheme Karta \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            test | xcpretty && exit ${PIPESTATUS[0]}
+      - name: Require every job
+        shell: bash
+        env:
+          CORE_RESULT: ${{ needs.core.result }}
+        run: test "$CORE_RESULT" = success
