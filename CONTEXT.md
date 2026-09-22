@@ -51,6 +51,14 @@ Un alérgeno que la usuaria declaró y que, por tanto, nunca puede aparecer en n
 superficie de recetas. Es una garantía dura, nunca de pago y nunca relajable por un filtro.
 _Avoid_: preferencia, restricción blanda
 
+**Revisión de alérgenos / Receta sin revisar**:
+Una receta revisada lleva un conjunto de alérgenos, incluso si está vacío; una receta sin revisar
+no es lo mismo que una receta revisada sin alérgenos. En el catálogo se escribe `contains: null`
+para una receta sin revisar y `contains: []` para una receta revisada sin alérgenos. Si falta la
+clave `contains`, el estado no se puede determinar y la receta no decodifica. Una receta sin
+revisar no llega a ninguna superficie, conforme al ADR 0002.
+_Avoid_: lista vacía como pendiente, `reviewedAt`
+
 **Hogar**:
 Para cuántas personas cocina habitualmente la usuaria. Lo único que se pregunta en el
 onboarding además de las intolerancias.

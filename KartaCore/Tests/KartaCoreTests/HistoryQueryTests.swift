@@ -18,7 +18,8 @@ struct HistoryQueryTests {
             difficulty: .easy,
             tags: [],
             ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
-            steps: ["step"]
+            steps: ["step"],
+            allergenReview: .reviewed([])
         )
     }
 

@@ -9,13 +9,32 @@ struct LeftoversQueryTests {
     private func recipe(
         _ id: String,
         ingredients: [String],
-        contains: [Allergen] = []
+        reviewedAllergens: [Allergen] = [],
+        review: AllergenReview = .reviewed([])
     ) -> Recipe {
         Recipe(
             id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy,
             tags: [], ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
-            steps: ["s"], contains: contains
+            steps: ["s"],
+            allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
         )
+    }
+
+    @Test("Unreviewed recipes never enter Leftovers")
+    func excludesUnreviewedRecipes() {
+        let cooked = recipe("cooked", ingredients: ["onion"])
+        let unreviewed = recipe("unreviewed", ingredients: ["onion"], review: .unreviewed)
+        let reviewed = recipe("reviewed", ingredients: ["onion"])
+
+        let result = LeftoversQuery.suggestions(
+            recipes: [cooked, unreviewed, reviewed],
+            cooks: cookEntries(for: ["cooked"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
+
+        #expect(result.map(\.id) == ["reviewed"])
     }
 
     @Test("Suggestions reuse ingredients from recently-cooked recipes, most overlap first")
@@ -43,7 +62,7 @@ struct LeftoversQueryTests {
         let unsafe = recipe(
             "unsafe-\(active.rawValue)",
             ingredients: ["flour", "milk", "egg"],
-            contains: [active]
+            reviewedAllergens: [active]
         )
         let safe = recipe("safe-\(active.rawValue)", ingredients: ["egg"])
         let all = [cooked, unsafe, safe]

@@ -5,7 +5,11 @@ import Foundation
 @Suite("Feed query — intolerance safety")
 struct FeedQuerySafetyTests {
 
-    private func recipe(_ id: String, contains: [Allergen] = []) -> Recipe {
+    private func recipe(
+        _ id: String,
+        reviewedAllergens: [Allergen] = [],
+        review: AllergenReview = .reviewed([])
+    ) -> Recipe {
         Recipe(
             id: id,
             name: id,
@@ -15,8 +19,21 @@ struct FeedQuerySafetyTests {
             tags: [],
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
-            contains: contains
+            allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
         )
+    }
+
+    @Test("Unreviewed recipes never enter the feed")
+    func excludesUnreviewedRecipes() {
+        let feed = FeedQuery.feed(
+            recipes: [recipe("reviewed"), recipe("unreviewed", review: .unreviewed)],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
+
+        #expect(feed.map(\.id) == ["reviewed"])
     }
 
     /// Exhaustive guard: derive the test matrix from the closed vocabulary,
@@ -26,8 +43,8 @@ struct FeedQuerySafetyTests {
         let allergens = Allergen.allCases
 
         // One recipe per allergen, plus multi-allergen and fully-safe recipes.
-        var recipes = allergens.map { recipe("only-\($0.rawValue)", contains: [$0]) }
-        recipes.append(recipe("dairy-and-gluten", contains: [.dairy, .gluten]))
+        var recipes = allergens.map { recipe("only-\($0.rawValue)", reviewedAllergens: [$0]) }
+        recipes.append(recipe("dairy-and-gluten", reviewedAllergens: [.dairy, .gluten]))
         recipes.append(recipe("safe"))
 
         // Every subset of the allergen set as an active intolerance filter.
@@ -71,7 +88,10 @@ struct FeedQuerySafetyTests {
     /// Boundary: an empty intolerance filter excludes nothing on safety grounds.
     @Test("No active intolerances keeps every recipe")
     func noIntolerancesKeepsAll() {
-        let recipes = [recipe("a", contains: [.gluten]), recipe("b", contains: [.nuts])]
+        let recipes = [
+            recipe("a", reviewedAllergens: [.gluten]),
+            recipe("b", reviewedAllergens: [.nuts]),
+        ]
         let feed = FeedQuery.feed(
             recipes: recipes,
             views: [],

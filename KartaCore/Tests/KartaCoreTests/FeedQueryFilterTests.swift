@@ -19,7 +19,8 @@ struct FeedQueryFilterTests {
             difficulty: difficulty,
             tags: tags,
             ingredients: [Ingredient(name: "x", quantity: "1")],
-            steps: ["paso"]
+            steps: ["paso"],
+            allergenReview: .reviewed([])
         )
     }
 

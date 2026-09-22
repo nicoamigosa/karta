@@ -15,6 +15,7 @@ struct FeedQueryOrderingTests {
             tags: [],
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
+            allergenReview: .reviewed([]),
             popularity: popularity
         )
     }

@@ -27,6 +27,22 @@ public struct Cookbook: Equatable, Sendable {
         savedIDs.contains(id)
     }
 
+    /// Resolve persisted recipe IDs against the current catalog in saved order.
+    /// Missing and unreviewed recipes are omitted so restored Cookbook entries
+    /// cannot bypass the catalog's safety boundary.
+    public func recipes(from catalog: [Recipe]) -> [Recipe] {
+        let recipesByID = Dictionary(
+            catalog.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return savedIDs.compactMap { id in
+            guard let recipe = recipesByID[id] else { return nil }
+            guard case .reviewed = recipe.allergenReview else { return nil }
+            return recipe
+        }
+    }
+
     /// Whether the cookbook is at its cap (the upgrade-invitation moment).
     public var isAtCap: Bool {
         saveCap.map { savedIDs.count >= $0 } ?? false
