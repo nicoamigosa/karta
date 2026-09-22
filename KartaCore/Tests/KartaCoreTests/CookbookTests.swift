@@ -5,6 +5,20 @@ import Testing
 @Suite("Cookbook — saving")
 struct CookbookSavingTests {
 
+    private func recipe(_ id: String, review: AllergenReview) -> Recipe {
+        Recipe(
+            id: id,
+            name: id,
+            heroPhotoURL: "",
+            totalMinutes: 10,
+            difficulty: .easy,
+            tags: [],
+            ingredients: [Ingredient(name: "x", quantity: "1")],
+            steps: ["s"],
+            allergenReview: review
+        )
+    }
+
     @Test("Saving a recipe adds it to the cookbook")
     func saveAddsRecipe() {
         var cookbook = Cookbook()
@@ -31,6 +45,19 @@ struct CookbookSavingTests {
         cookbook.unsave("r1")
         #expect(cookbook.isSaved("r1") == false)
         #expect(cookbook.savedIDs.isEmpty)
+    }
+
+    @Test("Restoring a cookbook omits unreviewed recipes")
+    func restoringOmitsUnreviewedRecipes() {
+        let cookbook = Cookbook(savedIDs: ["reviewed", "unreviewed"])
+        let catalog = [
+            recipe("reviewed", review: .reviewed([])),
+            recipe("unreviewed", review: .unreviewed),
+        ]
+
+        let restored = cookbook.recipes(from: catalog)
+
+        #expect(restored.map(\.id) == ["reviewed"])
     }
 }
 

@@ -9,7 +9,8 @@ struct RecipeShareTests {
     private func recipe(_ id: String, _ name: String) -> Recipe {
         Recipe(
             id: id, name: name, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy,
-            tags: [], ingredients: [Ingredient(name: "x", quantity: "1")], steps: ["s"]
+            tags: [], ingredients: [Ingredient(name: "x", quantity: "1")], steps: ["s"],
+            allergenReview: .reviewed([])
         )
     }
 

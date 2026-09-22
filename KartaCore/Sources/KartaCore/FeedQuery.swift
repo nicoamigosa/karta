@@ -26,11 +26,14 @@ public struct FeedFilters: Equatable, Sendable {
         self.requireOnePan = requireOnePan
     }
 
-    /// Whether a recipe satisfies every hard constraint. The intolerance check
-    /// is a critical safety guarantee: a recipe containing an active allergen is
-    /// never allowed through.
+    /// Whether a reviewed recipe satisfies every hard constraint. The
+    /// intolerance check is a critical safety guarantee; unreviewed recipes
+    /// are never allowed through.
     public func allows(_ recipe: Recipe) -> Bool {
-        recipe.contains.allSatisfy { !intolerances.contains($0) }
+        guard case let .reviewed(allergens) = recipe.allergenReview else {
+            return false
+        }
+        return allergens.isDisjoint(with: intolerances)
             && (maxMinutes.map { recipe.totalMinutes <= $0 } ?? true)
             && (maxDifficulty.map { recipe.difficulty <= $0 } ?? true)
             && (!requireOnePan || recipe.tags.contains(Self.onePanTag))

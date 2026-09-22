@@ -38,7 +38,7 @@ struct RecipeStepDecodingTests {
         let json = """
         {
             "id": "r1", "name": "Mix", "heroPhotoURL": "", "totalMinutes": 10,
-            "difficulty": "easy", "tags": [],
+            "difficulty": "easy", "tags": [], "contains": [],
             "ingredients": [{ "name": "x", "quantity": "1" }],
             "steps": [
                 "Chop the onion",
@@ -61,7 +61,8 @@ struct RecipeStepDecodingTests {
             steps: [
                 CookingStep(text: "Chop", ingredient: Ingredient(name: "Onion", quantity: "1")),
                 "Serve",
-            ]
+            ],
+            allergenReview: .reviewed([])
         )
 
         let session = recipe.cookingSession()
