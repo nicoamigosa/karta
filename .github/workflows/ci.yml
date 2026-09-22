@@ -6,9 +6,15 @@ on:
     branches: [main]
 
 jobs:
+  # Linux jobs run on the self-hosted runner (~/actions-runner-karta on
+  # wsl-nico): GitHub-hosted minutes are blocked on this private repo. The
+  # runner needs Docker up for the swift container. If the runner is down,
+  # jobs stay "Queued" instead of failing. Every Linux job runs inside the
+  # same container so the shared workspace has one owner (root); a job
+  # outside the container could not clean the files the container left.
   core:
     name: KartaCore (Linux)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     container: swift:6.3
     steps:
       - uses: actions/checkout@v4
@@ -18,7 +24,8 @@ jobs:
 
   detect:
     name: Detect iOS target
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    container: swift:6.3
     outputs:
       ios: ${{ steps.check.outputs.ios }}
     steps:
