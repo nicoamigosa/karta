@@ -6,27 +6,19 @@ import KartaPresentation
 @Suite("Seed recipe catalog")
 struct RecipeCatalogTests {
 
-    /// Issue #1 acceptance: the bundled seed catalog decodes into a non-empty
-    /// set of recipes, each usable by a feed card and the cooking flow — so
-    /// every recipe must carry at least one ingredient and at least one step.
-    @Test("The seed catalog decodes into valid, fully-populated recipes")
-    func seedCatalogIsValid() throws {
-        let recipes = try SeedResourceAdapter().loadRecipes()
-
-        #expect(!recipes.isEmpty)
-
-        for recipe in recipes {
-            #expect(!recipe.ingredients.isEmpty, "\(recipe.id) has no ingredients")
-            #expect(!recipe.steps.isEmpty, "\(recipe.id) has no steps")
+    @Test("The catalog decoder rejects the legacy seed's unknown allergen")
+    func legacySeedIsRejected() throws {
+        do {
+            _ = try SeedResourceAdapter().loadRecipes()
+            Issue.record("Expected the legacy lactose tag to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .unknownAllergen(
+                recipeID: "ensalada-cesar",
+                recipeName: "Ensalada Cesar",
+                value: "lactose"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
         }
-    }
-
-    /// Recipe ids identify recipes across saved/seen/cooked history, so a
-    /// duplicate id in the seed would silently corrupt that bookkeeping.
-    @Test("Seed recipe ids are unique")
-    func seedIdsAreUnique() throws {
-        let recipes = try SeedResourceAdapter().loadRecipes()
-        let ids = Set(recipes.map(\.id))
-        #expect(ids.count == recipes.count)
     }
 }

@@ -5,6 +5,60 @@ import Foundation
 @Suite("Recipe decoding")
 struct RecipeDecodingTests {
 
+    @Test("Allergen decoding is closed and normalizes input")
+    func allergenVocabularyNormalizesInput() throws {
+        #expect(Allergen(rawValue: " dairy ") == .dairy)
+        #expect(Allergen(rawValue: "DAIRY") == .dairy)
+        #expect(Allergen(rawValue: "lactose") == nil)
+
+        let json = """
+        {
+            "id": "normalized-allergens",
+            "name": "Normalized allergens",
+            "heroPhotoURL": "https://img.karta.app/normalized-allergens.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "tags": [],
+            "contains": [" DaIrY "],
+            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "steps": ["paso"]
+        }
+        """
+
+        let recipe = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+        #expect(recipe.contains == [.dairy])
+    }
+
+    @Test("Recipe decoding names an unknown allergen and its recipe")
+    func unknownAllergenFailsWithContext() throws {
+        let json = """
+        {
+            "id": "stale-pesto",
+            "name": "Stale pesto",
+            "heroPhotoURL": "https://img.karta.app/stale-pesto.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "tags": [],
+            "contains": ["lactose"],
+            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "steps": ["paso"]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected decoding to reject the unknown allergen")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .unknownAllergen(
+                recipeID: "stale-pesto",
+                recipeName: "Stale pesto",
+                value: "lactose"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     /// Tracer bullet: proves the data-model → JSON decode path end to end.
     /// A single recipe must decode with the fields a feed card and the
     /// detail screen depend on, including ingredient quantities and ordered steps.

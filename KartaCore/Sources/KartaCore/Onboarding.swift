@@ -5,11 +5,11 @@ import Foundation
 /// are learned from behavior / inferred from the device locale — not asked here.
 public struct OnboardingProfile: Equatable, Sendable {
     /// Allergens/intolerances the user must never be shown. Safety-critical.
-    public let intolerances: Set<String>
+    public let intolerances: Set<Allergen>
     /// Number of people the user typically cooks for.
     public let householdSize: Int
 
-    public init(intolerances: Set<String>, householdSize: Int) {
+    public init(intolerances: Set<Allergen>, householdSize: Int) {
         self.intolerances = intolerances
         self.householdSize = householdSize
     }

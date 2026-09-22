@@ -5,7 +5,7 @@ import Testing
 @Suite("Onboarding — feed seed")
 struct OnboardingFeedSeedTests {
 
-    private func recipe(_ id: String, contains: [String] = []) -> Recipe {
+    private func recipe(_ id: String, contains: [Allergen] = []) -> Recipe {
         Recipe(
             id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy,
             tags: [], ingredients: [Ingredient(name: "x", quantity: "1")], steps: ["s"],
@@ -15,8 +15,8 @@ struct OnboardingFeedSeedTests {
 
     @Test("Onboarding intolerances seed a non-generic first feed via the engine")
     func intolerancesSeedFirstFeed() {
-        let recipes = [recipe("safe"), recipe("glutenous", contains: ["gluten"])]
-        let profile = OnboardingProfile(intolerances: ["gluten"], householdSize: 2)
+        let recipes = [recipe("safe"), recipe("glutenous", contains: [.gluten])]
+        let profile = OnboardingProfile(intolerances: [.gluten], householdSize: 2)
 
         let firstFeed = FeedQuery.feed(recipes: recipes, seen: [], filters: profile.feedFilters)
 

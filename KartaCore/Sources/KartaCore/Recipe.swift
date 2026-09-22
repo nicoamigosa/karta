@@ -1,5 +1,16 @@
 import Foundation
 
+public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
+    case unknownAllergen(recipeID: String, recipeName: String, value: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .unknownAllergen(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has unknown allergen '\(value)'"
+        }
+    }
+}
+
 /// A cookable recipe: the foundation domain model every feature builds on.
 public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let id: String
@@ -13,9 +24,9 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     /// exact ingredient it needs, a timer, and a reusable technique clip. Decodes
     /// backward-compatibly from a bare string (text-only step).
     public let steps: [CookingStep]
-    /// Allergen / intolerance tags this recipe contains (e.g. "gluten", "lactose").
+    /// Allergen / intolerance tags this recipe contains.
     /// Used by the feed engine to enforce intolerance safety filtering.
-    public let contains: [String]
+    public let contains: [Allergen]
     /// Precalculated popularity score; the feed orders by this (higher first).
     public let popularity: Int
 
@@ -28,7 +39,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         tags: [String],
         ingredients: [Ingredient],
         steps: [CookingStep],
-        contains: [String] = [],
+        contains: [Allergen] = [],
         popularity: Int = 0
     ) {
         self.id = id
@@ -53,7 +64,19 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         tags = try c.decode([String].self, forKey: .tags)
         ingredients = try c.decode([Ingredient].self, forKey: .ingredients)
         steps = try c.decode([CookingStep].self, forKey: .steps)
-        contains = try c.decodeIfPresent([String].self, forKey: .contains) ?? []
+        let rawContains = try c.decodeIfPresent([String].self, forKey: .contains) ?? []
+        let recipeID = id
+        let recipeName = name
+        contains = try rawContains.map { rawValue in
+            guard let allergen = Allergen(rawValue: rawValue) else {
+                throw RecipeDecodingError.unknownAllergen(
+                    recipeID: recipeID,
+                    recipeName: recipeName,
+                    value: rawValue
+                )
+            }
+            return allergen
+        }
         popularity = try c.decodeIfPresent(Int.self, forKey: .popularity) ?? 0
     }
 }

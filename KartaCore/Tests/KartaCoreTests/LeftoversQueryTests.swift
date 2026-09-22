@@ -9,7 +9,7 @@ struct LeftoversQueryTests {
     private func recipe(
         _ id: String,
         ingredients: [String],
-        contains: [String] = []
+        contains: [Allergen] = []
     ) -> Recipe {
         Recipe(
             id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy,
@@ -35,20 +35,25 @@ struct LeftoversQueryTests {
         #expect(result.map(\.id) == ["two", "one"]) // overlap 2 then 1; no-match excluded
     }
 
-    @Test("Intolerance-violating recipes are never suggested, even with high overlap")
-    func safetyAlwaysApplies() {
+    @Test("Every vocabulary allergen is excluded from leftovers", arguments: Allergen.allCases)
+    func safetyAlwaysApplies(for active: Allergen) {
         let cooked = recipe("cooked", ingredients: ["flour", "milk", "egg"])
-        let unsafe = recipe("unsafe", ingredients: ["flour", "milk", "egg"], contains: ["gluten"])
-        let safe = recipe("safe", ingredients: ["egg"])
+        let unsafe = recipe(
+            "unsafe-\(active.rawValue)",
+            ingredients: ["flour", "milk", "egg"],
+            contains: [active]
+        )
+        let safe = recipe("safe-\(active.rawValue)", ingredients: ["egg"])
         let all = [cooked, unsafe, safe]
 
         let result = LeftoversQuery.suggestions(
             recipes: all,
             cookedRecipeIDs: ["cooked"],
-            filters: FeedFilters(intolerances: ["gluten"])
+            filters: FeedFilters(intolerances: [active])
         )
 
-        #expect(result.map(\.id) == ["safe"]) // unsafe excluded despite full overlap
+        #expect(result.map(\.id) == ["safe-\(active.rawValue)"])
+        #expect(!result.isEmpty)
     }
 
     @Test("No cooked history yields no leftover suggestions")
