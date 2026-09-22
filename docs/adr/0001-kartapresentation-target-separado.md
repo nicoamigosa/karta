@@ -16,10 +16,17 @@ no una promesa en un documento.
 - **Un único target.** Cero configuración, pero la frontera sólo se respeta por disciplina
   y nada avisa cuando se rompe.
 - **Tres targets** (Core / Presentation / adaptador de recursos). Es lo que pediría la
-  pureza estricta, pero la única I/O real son dos `Bundle.module` sobre un bundle que vive
-  físicamente en `KartaCore/Resources`; separarlo hoy obliga a mover `.process("Resources")`
-  y rehacer los tests de seed a cambio de un beneficio nominal. El adaptador de recursos
+  pureza estricta, pero la única I/O real son dos lecturas de JSON empaquetados; un target
+  propio para ellas no aporta nada que Presentation no dé ya. El adaptador de recursos
   queda como un tipo dentro de Presentation, revisable más adelante.
+
+## Los recursos pertenecen a Presentation
+
+`Bundle.module` es el bundle del target que lo invoca, no el del paquete: un adaptador en
+Presentation no puede leer recursos declarados en Core. Por eso los dos JSON del seed
+(`seed-recipes.json`, `seed-clips.json`) y el `.process("Resources")` se mueven a
+`KartaPresentation`. `KartaCore` conserva sólo la conversión pura de datos a modelos y sus
+reglas de validación, sin `Bundle` ni acceso a archivos.
 
 ## Consequences
 

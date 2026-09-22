@@ -1,8 +1,10 @@
 # Karta — Working agreement
 
 Karta is a SwiftUI/iOS recipe app. Product scope: `docs/PRD-karta-mvp.md`.
-Work is tracked as GitHub issues on `nicoamigosa/karta` and resolved by the
-unattended loop in `ralph/` (see `ralph/README.md`). This file is the single
+Work is tracked as GitHub issues on `nicoamigosa/karta`. Linux issues
+(`ralph-host:linux`) are resolved by the unattended loop in `ralph/` (see
+`ralph/README.md`); iOS shell issues (`ralph-host:macos`) are implemented by
+Devin on macOS, outside the loop (see "The macOS side"). This file is the single
 source of truth for agents; `CLAUDE.md` and `CODEX.md` only point here.
 
 `ralph/` is an **installed release** of [`nicoamigosa/ralph`](https://github.com/nicoamigosa/ralph)
@@ -12,21 +14,20 @@ Never edit it here: fix it upstream, cut a release and run
 refuses local edits). Project-specific overrides go in `.ralph/` (see
 "Niveles de configuración" in `ralph/README.md`). The hardening backlog from
 the 2026-09 review (`docs/reviews/2026-09-astra-ralph.md`) is fully closed as
-of v1.2.0. Since v1.2.0 the loop requires a ruleset without bypass on the base
-branch and a read-only reviewer token (`RALPH_REVIEWER_GH_TOKEN`); this repo
-has neither yet, so until decision D1 is taken it must run with
-`RALPH_REQUIRE_PROTECTION=0 RALPH_REQUIRE_REVIEWER_TOKEN=0` and
-`RALPH_TDD_SKILL` pointing at a `SKILL.md`.
+of v1.2.0. The loop requires a ruleset without bypass on the base branch and a
+read-only reviewer token (`RALPH_REVIEWER_GH_TOKEN`). Both exist since
+2026-09-22 (`docs/reviews/2026-09-astra-pipeline-runbook.md`): `main` only
+accepts PRs with the `gate` check green, with no bypass for anyone.
 
-## Architecture — keep logic in KartaCore
+## Architecture — rules in Core, state in Presentation, rendering in Karta
 
-The repo has two targets with two different build environments:
+The repo has two SwiftPM library targets and one iOS app target:
 
 | Target | Where it lives | Builds & tests on | Command |
 |---|---|---|---|
 | `KartaCore` (SwiftPM library) | `KartaCore/Sources/KartaCore/` | Linux (WSL) **and** macOS | `cd KartaCore && swift test` |
 | `KartaPresentation` (SwiftPM library) | `KartaCore/Sources/KartaPresentation/` | Linux (WSL) **and** macOS | `cd KartaCore && swift test` |
-| `Karta` (SwiftUI iOS app) | `Karta/` (not scaffolded yet — issue #1) | macOS only | `xcodebuild -scheme Karta -destination 'platform=iOS Simulator,name=iPhone 16' test` |
+| `Karta` (SwiftUI iOS app) | `Karta/` (not scaffolded yet — issue #1) | macOS only | CI job `ios`: `xcodebuild … test` on the first available iPhone simulator |
 
 **Three layers, and the compiler enforces the boundary** (ADR 0001):
 
@@ -36,7 +37,8 @@ The repo has two targets with two different build environments:
   `KartaPresentation`.
 - **`KartaPresentation` — the state.** Screen state, reducers, formatting, the
   observable store, and the resource adapter that loads the bundled seed.
-  Imports `KartaCore`. Everything here is still testable with `swift test` on
+  Bundled resources (the seed JSON) belong to this target; `KartaCore` only
+  decodes `Data` (ADR 0001). Imports `KartaCore`. Everything here is still testable with `swift test` on
   Linux — that is the whole point of the split.
 - **`Karta` — the shell.** Rendering, gestures, storage, media playback,
   timers, sound and haptics. No business rules in views or view models. If a UI
@@ -46,8 +48,9 @@ The repo has two targets with two different build environments:
 If you are unsure which of the two packages something belongs in, ask: *could
 this be wrong in a way a Linux test would catch?* If yes, it is not UI.
 - **Feed safety (intolerance filtering) is a critical guarantee.** Cover it
-  exhaustively (`FeedQuerySafetyTests`) and never regress it. Never bypass
-  `FeedQuery` from the UI.
+  exhaustively (`FeedQuerySafetyTests`) and never regress it. Views reach
+  recipes through the `KartaPresentation` store, never by calling or bypassing
+  `FeedQuery` themselves.
 - Toolchain: Swift 6.3 (`swift-tools-version: 6.0`). Tests use **Swift Testing**
   (`import Testing`, `@Test`, `#expect`/`#require`), never XCTest.
 - Keep the Xcode project declarative and regenerable (XcodeGen `project.yml`)
@@ -58,8 +61,8 @@ this be wrong in a way a Linux test would catch?* If yes, it is not UI.
 - On WSL, source Swiftly before any `swift` command:
   `. "$HOME/.local/share/swiftly/env.sh"`.
 - On Linux the iOS target **cannot** be built. When reviewing a PR that touches
-  `Karta/` from Linux, run `swift test` locally and rely on the `ios` CI check
-  for the app target. Do not fake a simulator verification.
+  `Karta/` from Linux, run `swift test` locally and rely on the `gate` CI check
+  (which includes the iOS job) for the app target. Do not fake a simulator verification.
 - Issues whose acceptance requires the simulator are only closed from a macOS
   host. From Linux, such a PR says `Part of #N`, not `Closes #N`.
 
@@ -86,8 +89,10 @@ review set the agenda; the ADRs hold the answers.
 Every PR must be green on all of these before merge:
 
 1. `cd KartaCore && swift test` — the full suite, no skipped tests.
-2. CI (`.github/workflows/ci.yml`): `core` job on Linux always; `ios` job on
-   macOS once the app target exists.
+2. CI (`.github/workflows/ci.yml`): the `gate` check green. It aggregates
+   `KartaCore (Linux)` and, from #1 on, the iOS Simulator job (skipped only
+   for documentation-only PRs). `gate` is the only check the ruleset and ralph
+   require.
 3. The reviewer's `<verdict>PASS</verdict>` (see `ralph/prompt_review.md`).
 
 Never weaken a gate: no skipped tests, no `@Test(.disabled)`, no lowered
@@ -110,17 +115,27 @@ expectations.
 - Open the PR against `main` with the sections `ralph/prompt_implement.md`
   requires (`What changed`, `Seams under test`, `How I verified`,
   `Open decisions`, `Acceptance criteria`).
-- The loop merges (`--squash`) and closes the issue. Agents never merge, never
+- ralph merges its own PRs (`--squash`) and closes the issue. Devin PRs: Nico
+  runs the ralph reviewer on the PR and merges only with a PASS for the current
+  head and `gate` green. Implementing agents (Codex, Devin) never merge, never
   approve, never close issues themselves.
+- Issues whose content needs the editor's sign-off (e.g. #32, seed and allergen
+  tagging) carry `ralph-needs-human`: the loop must not merge them on its own.
 
 ### Running ralph in Karta
 
 ```bash
-./ralph/once.sh                                  # WSL: KartaCore / KartaPresentation issues
+. "$HOME/.local/share/swiftly/env.sh"
+set -a; . ~/.config/ralph/reviewer.env; set +a      # RALPH_REVIEWER_GH_TOKEN (read-only)
+RALPH_REQUIRED_CHECKS_JSON='["gate"]' \
+RALPH_TDD_SKILL=$HOME/.codex/skills/tdd/SKILL.md \
+./ralph/once.sh
 ```
 
-`RALPH_ISSUE_ORDER` only orders; host routing (`ralph-host:*` labels) is
-pending upstream.
+Add `RALPH_DRY_RUN=1` first to check the preflight and the plan. Host routing
+is active (ralph ≥ 1.2): every open issue carries exactly one
+`ralph-host:linux` or `ralph-host:macos`, and ralph on WSL only takes the
+Linux ones. `RALPH_ISSUE_ORDER` only orders.
 
 ### The macOS side
 
@@ -129,9 +144,28 @@ simulator, gestures, media playback or accessibility is handed to **Devin**,
 which does **not** run ralph: it receives an already-verified contract and
 builds the shell against it. Devin never merges and never closes issues.
 
+Devin works issue by issue, as soon as its Linux blockers are merged (the
+`## Blocked by` of every macOS issue lists them). To see which macOS issues are
+free:
+
+```bash
+for n in $(gh issue list -l ralph-host:macos -l ready-for-agent --json number -q '.[].number'); do
+  open=$(gh issue view "$n" --json body -q .body \
+    | awk '/^## Blocked by/{f=1;next} /^## /{f=0} f' | grep -o '#[0-9]\+' | tr -d '#' \
+    | while read -r b; do [ "$(gh issue view "$b" --json state -q .state)" = OPEN ] && echo "$b"; done)
+  [ -z "$open" ] && echo "#$n free for Devin"
+done
+```
+
+Devin uses the same branch (`ralph/issue-<N>`), PR sections and
+`Closes`/`Part of` rules as the loop. Its PR is reviewed with the ralph
+reviewer (`once.sh --review-pr <N>`, nicoamigosa/ralph#81; until it exists,
+run the review by hand with `ralph/prompt_review.md`) and merged by Nico.
+
 That is the reason for the `KartaCore` / `KartaPresentation` split: the state
 and the rules have to be verifiable here, on Linux, because we cannot check
-them over there. Mac time is scarce and is spent on what only a Mac can do.
+them over there. Mac time comes out of Devin's plan and is spent on what only
+a Mac can do.
 Anything we can settle with `swift test` must be settled before it is handed
 over — sending the shell back to be rebuilt is the one cost we cannot pay.
 
@@ -139,6 +173,6 @@ over — sending the shell back to be rebuilt is the one cost we cannot pay.
 
 ```
 Nico  →  design / PRD (Claude Code)  →  GitHub issues (ready-for-agent)
-      →  ralph: Codex implements (tdd) → PR → Claude reviews → PASS + CI → merge
+      →  ralph: Codex implements (tdd) → PR → Claude reviews → PASS + gate → merge
       →  WSL for KartaCore / KartaPresentation issues · Devin for iOS/UI issues
 ```

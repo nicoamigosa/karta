@@ -39,14 +39,21 @@ navigation, worlds, routes and the scroll anchor are state, they live in
 
 ## 0. Setup on a freshly-cloned macOS host
 
-```bash
-# 1. Verify the logic package builds & all tests pass (no Xcode needed for this)
-cd KartaCore && swift test          # expect: all green (53+ tests)
+From the repository root:
 
-# 2. Open / create the iOS app. The app target does NOT exist yet — issue #1
-#    is where you scaffold it. Once it exists:
-open Karta.xcodeproj                 # or Package/workspace, see #1
+```bash
+# 1. Verify the logic packages build and every test passes (no Xcode needed)
+swift test --package-path KartaCore
+
+# 2. The iOS app does not exist until issue #1 scaffolds it in Karta/
+#    (Karta/project.yml, generated with XcodeGen; the .xcodeproj is not committed):
+xcodegen generate --spec Karta/project.yml
+open Karta/Karta.xcodeproj
 ```
+
+The CI job that builds and tests the app, and the check (`gate`) that every PR
+needs, are described in `AGENTS.md` ("Gates") and in
+`docs/reviews/2026-09-astra-pipeline-runbook.md` (step 6).
 
 - The iOS app target is a **thin shell**: it links both packages and renders
   them. Rules go in `KartaCore`, screen state and reducers in

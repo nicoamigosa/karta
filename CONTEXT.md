@@ -18,6 +18,12 @@ Una unidad autosuficiente de la preparación: lleva consigo el ingrediente y la 
 que necesita, y opcionalmente un temporizador y un clip de técnica.
 _Avoid_: instrucción, paso de la receta
 
+**Foto**:
+La imagen principal de una receta. Puede ser real o generada, pero siempre la aprueba la
+editora antes de publicarse: una foto que parezca falsa o genérica no se publica, y sin foto
+aprobada la receta no está completa.
+_Avoid_: imagen, hero, thumbnail, placeholder como foto final
+
 **Raciones**:
 Cuántas personas come una receta, declarado por la editora. Se muestra en la tarjeta y acerca
 en el orden del feed las recetas del tamaño del hogar, pero nunca las hace desaparecer.
