@@ -7,6 +7,113 @@ import KartaPresentation
 @Suite("Karta store")
 struct KartaStoreTests {
 
+    @Test("A new presentation state starts at the For You root")
+    func navigationStartsAtForYouRoot() {
+        let state = KartaState()
+
+        #expect(state.navigation.world == .forYou)
+        #expect(state.navigation.routes.isEmpty)
+        #expect(state.navigation.anchor(for: .forYou) == nil)
+    }
+
+    @Test("Navigation anchors are session-scoped")
+    func navigationAnchorIsNotCarriedIntoNewState() {
+        var previousState = KartaState()
+        KartaReducer.reduce(
+            &previousState,
+            action: .setFeedAnchor(
+                ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25),
+                world: .forYou
+            )
+        )
+
+        let newState = KartaState()
+
+        #expect(previousState.navigation.anchor(for: .forYou) != nil)
+        #expect(newState.navigation.anchor(for: .forYou) == nil)
+    }
+
+    @Test("Opening a recipe and returning preserves the world's feed anchor")
+    func detailBackPreservesFeedAnchor() {
+        var state = KartaState()
+        let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
+
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedAnchor(anchor, world: .forYou)
+        )
+        KartaReducer.reduce(
+            &state,
+            action: .pushRoute(.recipeDetail(recipeID: "recipe-4"))
+        )
+        #expect(state.navigation.routes == [.recipeDetail(recipeID: "recipe-4")])
+        KartaReducer.reduce(&state, action: .popRoute)
+
+        #expect(state.navigation.routes.isEmpty)
+        #expect(state.navigation.anchor(for: .forYou) == anchor)
+    }
+
+    @Test("Switching worlds and returning preserves each world's anchor")
+    func worldSwitchPreservesForYouAnchor() {
+        var state = KartaState()
+        let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
+        let savedAnchor = ScrollAnchor(recipeID: "saved-2", relativeOffset: 0.75)
+
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedAnchor(anchor, world: .forYou)
+        )
+        KartaReducer.reduce(&state, action: .selectWorld(.saved))
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedAnchor(savedAnchor, world: .saved)
+        )
+        KartaReducer.reduce(&state, action: .selectWorld(.forYou))
+
+        #expect(state.navigation.world == .forYou)
+        #expect(state.navigation.anchor(for: .forYou) == anchor)
+        #expect(state.navigation.anchor(for: .saved) == savedAnchor)
+    }
+
+    @Test("Changing feed filters discards the session anchors")
+    func changingFiltersDiscardsAnchors() {
+        var state = KartaState()
+        let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedAnchor(anchor, world: .forYou)
+        )
+
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedFilters(FeedFilters(maxMinutes: 30))
+        )
+
+        #expect(state.feedFilters == FeedFilters(maxMinutes: 30))
+        #expect(state.navigation.anchor(for: .forYou) == nil)
+    }
+
+    @Test("An anchor for a recipe absent from the feed resolves to the top")
+    func staleAnchorResolvesToTop() {
+        var state = KartaState()
+        let currentAnchor = ScrollAnchor(recipeID: "recipe-1", relativeOffset: 0.25)
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedAnchor(currentAnchor, world: .forYou)
+        )
+        #expect(state.navigation.anchor(for: .forYou, in: [recipe()]) == currentAnchor)
+
+        KartaReducer.reduce(
+            &state,
+            action: .setFeedAnchor(
+                ScrollAnchor(recipeID: "missing", relativeOffset: 0.25),
+                world: .forYou
+            )
+        )
+
+        #expect(state.navigation.anchor(for: .forYou, in: [recipe()]) == nil)
+    }
+
     @Test("The save action is applied by the pure reducer")
     func reducerSavesRecipe() {
         var state = KartaState()
