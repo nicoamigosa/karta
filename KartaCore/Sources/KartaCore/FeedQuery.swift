@@ -3,7 +3,7 @@ import Foundation
 /// The active feed filters chosen by the user.
 public struct FeedFilters: Equatable, Sendable {
     /// Allergen tags the user must never be shown. Hard safety constraint.
-    public var intolerances: Set<String>
+    public var intolerances: Set<Allergen>
     /// Upper bound on total cooking time, in minutes. `nil` means no limit.
     public var maxMinutes: Int?
     /// Hardest difficulty the user is willing to cook. `nil` means no limit.
@@ -15,7 +15,7 @@ public struct FeedFilters: Equatable, Sendable {
     public static let onePanTag = "one-pan"
 
     public init(
-        intolerances: Set<String> = [],
+        intolerances: Set<Allergen> = [],
         maxMinutes: Int? = nil,
         maxDifficulty: Difficulty? = nil,
         requireOnePan: Bool = false
