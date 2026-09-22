@@ -1,18 +1,43 @@
 # Mac handoff — building the SwiftUI shell over KartaCore
 
-> **Read this first if you are a fresh Claude session on Nico's Mac.**
-> The pure domain logic for Karta is already built, tested, and merged into
-> `main` as the SwiftPM package `KartaCore/`. What remains is the **SwiftUI/iOS
-> layer** — the part that can only be built and verified here on the Mac. This
-> document maps every open issue to the KartaCore APIs it should consume and the
-> UI acceptance criteria you must verify in the simulator.
+> **⚠️ Large parts of this document are out of date. Read `CONTEXT.md` and
+> `docs/adr/` first — they win wherever they disagree with this file.**
+>
+> This was written assuming a macOS host that would pick up UI issues directly
+> against the `KartaCore` API as it stood in September 2026. Both assumptions
+> changed: the macOS work goes to **Devin**, which does not run the ralph loop,
+> and ADRs 0001–0010 changed the domain underneath. The per-issue *acceptance
+> criteria* below are still broadly right; the **API cheat-sheet in §3 is not a
+> contract any more** — it is a snapshot of a surface that is being reshaped.
 
-Also read `CLAUDE.md` (working agreement) and `docs/PRD-karta-mvp.md` (product
-scope). This file is the bridge between them and the code.
+Read, in this order: `AGENTS.md` (working agreement), `CONTEXT.md` (glossary),
+`docs/adr/` (decisions), `docs/PRD-karta-mvp.md` (product scope). This file is
+the bridge between them and the simulator.
 
 ---
 
-## 0. Setup on a freshly-cloned Mac
+## −1. What changed since this was written
+
+| ADR | Decision | What it voids here |
+|---|---|---|
+| 0001 | `KartaCore` + `KartaPresentation`, two targets | "thin shell over KartaCore"; the shell now consumes a store, not raw value types |
+| 0002 | Closed allergen vocabulary, `dairy` not `lactose`, unreviewed recipes unrepresentable | `contains: [String]`; the §5 seed table |
+| 0003 | History carries dates; the clock is injected | `seen: Set<String>` |
+| 0004 | A **frontier** between new and already-seen; crossing it does not re-mark | "holds back recently-seen (never empties)" |
+| 0005 | Catalog authored in English with US units; no locale conversion | the Spanish seed; "locale-inferred units" in #10 |
+| 0006 | Recipes declare servings; household size labels and orders, never filters | #10's household question now has a visible effect |
+| 0007 | Downgrading from premium never deletes saves; the cap becomes a ceiling | #7's "cap" behaviour |
+| 0008 | Cooked is inferred from the whole session, not 20 s of dwell; only explicit cooks feed Leftovers | #4's `inferProbablyCooked(dwellSeconds:)`; #9's input |
+| 0009 | Feed position is session memory: kept on open/back and world switches, reset next day and on filter change | #2 and #8's "restores scroll position" |
+| 0010 | An explicit versioned snapshot; a half-finished cooking session **is** saved; unreadable data is never deleted | "persistence is the UI shell's job" |
+
+Issues #2 and #8 were labelled "pure UI — nothing in KartaCore". That is wrong:
+navigation, worlds, routes and the scroll anchor are state, they live in
+`KartaPresentation`, and they are tested on Linux.
+
+---
+
+## 0. Setup on a freshly-cloned macOS host
 
 ```bash
 # 1. Verify the logic package builds & all tests pass (no Xcode needed for this)
@@ -23,17 +48,20 @@ cd KartaCore && swift test          # expect: all green (53+ tests)
 open Karta.xcodeproj                 # or Package/workspace, see #1
 ```
 
-- The iOS app target is a **thin shell**: it links `KartaCore` and renders it.
-  Push any non-trivial logic *down into KartaCore* (test it on Linux-style
-  `swift test`), never into the views.
-- `KartaCore` is pure and deterministic — no I/O, no ML. The **intolerance /
-  feed-safety filtering is a critical guarantee**; never bypass it in the UI.
+- The iOS app target is a **thin shell**: it links both packages and renders
+  them. Rules go in `KartaCore`, screen state and reducers in
+  `KartaPresentation`, and both are covered by `swift test` on Linux before the
+  shell is written. Nothing that a Linux test could catch belongs in a view.
+- The **intolerance / feed-safety filtering is a critical guarantee**; never
+  bypass it in the UI and never re-implement a filter in a view.
 
 ---
 
-## 1. Workflow on the Mac (differs from the logic phase)
+## 1. Workflow on the macOS host (differs from the logic phase)
 
-Same per-issue branch/commit/PR loop as `CLAUDE.md`, with one important change:
+Same per-issue branch/commit/PR loop as `AGENTS.md`, with one important change
+— and note that the ralph loop does **not** run here: the agent on this host
+never merges, never approves and never closes an issue itself.
 
 - During the logic phase we could **not** verify UI, so PRs said `Part of #N`
   and issues stayed **open**.
@@ -44,8 +72,9 @@ Same per-issue branch/commit/PR loop as `CLAUDE.md`, with one important change:
 - If you build the UI but cannot verify a criterion (e.g. needs a device, needs
   StoreKit sandbox), keep `Part of #N` and leave it open — do not fake-close.
 
-Per issue: branch from up-to-date `main` → build SwiftUI over KartaCore →
-verify in simulator → `Closes #N` commit → push → PR → merge.
+Per issue: branch from up-to-date `main` → build SwiftUI over the two packages
+→ verify in simulator → `Closes #N` commit → push → PR. The merge happens
+elsewhere.
 
 ---
 
@@ -54,7 +83,7 @@ verify in simulator → `Closes #N` commit → push → PR → merge.
 | # | Issue | Logic status | PR |
 |---|-------|--------------|----|
 | 1 | Scaffold + vertical feed | `Recipe` model + `RecipeCatalog.seed()` ready; **app target + feed UI pending** | #1 |
-| 2 | Recipe detail | (pure UI — nothing in KartaCore) | — |
+| 2 | Recipe detail | ~~pure UI~~ — navigation + scroll anchor are state (ADR 0009) | — |
 | 4 | Cooking mode state machine | `CookingSession` + `cooked` event done | #16, #23 |
 | 5 | In-step timers | timer logic done | #17, #23 |
 | 6 | Filters UI | engine (`FeedFilters`/`FeedQuery`) done | #3 |
@@ -65,7 +94,8 @@ verify in simulator → `Closes #N` commit → push → PR → merge.
 | 13 | Share recipe | `RecipeShare.payload` done | #22 |
 
 Still **fully** open (need product/Mac decisions, not just UI):
-- **#8** Top-nav dropdown (For You / Saved / Leftovers) — pure UI navigation.
+- **#8** Top-nav dropdown (For You / Saved / Leftovers) — ~~pure UI~~: worlds,
+  routes and per-world position are state (ADR 0009).
 - **#11** Auto shopping list — **blocked by #14**.
 - **#14** Freemium gating + StoreKit — `hitl`, needs Nico's product + StoreKit
   decisions. No logic stub exists yet.
@@ -73,7 +103,7 @@ Still **fully** open (need product/Mac decisions, not just UI):
 
 ---
 
-## 3. KartaCore API cheat-sheet (the surface the UI consumes)
+## 3. KartaCore API cheat-sheet *(September 2026 snapshot — no longer the contract)*
 
 ```swift
 import KartaCore
@@ -151,10 +181,15 @@ struct TasteCalibration { var likedIDs:[String]; mutating func tap(_:String) }
 RecipeShare.payload(for: Recipe) -> SharePayload       // { text:String, url:URL? }
 ```
 
-> KartaCore types are **value types**. In SwiftUI keep a `CookingSession` /
-> `Cookbook` in your store/`@Observable` view model and reassign after each
-> mutating call. Persistence (saved recipes, cooked history) is the UI shell's
-> job — KartaCore intentionally holds no storage.
+> **Stale — see §−1.** Two corrections worth stating explicitly, because both
+> were verified rather than assumed:
+>
+> - Reassigning after each mutating call is **not** necessary for a stored
+>   property of an `@Observable` class; `withObservationTracking` confirms the
+>   mutation is observed. Do not write code around a constraint that is not there.
+> - Persistence is **not** freeform shell work. ADR 0010 defines what is saved,
+>   what is deliberately not, and what happens to data the app cannot read.
+>   The shell reads and writes the snapshot; it does not design it.
 
 ---
 
@@ -272,10 +307,12 @@ Order respects dependencies; start at the top.
 
 ---
 
-## 5. Seed data reference (for predictable manual testing)
+## 5. Seed data reference *(void — the seed is being rewritten)*
 
-8 seed recipes. Intolerance vocabulary in use: `gluten`, `lactose`, `egg`,
-`fish`, `nuts`. Quick map:
+The table below describes the Spanish, metric, `lactose`-tagged seed. ADRs 0002,
+0005 and 0006 replace it with an English, US-unit catalog on a closed allergen
+vocabulary with declared servings and an explicit review state. Kept only so the
+migration can be checked against what was there.
 
 | id | difficulty | contains | popularity | timer step? | clip? |
 |----|-----------|----------|-----------|-------------|-------|

@@ -24,15 +24,27 @@ The repo has two targets with two different build environments:
 
 | Target | Where it lives | Builds & tests on | Command |
 |---|---|---|---|
-| `KartaCore` (SwiftPM library) | `KartaCore/` | Linux (WSL) **and** macOS | `cd KartaCore && swift test` |
+| `KartaCore` (SwiftPM library) | `KartaCore/Sources/KartaCore/` | Linux (WSL) **and** macOS | `cd KartaCore && swift test` |
+| `KartaPresentation` (SwiftPM library) | `KartaCore/Sources/KartaPresentation/` | Linux (WSL) **and** macOS | `cd KartaCore && swift test` |
 | `Karta` (SwiftUI iOS app) | `Karta/` (not scaffolded yet — issue #1) | macOS only | `xcodebuild -scheme Karta -destination 'platform=iOS Simulator,name=iPhone 16' test` |
 
-- **All pure domain logic lives in `KartaCore`.** It is pure and deterministic:
-  no I/O, no ML, no UIKit/SwiftUI imports. Push as much as possible into it —
-  if a UI issue needs new logic, add it to `KartaCore` with tests first, then
-  consume it from the view.
-- The iOS app is a **thin shell** over `KartaCore`: it links the local package
-  and renders it. No business rules in views or view models.
+**Three layers, and the compiler enforces the boundary** (ADR 0001):
+
+- **`KartaCore` — the rules.** Pure and deterministic: no I/O, no ML, no clocks
+  of its own, no UIKit/SwiftUI, and no knowledge of any screen. "Is this recipe
+  safe for someone with a dairy intolerance?" lives here. It never imports
+  `KartaPresentation`.
+- **`KartaPresentation` — the state.** Screen state, reducers, formatting, the
+  observable store, and the resource adapter that loads the bundled seed.
+  Imports `KartaCore`. Everything here is still testable with `swift test` on
+  Linux — that is the whole point of the split.
+- **`Karta` — the shell.** Rendering, gestures, storage, media playback,
+  timers, sound and haptics. No business rules in views or view models. If a UI
+  issue needs new logic, it goes into one of the two packages with tests first,
+  then gets consumed from the view.
+
+If you are unsure which of the two packages something belongs in, ask: *could
+this be wrong in a way a Linux test would catch?* If yes, it is not UI.
 - **Feed safety (intolerance filtering) is a critical guarantee.** Cover it
   exhaustively (`FeedQuerySafetyTests`) and never regress it. Never bypass
   `FeedQuery` from the UI.
@@ -49,7 +61,25 @@ The repo has two targets with two different build environments:
   `Karta/` from Linux, run `swift test` locally and rely on the `ios` CI check
   for the app target. Do not fake a simulator verification.
 - Issues whose acceptance requires the simulator are only closed from a macOS
-  host (the macOS VM). From Linux, such a PR says `Part of #N`, not `Closes #N`.
+  host. From Linux, such a PR says `Part of #N`, not `Closes #N`.
+
+## Domain
+
+Two documents define what the words mean and why things are the way they are.
+**Read both before designing anything**; they outrank this file on questions of
+domain, and they outrank the older `docs/mac-handoff.md` everywhere they overlap.
+
+- **`CONTEXT.md`** — the glossary. Use exactly these terms in code, issues,
+  commits and PRs. It is opinionated: where several words exist, it names the
+  one to use and lists the ones to avoid. If you need a term it does not
+  define, add it there in the same PR rather than inventing a synonym.
+- **`docs/adr/`** — the decisions, numbered and dated. Each one records a choice
+  that was expensive to make and would otherwise look arbitrary. Do not
+  silently contradict an ADR: if one is wrong, supersede it with a new ADR in
+  the same PR that changes the behaviour.
+
+Several ADRs deliberately contradict `docs/reviews/2026-09-astra-core.md`. The
+review set the agenda; the ADRs hold the answers.
 
 ## Gates
 
@@ -86,17 +116,29 @@ expectations.
 ### Running ralph in Karta
 
 ```bash
-./ralph/once.sh                                  # WSL: KartaCore issues
-RALPH_ISSUE_ORDER="1 2 8" ./ralph/once.sh        # macOS VM: UI issues first
+./ralph/once.sh                                  # WSL: KartaCore / KartaPresentation issues
 ```
 
 `RALPH_ISSUE_ORDER` only orders; host routing (`ralph-host:*` labels) is
 pending upstream.
+
+### The macOS side
+
+There is no macOS host running this loop. Everything that needs Xcode, a
+simulator, gestures, media playback or accessibility is handed to **Devin**,
+which does **not** run ralph: it receives an already-verified contract and
+builds the shell against it. Devin never merges and never closes issues.
+
+That is the reason for the `KartaCore` / `KartaPresentation` split: the state
+and the rules have to be verifiable here, on Linux, because we cannot check
+them over there. Mac time is scarce and is spent on what only a Mac can do.
+Anything we can settle with `swift test` must be settled before it is handed
+over — sending the shell back to be rebuilt is the one cost we cannot pay.
 
 ## Pipeline
 
 ```
 Nico  →  design / PRD (Claude Code)  →  GitHub issues (ready-for-agent)
       →  ralph: Codex implements (tdd) → PR → Claude reviews → PASS + CI → merge
-      →  WSL for KartaCore issues · macOS VM for iOS/UI issues
+      →  WSL for KartaCore / KartaPresentation issues · Devin for iOS/UI issues
 ```
