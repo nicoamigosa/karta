@@ -6,7 +6,7 @@ import Foundation
 /// Deterministic and UI-independent.
 public enum LeftoversQuery {
 
-    /// Recipes that reuse ingredients from explicitly cooked recipes inside the
+    /// Recipes that reuse ingredients from cooked recipes inside the
     /// recency window, most overlap first. Recently-cooked recipes are excluded,
     /// and the intolerance safety guarantee in `filters` is always applied.
     public static func suggestions(
