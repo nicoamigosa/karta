@@ -135,6 +135,99 @@ struct RecipeStepDecodingTests {
         }
     }
 
+    @Test("Recipe decoding rejects an empty step ingredient name")
+    func emptyStepIngredientNameFailsWithContext() throws {
+        let json = """
+        {
+            "id": "empty-step-ingredient-name", "name": "Empty step ingredient name",
+            "heroPhotoURL": "https://img.karta.app/empty-step-ingredient-name.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "tags": [], "contains": [],
+            "ingredients": [{ "name": "Flour", "quantity": "1 cup" }],
+            "steps": [{
+                "text": "Cook",
+                "ingredient": { "name": "  ", "quantity": "1 cup" }
+            }]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected an empty step ingredient name to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .emptyStepIngredientName(
+                recipeID: "empty-step-ingredient-name",
+                recipeName: "Empty step ingredient name",
+                stepIndex: 0
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Recipe decoding rejects an empty step ingredient quantity")
+    func emptyStepIngredientQuantityFailsWithContext() throws {
+        let json = """
+        {
+            "id": "empty-step-ingredient-quantity", "name": "Empty step ingredient quantity",
+            "heroPhotoURL": "https://img.karta.app/empty-step-ingredient-quantity.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "tags": [], "contains": [],
+            "ingredients": [{ "name": "Flour", "quantity": "1 cup" }],
+            "steps": [{
+                "text": "Cook",
+                "ingredient": { "name": "Flour", "quantity": "  " }
+            }]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected an empty step ingredient quantity to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .emptyStepIngredientQuantity(
+                recipeID: "empty-step-ingredient-quantity",
+                recipeName: "Empty step ingredient quantity",
+                stepIndex: 0,
+                ingredientName: "Flour"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Recipe decoding rejects a non-positive step ingredient quantity")
+    func nonPositiveStepIngredientQuantityFailsWithContext() throws {
+        let json = """
+        {
+            "id": "zero-step-ingredient-quantity", "name": "Zero step ingredient quantity",
+            "heroPhotoURL": "https://img.karta.app/zero-step-ingredient-quantity.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "tags": [], "contains": [],
+            "ingredients": [{ "name": "Flour", "quantity": "1 cup" }],
+            "steps": [{
+                "text": "Cook",
+                "ingredient": { "name": "Flour", "quantity": "0 cups" }
+            }]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected a non-positive step ingredient quantity to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .nonPositiveStepIngredientQuantity(
+                recipeID: "zero-step-ingredient-quantity",
+                recipeName: "Zero step ingredient quantity",
+                stepIndex: 0,
+                ingredientName: "Flour",
+                value: "0 cups"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test("A recipe builds a cooking session over its own steps")
     func recipeBuildsCookingSession() throws {
         let recipe = Recipe(

@@ -178,6 +178,97 @@ struct RecipeDecodingTests {
         }
     }
 
+    @Test("Recipe decoding rejects empty ingredients with recipe context")
+    func emptyIngredientsFailWithContext() throws {
+        let json = """
+        {
+            "id": "empty-ingredients",
+            "name": "Empty ingredients",
+            "heroPhotoURL": "https://img.karta.app/empty-ingredients.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "servings": 2,
+            "tags": [],
+            "contains": [],
+            "ingredients": [],
+            "steps": ["Cook"]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected empty ingredients to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .emptyIngredients(
+                recipeID: "empty-ingredients",
+                recipeName: "Empty ingredients"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Recipe decoding rejects empty ingredient names with recipe context")
+    func emptyIngredientNameFailsWithContext() throws {
+        let json = """
+        {
+            "id": "empty-ingredient-name",
+            "name": "Empty ingredient name",
+            "heroPhotoURL": "https://img.karta.app/empty-ingredient-name.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "servings": 2,
+            "tags": [],
+            "contains": [],
+            "ingredients": [{ "name": "  ", "quantity": "1 cup" }],
+            "steps": ["Cook"]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected an empty ingredient name to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .emptyIngredientName(
+                recipeID: "empty-ingredient-name",
+                recipeName: "Empty ingredient name",
+                ingredientIndex: 0
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Recipe decoding rejects empty steps with recipe context")
+    func emptyStepsFailWithContext() throws {
+        let json = """
+        {
+            "id": "empty-steps",
+            "name": "Empty steps",
+            "heroPhotoURL": "https://img.karta.app/empty-steps.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "servings": 2,
+            "tags": [],
+            "contains": [],
+            "ingredients": [{ "name": "Flour", "quantity": "1 cup" }],
+            "steps": []
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected empty steps to be rejected")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .emptySteps(
+                recipeID: "empty-steps",
+                recipeName: "Empty steps"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test("Recipe decoding rejects an empty recipe id")
     func emptyRecipeIDFailsWithContext() throws {
         let json = """
