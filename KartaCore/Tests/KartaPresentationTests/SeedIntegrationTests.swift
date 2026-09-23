@@ -32,4 +32,16 @@ struct SeedIntegrationTests {
         let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
         #expect(clip.id == "cuajar-tortilla")
     }
+
+    @Test("A bundled clip source resolves through the packaged manifest")
+    func bundledClipSourceResolves() throws {
+        let adapter = SeedResourceAdapter()
+        let library = try adapter.loadTechniqueClips()
+        let manifest = try adapter.loadMediaManifest()
+        let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
+
+        let resolved = try MediaResolver(manifest: manifest, baseURL: nil).resolve(clip.source)
+
+        #expect(resolved == .bundle(resource: "clips/cuajar-tortilla.mp4"))
+    }
 }

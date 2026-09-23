@@ -24,6 +24,39 @@ struct TechniqueClipTests {
         #expect(library.clip(for: textOnly) == nil)
     }
 
+    @Test("A technique clip carries a validated media source")
+    func decodesClipSource() throws {
+        let json = """
+        [{
+            "id": "dice-onion",
+            "title": "How to dice an onion",
+            "seconds": 6,
+            "source": "https://video.karta.app/dice-onion.mp4"
+        }]
+        """
+
+        let library = try TechniqueClipLibrary.decode(from: Data(json.utf8))
+        let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "dice-onion")))
+
+        #expect(clip.source == .remote(URL(string: "https://video.karta.app/dice-onion.mp4")!))
+    }
+
+    @Test("Clip catalog decoding rejects a missing media source")
+    func missingClipSourceFailsWithContext() throws {
+        let json = """
+        [{ "id": "source-less", "title": "Source-less", "seconds": 5 }]
+        """
+
+        do {
+            _ = try TechniqueClipLibrary.decode(from: Data(json.utf8))
+            Issue.record("Expected a technique clip without a source to be rejected")
+        } catch let error as TechniqueClipDecodingError {
+            #expect(error == .missingSource(clipID: "source-less", title: "Source-less"))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test("The same clip is shared across recipes by id, never duplicated")
     func sameClipSharedAcrossRecipes() throws {
         let library = try makeLibrary()
@@ -47,8 +80,8 @@ struct TechniqueClipTests {
     func duplicateClipIDsFailWithContext() throws {
         let json = """
         [
-            { "id": "repeat-clip", "title": "First", "seconds": 5 },
-            { "id": "repeat-clip", "title": "Second", "seconds": 6 }
+            { "id": "repeat-clip", "title": "First", "seconds": 5, "source": "https://video.karta.app/first.mp4" },
+            { "id": "repeat-clip", "title": "Second", "seconds": 6, "source": "https://video.karta.app/second.mp4" }
         ]
         """
 
