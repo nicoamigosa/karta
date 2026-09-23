@@ -113,10 +113,10 @@ struct CookingSessionCookedEventTests {
 
     @Test("An explicit response enriches an inferred cook")
     func explicitResponseEnrichesInference() {
-        var session = CookingSession(recipeID: "r1", steps: steps)
+        var session = CookingSession(recipeID: "r1", steps: steps, declaredDuration: 60)
         session.next(); session.next() // reach last step
 
-        let inferred = session.inferProbablyCooked(dwellSeconds: 30)
+        let inferred = session.inferProbablyCooked(at: 30)
         let explicit = session.respond(.thumbsDown)
 
         #expect(inferred == CookedEvent(recipeID: "r1", outcome: nil, wasInferred: true))
@@ -133,29 +133,116 @@ struct CookingSessionCookedEventTests {
         #expect(session.cookedEvent == nil)
     }
 
-    @Test("Dwelling on the last step infers a 'probably cooked' event")
-    func dwellInfersProbablyCooked() {
-        var session = CookingSession(recipeID: "r1", steps: steps)
-        session.next(); session.next() // last step
+    @Test("A full session infers a cook from progress, timers, and declared duration")
+    func fullSessionInfersProbablyCooked() {
+        let recipe = Recipe(
+            id: "r1",
+            name: "Recipe",
+            heroPhoto: .local("r1"),
+            totalMinutes: 30,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "Onion", quantity: "1")],
+            steps: [
+                CookingStep(text: "Chop", timerSeconds: 120),
+                CookingStep(text: "Cook"),
+                CookingStep(text: "Serve"),
+            ],
+            allergenReview: .reviewed([])
+        )
+        var session = recipe.cookingSession(startedAt: 0)
 
-        // Not enough dwell yet.
-        #expect(session.inferProbablyCooked(dwellSeconds: 5) == nil)
-        #expect(session.cookedEvent == nil)
+        session.startTimer(now: 10)
+        session.next(); session.next() // complete the journey to the last step
 
-        // Sufficient dwell → inferred event with no explicit outcome.
-        let event = session.inferProbablyCooked(dwellSeconds: 30)
+        let event = session.inferProbablyCooked(at: 900)
+
         #expect(event == CookedEvent(recipeID: "r1", outcome: nil, wasInferred: true))
+        #expect(session.cookedEvent?.wasInferred == true)
+    }
+
+    @Test("A timed recipe without a started timer does not infer a cook")
+    func aTimedRecipeNeedsTimerActivity() {
+        let recipe = Recipe(
+            id: "r1",
+            name: "Recipe",
+            heroPhoto: .local("r1"),
+            totalMinutes: 30,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "Onion", quantity: "1")],
+            steps: [
+                CookingStep(text: "Chop", timerSeconds: 120),
+                CookingStep(text: "Cook"),
+                CookingStep(text: "Serve"),
+            ],
+            allergenReview: .reviewed([])
+        )
+        var session = recipe.cookingSession(startedAt: 0)
+        session.next(); session.next()
+
+        #expect(session.inferProbablyCooked(at: 900) == nil)
+        #expect(session.cookedEvent == nil)
+    }
+
+    @Test("Idling on the only step, even with a timer, does not infer a cook")
+    func anIdleLastStepDoesNotInfer() {
+        let recipe = Recipe(
+            id: "r1",
+            name: "Recipe",
+            heroPhoto: .local("r1"),
+            totalMinutes: 30,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "Onion", quantity: "1")],
+            steps: [CookingStep(text: "Serve", timerSeconds: 120)],
+            allergenReview: .reviewed([])
+        )
+        var session = recipe.cookingSession(startedAt: 0)
+        session.startTimer(now: 0)
+
+        #expect(session.inferProbablyCooked(at: 900) == nil)
+        #expect(session.cookedEvent == nil)
+    }
+
+    @Test("A complete-looking journey dispatched far faster than the recipe does not infer")
+    func aTooShortSessionDoesNotInfer() {
+        let recipe = Recipe(
+            id: "r1",
+            name: "Recipe",
+            heroPhoto: .local("r1"),
+            totalMinutes: 30,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "Onion", quantity: "1")],
+            steps: [
+                CookingStep(text: "Chop", timerSeconds: 120),
+                CookingStep(text: "Cook"),
+                CookingStep(text: "Serve"),
+            ],
+            allergenReview: .reviewed([])
+        )
+        var session = recipe.cookingSession(startedAt: 0)
+        session.startTimer(now: 10)
+        session.next(); session.next()
+
+        #expect(session.inferProbablyCooked(at: 90) == nil)
+        #expect(session.cookedEvent == nil)
     }
 
     @Test("Inference never fires off the last step and never overrides an explicit response")
     func inferenceGuards() {
         var early = CookingSession(recipeID: "r1", steps: steps)
-        #expect(early.inferProbablyCooked(dwellSeconds: 999) == nil) // not last step
+        #expect(early.inferProbablyCooked(at: 999) == nil) // not last step
 
-        var answered = CookingSession(recipeID: "r1", steps: steps)
+        var answered = CookingSession(recipeID: "r1", steps: steps, declaredDuration: 60)
         answered.next(); answered.next()
         answered.respond(.thumbsDown)
-        #expect(answered.inferProbablyCooked(dwellSeconds: 999) == nil) // already recorded
+        #expect(answered.inferProbablyCooked(at: 999) == nil) // already recorded
         #expect(answered.cookedEvent?.outcome == .thumbsDown)
     }
 
@@ -165,7 +252,7 @@ struct CookingSessionCookedEventTests {
         session.next(); session.next()
         session.exit()
 
-        #expect(session.inferProbablyCooked(dwellSeconds: 999) == nil)
+        #expect(session.inferProbablyCooked(at: 999) == nil)
         #expect(session.cookedEvent == nil)
     }
 }

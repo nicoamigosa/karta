@@ -6,9 +6,9 @@ import Foundation
 /// Deterministic and UI-independent.
 public enum LeftoversQuery {
 
-    /// Recipes that reuse ingredients from cooked recipes inside the
-    /// recency window, most overlap first. Recently-cooked recipes are excluded,
-    /// and the intolerance safety guarantee in `filters` is always applied.
+    /// Recipes that reuse ingredients from explicit cooks inside the recency
+    /// window, most overlap first. Recently-cooked recipes are excluded, and
+    /// the intolerance safety guarantee in `filters` is always applied.
     public static func suggestions(
         recipes: [Recipe],
         cooks: [CookEntry],
@@ -19,7 +19,7 @@ public enum LeftoversQuery {
         let now = clock.now
         let lowerBound = now.addingTimeInterval(-recentWindow)
         let recentCooks = cooks.filter {
-            $0.date >= lowerBound && $0.date <= now
+            !$0.wasInferred && $0.date >= lowerBound && $0.date <= now
         }
         let cookedRecipeIDs = Set(recentCooks.map(\.recipeID))
 
