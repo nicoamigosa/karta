@@ -31,11 +31,6 @@ public struct UserSnapshot: Equatable, Sendable {
         self.cookingSession = cookingSession
     }
 
-    /// An explicit safe state used when persisted bytes cannot be understood.
-    public static let safeDefault = UserSnapshot(
-        profile: OnboardingProfile(intolerances: [], householdSize: 1)
-    )
-
     /// Encode the snapshot without performing any storage I/O.
     public func encoded() throws -> Data {
         let dto = UserSnapshotDTO(
@@ -67,7 +62,9 @@ public struct UserSnapshot: Equatable, Sendable {
     /// Decode persisted bytes, retaining unreadable input for the storage owner.
     ///
     /// The package never writes or deletes storage. Callers should keep
-    /// `preservedData` untouched when it is non-nil and start with `snapshot`.
+    /// `preservedData` untouched when it is non-nil. When `snapshot` is nil,
+    /// callers must complete onboarding again before showing any recipe
+    /// surfaces.
     public static func restore(from data: Data) -> SnapshotRestoreResult {
         do {
             let decoder = JSONDecoder()
@@ -79,22 +76,23 @@ public struct UserSnapshot: Equatable, Sendable {
             let dto = try decoder.decode(UserSnapshotDTO.self, from: data)
             return SnapshotRestoreResult(snapshot: try dto.snapshot(), preservedData: nil)
         } catch {
-            return SnapshotRestoreResult(snapshot: Self.safeDefault, preservedData: data)
+            return SnapshotRestoreResult(snapshot: nil, preservedData: data)
         }
     }
 }
 
 /// The result of attempting to restore a snapshot.
 public struct SnapshotRestoreResult: Equatable, Sendable {
-    /// Always safe to start the app with, including after a decode failure.
-    public let snapshot: UserSnapshot
+    /// The restored snapshot, or nil when the persisted data was unreadable.
+    /// A nil value means onboarding must be completed before showing recipes.
+    public let snapshot: UserSnapshot?
     /// The exact original bytes when restoration failed. Storage owners must
     /// preserve these bytes rather than replacing or deleting them.
     public let preservedData: Data?
 
     public var wasRestored: Bool { preservedData == nil }
 
-    fileprivate init(snapshot: UserSnapshot, preservedData: Data?) {
+    fileprivate init(snapshot: UserSnapshot?, preservedData: Data?) {
         self.snapshot = snapshot
         self.preservedData = preservedData
     }

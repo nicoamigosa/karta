@@ -26,27 +26,28 @@ struct UserSnapshotTests {
             tasteCalibration: calibration
         )
 
-        let restored = UserSnapshot.restore(from: try snapshot.encoded()).snapshot
+        let restored = try #require(UserSnapshot.restore(from: try snapshot.encoded()).snapshot)
 
         #expect(restored == snapshot)
     }
 
     @Test("An older snapshot restores known fields and defaults missing sections")
-    func restoresOlderVersionWithExplicitDefaults() {
+    func restoresOlderVersionWithExplicitDefaults() throws {
         let olderData = Data(
             #"{"version":0,"profile":{"intolerances":["gluten"],"householdSize":2},"cookbook":{"savedIDs":["recipe-1"]}}"#.utf8
         )
 
         let result = UserSnapshot.restore(from: olderData)
+        let snapshot = try #require(result.snapshot)
 
         #expect(result.wasRestored)
         #expect(result.preservedData == nil)
-        #expect(result.snapshot.profile == OnboardingProfile(intolerances: [.gluten], householdSize: 2))
-        #expect(result.snapshot.cookbook.savedIDs == ["recipe-1"])
-        #expect(result.snapshot.cookbook.saveCap == Cookbook.freeSaveCap)
-        #expect(result.snapshot.viewHistory == ViewHistory())
-        #expect(result.snapshot.cookHistory.isEmpty)
-        #expect(result.snapshot.tasteCalibration == TasteCalibration())
+        #expect(snapshot.profile == OnboardingProfile(intolerances: [.gluten], householdSize: 2))
+        #expect(snapshot.cookbook.savedIDs == ["recipe-1"])
+        #expect(snapshot.cookbook.saveCap == Cookbook.freeSaveCap)
+        #expect(snapshot.viewHistory == ViewHistory())
+        #expect(snapshot.cookHistory.isEmpty)
+        #expect(snapshot.tasteCalibration == TasteCalibration())
     }
 
     @Test("Unreadable snapshot data is preserved while restoration starts safely")
@@ -56,8 +57,15 @@ struct UserSnapshotTests {
         let result = UserSnapshot.restore(from: corruptData)
 
         #expect(result.wasRestored == false)
-        #expect(result.snapshot == UserSnapshot.safeDefault)
+        #expect(result.snapshot == nil)
         #expect(result.preservedData == corruptData)
+    }
+
+    @Test("An unreadable snapshot does not present an empty-intolerance profile as completed onboarding")
+    func requiresOnboardingAfterFailure() {
+        let result = UserSnapshot.restore(from: Data("not-json".utf8))
+
+        #expect(result.snapshot == nil)
     }
 
     @Test("A snapshot version that this app cannot understand is preserved")
@@ -67,7 +75,7 @@ struct UserSnapshotTests {
         let result = UserSnapshot.restore(from: futureData)
 
         #expect(result.wasRestored == false)
-        #expect(result.snapshot == UserSnapshot.safeDefault)
+        #expect(result.snapshot == nil)
         #expect(result.preservedData == futureData)
     }
 
@@ -80,7 +88,7 @@ struct UserSnapshotTests {
         let result = UserSnapshot.restore(from: malformedData)
 
         #expect(result.wasRestored == false)
-        #expect(result.snapshot == UserSnapshot.safeDefault)
+        #expect(result.snapshot == nil)
         #expect(result.preservedData == malformedData)
     }
 
@@ -94,7 +102,7 @@ struct UserSnapshotTests {
             )
         )
 
-        let restored = UserSnapshot.restore(from: try snapshot.encoded()).snapshot
+        let restored = try #require(UserSnapshot.restore(from: try snapshot.encoded()).snapshot)
 
         #expect(restored.cookbook.savedIDs == [
             "valid-1", "missing-from-catalog", "valid-2",
@@ -133,7 +141,7 @@ struct UserSnapshotTests {
             cookingSession: session
         )
 
-        let restored = UserSnapshot.restore(from: try snapshot.encoded()).snapshot
+        let restored = try #require(UserSnapshot.restore(from: try snapshot.encoded()).snapshot)
 
         #expect(restored.cookingSession == session)
     }
