@@ -13,7 +13,7 @@ struct LeftoversQueryTests {
         review: AllergenReview = .reviewed([])
     ) -> Recipe {
         Recipe(
-            id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy,
+            id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy, servings: 4,
             tags: [], ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
             steps: ["s"],
             allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))

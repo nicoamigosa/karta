@@ -12,20 +12,23 @@ struct SeedResourceAdapterTests {
 
         let clips = try adapter.loadTechniqueClips()
 
-        #expect(clips.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")) != nil)
+        let clip = try #require(clips.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
+        #expect(clip.id == "cuajar-tortilla")
     }
 
-    @Test("The public adapter propagates an unknown allergen from the recipe catalog")
-    func rejectsUnknownRecipeAllergen() throws {
+    @Test("The public adapter rejects the legacy recipe catalog before editorial migration")
+    func rejectsLegacySeed() throws {
         do {
             _ = try SeedResourceAdapter().loadRecipes()
-            Issue.record("Expected the legacy lactose tag to be rejected")
+            Issue.record("Expected the legacy seed to be rejected")
         } catch let error as RecipeDecodingError {
-            #expect(error == .unknownAllergen(
-                recipeID: "ensalada-cesar",
-                recipeName: "Ensalada Cesar",
-                value: "lactose"
-            ))
+            Issue.record("Unexpected typed recipe error: \(error)")
+        } catch let error as DecodingError {
+            guard case let .keyNotFound(key, _) = error else {
+                Issue.record("Unexpected decoding error: \(error)")
+                return
+            }
+            #expect(key.stringValue == "servings")
         } catch {
             Issue.record("Unexpected error: \(error)")
         }

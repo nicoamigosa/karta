@@ -16,6 +16,7 @@ struct HistoryQueryTests {
             heroPhotoURL: "https://img.karta.app/\(id).jpg",
             totalMinutes: 30,
             difficulty: .easy,
+            servings: 4,
             tags: [],
             ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
             steps: ["step"],
