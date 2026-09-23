@@ -56,26 +56,6 @@ public struct OnboardingState: Equatable, Sendable {
         return RecipeCardPresentation(recipe: recipe, householdSize: householdSize)
     }
 
-    /// The first feed is unavailable until the user explicitly answers the
-    /// intolerance question, including when the answer is an empty set.
-    public func feed(
-        recipes: [Recipe],
-        views: [ViewEntry],
-        recentWindow: TimeInterval,
-        clock: any KartaClock
-    ) -> Feed? {
-        guard let profile, let householdSize else { return nil }
-        return FeedQuery.feed(
-            recipes: recipes,
-            views: views,
-            recentWindow: recentWindow,
-            clock: clock,
-            filters: profile.feedFilters,
-            tastePreferences: tastePreferences,
-            householdSize: householdSize
-        )
-    }
-
     public mutating func answerIntolerances(_ intolerances: Set<Allergen>) {
         intoleranceAnswer = .answered(intolerances)
     }

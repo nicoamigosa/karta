@@ -338,6 +338,27 @@ struct KartaStoreTests {
     }
 
     @MainActor
+    @Test("The feed uses the active safety profile after onboarding")
+    func feedUsesUpdatedSafetyProfileAfterOnboarding() throws {
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        store.send(.onboarding(.answerIntolerances([])))
+        store.send(.onboarding(.setHouseholdSize(2)))
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy]))))
+
+        let feed = try #require(store.feed(
+            recipes: [
+                allergenRecipe("safe", allergens: []),
+                allergenRecipe("dairy", allergens: [.dairy]),
+            ],
+            views: [],
+            recentWindow: 7 * 24 * 60 * 60,
+            clock: StoreTestClock(now: Date(timeIntervalSince1970: 1_000_000))
+        ))
+
+        #expect(feed.newRecipes.map(\.id) == ["safe"])
+    }
+
+    @MainActor
     @Test("The store applies cooking actions through the same send entry point")
     func storeSendsCookingAction() {
         let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
@@ -433,6 +454,21 @@ struct KartaStoreTests {
             steps: ["Cook"],
             allergenReview: .reviewed([]),
             popularity: popularity
+        )
+    }
+
+    private func allergenRecipe(_ id: String, allergens: Set<Allergen>) -> Recipe {
+        Recipe(
+            id: id,
+            name: id,
+            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "x", quantity: "1")],
+            steps: ["Cook"],
+            allergenReview: .reviewed(allergens)
         )
     }
 }

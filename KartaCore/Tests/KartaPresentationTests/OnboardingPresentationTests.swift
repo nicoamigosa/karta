@@ -6,12 +6,16 @@ import KartaPresentation
 @Suite("Onboarding state")
 struct OnboardingPresentationTests {
 
+    @MainActor
     @Test("An unanswered intolerance question cannot produce a feed")
     func unansweredIntolerancesProduceNoFeed() {
-        let state = OnboardingState(householdSize: 2)
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
 
-        #expect(state.intoleranceAnswer == .unanswered)
-        #expect(state.feed(
+        #expect(store.state.onboarding.intoleranceAnswer == .unanswered)
+        #expect(store.feed(
             recipes: [recipe("safe")],
             views: [],
             recentWindow: recentWindow,
@@ -19,12 +23,16 @@ struct OnboardingPresentationTests {
         ) == nil)
     }
 
+    @MainActor
     @Test("An explicit no-intolerances answer produces a safe feed")
     func answeredWithNoIntolerancesProducesFeed() throws {
-        var state = OnboardingState(householdSize: 2)
-        state.answerIntolerances([])
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        store.send(.onboarding(.answerIntolerances([])))
 
-        let feed = try #require(state.feed(
+        let feed = try #require(store.feed(
             recipes: [recipe("safe")],
             views: [],
             recentWindow: recentWindow,
@@ -32,7 +40,7 @@ struct OnboardingPresentationTests {
         ))
 
         #expect(feed.newRecipes.map(\.id) == ["safe"])
-        #expect(state.profile?.intolerances.isEmpty == true)
+        #expect(store.state.onboarding.profile?.intolerances.isEmpty == true)
     }
 
     @Test("An invalid household size is rejected when onboarding accepts it")
