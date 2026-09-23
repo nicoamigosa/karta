@@ -264,7 +264,7 @@ struct KartaStoreTests {
         var state = KartaState(safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .startCooking(recipe, startedAt: 123))
-        KartaReducer.reduce(&state, action: .nextStep)
+        KartaReducer.reduce(&state, action: .nextStep(now: 124))
 
         #expect(state.session?.currentIndex == 1)
         #expect(state.session?.startedAt == 123)
@@ -365,7 +365,7 @@ struct KartaStoreTests {
         let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
 
         store.send(.startCooking(recipe(), startedAt: 123))
-        store.send(.nextStep)
+        store.send(.nextStep(now: 124))
 
         #expect(store.session?.currentIndex == 1)
     }
@@ -402,7 +402,7 @@ struct KartaStoreTests {
             changes.withLock { $0 += 1 }
         }
 
-        store.send(.nextStep)
+        store.send(.nextStep(now: 124))
 
         #expect(changes.withLock { $0 } == 1)
     }

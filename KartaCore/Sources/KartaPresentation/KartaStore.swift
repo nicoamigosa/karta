@@ -72,7 +72,7 @@ public enum KartaAction: Sendable {
     case downgradeCookbookToFree
     case onboarding(OnboardingAction)
     case startCooking(Recipe, startedAt: TimeInterval)
-    case nextStep
+    case nextStep(now: TimeInterval)
     case previousStep
     case exitCooking
     case respond(CookOutcome)
@@ -114,8 +114,8 @@ public enum KartaReducer {
             }
         case let .startCooking(recipe, startedAt):
             state.session = recipe.cookingSession(startedAt: startedAt)
-        case .nextStep:
-            state.session?.next()
+        case let .nextStep(now):
+            state.session?.next(at: now)
         case .previousStep:
             state.session?.previous()
         case .exitCooking:

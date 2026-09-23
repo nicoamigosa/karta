@@ -114,7 +114,7 @@ struct CookingSessionCookedEventTests {
     @Test("An explicit response enriches an inferred cook")
     func explicitResponseEnrichesInference() {
         var session = CookingSession(recipeID: "r1", steps: steps, declaredDuration: 60)
-        session.next(); session.next() // reach last step
+        session.next(at: 10); session.next(at: 30) // reach last step
 
         let inferred = session.inferProbablyCooked(at: 30)
         let explicit = session.respond(.thumbsDown)
@@ -154,7 +154,7 @@ struct CookingSessionCookedEventTests {
         var session = recipe.cookingSession(startedAt: 0)
 
         session.startTimer(now: 10)
-        session.next(); session.next() // complete the journey to the last step
+        session.next(at: 10); session.next(at: 900) // complete the journey to the last step
 
         let event = session.inferProbablyCooked(at: 900)
 
@@ -208,6 +208,32 @@ struct CookingSessionCookedEventTests {
         #expect(session.cookedEvent == nil)
     }
 
+    @Test("Idling after a fast journey to the last step does not infer a cook")
+    func anIdleLastStepAfterFastJourneyDoesNotInfer() {
+        let recipe = Recipe(
+            id: "r1",
+            name: "Recipe",
+            heroPhoto: .local("r1"),
+            totalMinutes: 30,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "Onion", quantity: "1")],
+            steps: [
+                CookingStep(text: "Chop"),
+                CookingStep(text: "Cook"),
+                CookingStep(text: "Serve"),
+            ],
+            allergenReview: .reviewed([])
+        )
+        var session = recipe.cookingSession(startedAt: 0)
+        session.next(at: 5)
+        session.next(at: 5)
+
+        #expect(session.inferProbablyCooked(at: 450) == nil)
+        #expect(session.cookedEvent == nil)
+    }
+
     @Test("A complete-looking journey dispatched far faster than the recipe does not infer")
     func aTooShortSessionDoesNotInfer() {
         let recipe = Recipe(
@@ -228,7 +254,7 @@ struct CookingSessionCookedEventTests {
         )
         var session = recipe.cookingSession(startedAt: 0)
         session.startTimer(now: 10)
-        session.next(); session.next()
+        session.next(at: 10); session.next(at: 90)
 
         #expect(session.inferProbablyCooked(at: 90) == nil)
         #expect(session.cookedEvent == nil)

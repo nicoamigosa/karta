@@ -132,6 +132,8 @@ public struct CookingSession: Equatable, Sendable {
     /// The furthest step reached during the session. Going back does not erase
     /// evidence of the journey.
     private var furthestIndex: Int
+    /// The first injected time at which the session reached the last step.
+    private var lastStepReachedAt: TimeInterval?
 
     public init(
         recipeID: String,
@@ -148,6 +150,7 @@ public struct CookingSession: Equatable, Sendable {
         self.cookedEvent = nil
         self.timers = [:]
         self.furthestIndex = 0
+        self.lastStepReachedAt = nil
     }
 
     /// The step currently shown, or `nil` if there are no steps.
@@ -192,9 +195,25 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Advance to the next step (swipe-right). Clamps at the last step.
     public mutating func next() {
+        advanceToNextStep(at: nil)
+    }
+
+    /// Advance to the next step and record the injected time when the last step
+    /// is reached for the first time. Clamps at the last step.
+    public mutating func next(at now: TimeInterval) {
+        advanceToNextStep(at: now)
+    }
+
+    private mutating func advanceToNextStep(at now: TimeInterval?) {
         guard !isExited else { return }
+        let previousIndex = currentIndex
         currentIndex = min(currentIndex + 1, max(steps.count - 1, 0))
         furthestIndex = max(furthestIndex, currentIndex)
+        if previousIndex != currentIndex,
+           currentIndex == steps.count - 1,
+           lastStepReachedAt == nil {
+            lastStepReachedAt = now
+        }
     }
 
     /// Go back to the previous step (swipe-left). Clamps at the first step.
@@ -209,15 +228,19 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Infer a cook from the complete session rather than time spent on the
     /// final step. The session must have traversed a real multi-step journey, started
-    /// a declared timer when the recipe has one, and lasted long enough relative
-    /// to the recipe's declared time. Won't override an explicit response and
+    /// a declared timer when the recipe has one, and taken long enough to reach
+    /// the final step relative to the recipe's declared time. Time spent idle on
+    /// the final step does not count. Won't override an explicit response and
     /// is ignored after exit.
     @discardableResult
     public mutating func inferProbablyCooked(at now: TimeInterval) -> CookedEvent? {
         let declaredTimerSteps = steps.indices.filter { steps[$0].timerSeconds != nil }
         let startedDeclaredTimer = declaredTimerSteps.isEmpty || declaredTimerSteps.contains { timers[$0] != nil }
-        let lastedLongEnough = declaredDuration > 0
-            && sessionDuration(at: now) >= declaredDuration * Self.probablyCookedMinimumDurationRatio
+        let lastedLongEnough = lastStepReachedAt.map { reachedAt in
+            now >= reachedAt
+                && declaredDuration > 0
+                && sessionDuration(at: reachedAt) >= declaredDuration * Self.probablyCookedMinimumDurationRatio
+        } ?? false
 
         guard isOnLastStep,
               !isExited,
