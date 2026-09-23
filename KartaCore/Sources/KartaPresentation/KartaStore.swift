@@ -7,18 +7,36 @@ public struct KartaState: Equatable, Sendable {
     public var cookbook: Cookbook
     public var session: CookingSession?
     public var navigation: AppNavigationState
-    public var feedFilters: FeedFilters
+    public var filterState: FilterState
+
+    /// The safety profile is kept separate from the non-safety draft.
+    public var safetyProfile: SafetyProfile { filterState.safetyProfile }
+
+    /// The time, difficulty and one-pan controls currently applied.
+    public var filterDraft: FilterDraft { filterState.filterDraft }
+
+    /// The single effective filter value consumed by Core queries.
+    public var effectiveFeedFilters: FeedFilters {
+        filterState.effectiveFeedFilters
+    }
+
+    /// Compatibility spelling for the effective query consumed by the shell.
+    public var feedFilters: FeedFilters { effectiveFeedFilters }
 
     public init(
         cookbook: Cookbook = Cookbook(),
         session: CookingSession? = nil,
         navigation: AppNavigationState = AppNavigationState(),
-        feedFilters: FeedFilters = FeedFilters()
+        safetyProfile: SafetyProfile,
+        filterDraft: FilterDraft = FilterDraft()
     ) {
         self.cookbook = cookbook
         self.session = session
         self.navigation = navigation
-        self.feedFilters = feedFilters
+        self.filterState = FilterState(
+            safetyProfile: safetyProfile,
+            filterDraft: filterDraft
+        )
     }
 }
 
@@ -36,7 +54,7 @@ public enum KartaAction: Sendable {
     case startTimer(now: TimeInterval)
     case selectWorld(World)
     case setFeedAnchor(ScrollAnchor?, world: World)
-    case setFeedFilters(FeedFilters)
+    case filter(FilterAction)
     case pushRoute(Route)
     case popRoute
 }
@@ -70,9 +88,10 @@ public enum KartaReducer {
             state.navigation.selectWorld(world)
         case let .setFeedAnchor(anchor, world):
             state.navigation.setAnchor(anchor, for: world)
-        case let .setFeedFilters(filters):
-            guard state.feedFilters != filters else { return }
-            state.feedFilters = filters
+        case let .filter(action):
+            let previousFilters = state.effectiveFeedFilters
+            state.filterState.reduce(action)
+            guard state.effectiveFeedFilters != previousFilters else { return }
             state.navigation.discardAnchors()
         case let .pushRoute(route):
             state.navigation.push(route)
@@ -96,7 +115,7 @@ public final class KartaStore {
     /// The active cooking session, exposed as a read-only value snapshot.
     public var session: CookingSession? { state.session }
 
-    public init(state: KartaState = KartaState()) {
+    public init(state: KartaState) {
         self.state = state
     }
 
