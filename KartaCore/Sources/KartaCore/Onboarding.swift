@@ -10,6 +10,7 @@ public struct OnboardingProfile: Equatable, Sendable {
     public let householdSize: Int
 
     public init(intolerances: Set<Allergen>, householdSize: Int) {
+        precondition(householdSize > 0, "householdSize must be positive")
         self.intolerances = intolerances
         self.householdSize = householdSize
     }

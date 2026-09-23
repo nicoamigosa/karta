@@ -123,6 +123,19 @@ struct KartaStoreTests {
         #expect(state.cookbook.savedIDs == ["recipe-1"])
     }
 
+    @Test("The pure reducer downgrades a cookbook without deleting saves")
+    func reducerDowngradesCookbook() {
+        var cookbook = Cookbook(saveCap: nil)
+        for i in 0..<9 { #expect(cookbook.save("recipe-\(i)") == .saved) }
+        var state = KartaState(cookbook: cookbook)
+
+        KartaReducer.reduce(&state, action: .downgradeCookbookToFree)
+
+        #expect(state.cookbook.savedIDs.count == 9)
+        #expect(state.cookbook.saveCap == 9)
+        #expect(state.cookbook.save("overflow") == .blockedByCap)
+    }
+
     @Test("The pure reducer advances a started cooking session")
     func reducerAdvancesCookingSession() {
         let recipe = Recipe(

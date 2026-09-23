@@ -26,6 +26,7 @@ public struct KartaState: Equatable, Sendable {
 public enum KartaAction: Sendable {
     case saveRecipe(String)
     case unsaveRecipe(String)
+    case downgradeCookbookToFree
     case startCooking(Recipe)
     case nextStep
     case previousStep
@@ -49,6 +50,8 @@ public enum KartaReducer {
             state.cookbook.save(id)
         case let .unsaveRecipe(id):
             state.cookbook.unsave(id)
+        case .downgradeCookbookToFree:
+            state.cookbook.downgradeToFree()
         case let .startCooking(recipe):
             state.session = recipe.cookingSession()
         case .nextStep:
