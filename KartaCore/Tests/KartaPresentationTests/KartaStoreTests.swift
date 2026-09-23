@@ -86,11 +86,117 @@ struct KartaStoreTests {
 
         KartaReducer.reduce(
             &state,
-            action: .setFeedFilters(FeedFilters(maxMinutes: 30))
+            action: .filter(.apply(FilterDraft(maxMinutes: 30)))
         )
 
-        #expect(state.feedFilters == FeedFilters(maxMinutes: 30))
+        #expect(state.feedFilters == FeedFilters(intolerances: [], maxMinutes: 30))
         #expect(state.navigation.anchor(for: .forYou) == nil)
+    }
+
+    @Test("Applying a filter draft preserves the safety profile")
+    func applyingFilterDraftPreservesSafetyProfile() {
+        let profile = SafetyProfile(intolerances: [.dairy])
+        var state = KartaState(safetyProfile: profile)
+
+        KartaReducer.reduce(
+            &state,
+            action: .filter(.apply(FilterDraft(maxMinutes: 30)))
+        )
+
+        #expect(state.safetyProfile == profile)
+        #expect(state.effectiveFeedFilters == FeedFilters(
+            intolerances: [.dairy],
+            maxMinutes: 30
+        ))
+    }
+
+    @Test("Resetting filters preserves the safety profile")
+    func resettingFiltersPreservesSafetyProfile() {
+        let profile = SafetyProfile(intolerances: [.gluten, .nuts])
+        var state = KartaState(
+            safetyProfile: profile,
+            filterDraft: FilterDraft(
+                maxMinutes: 20,
+                maxDifficulty: .medium,
+                requireOnePan: true
+            )
+        )
+
+        KartaReducer.reduce(&state, action: .filter(.reset))
+
+        #expect(state.safetyProfile == profile)
+        #expect(state.filterDraft == FilterDraft())
+        #expect(state.effectiveFeedFilters == FeedFilters(
+            intolerances: [.gluten, .nuts]
+        ))
+    }
+
+    @Test("Cancelling filter editing leaves the applied safety profile unchanged")
+    func cancellingFilterEditingPreservesSafetyProfile() {
+        let profile = SafetyProfile(intolerances: [.dairy])
+        var state = KartaState(
+            safetyProfile: profile,
+            filterDraft: FilterDraft(maxDifficulty: .hard)
+        )
+        let beforeCancel = state
+
+        KartaReducer.reduce(&state, action: .filter(.cancel))
+
+        #expect(state == beforeCancel)
+        #expect(state.effectiveFeedFilters.intolerances == [.dairy])
+    }
+
+    @Test("Changing the safety profile preserves the filter draft")
+    func changingSafetyProfilePreservesFilterDraft() {
+        var state = KartaState(
+            safetyProfile: SafetyProfile(intolerances: [.dairy]),
+            filterDraft: FilterDraft(maxMinutes: 45, requireOnePan: true)
+        )
+
+        KartaReducer.reduce(
+            &state,
+            action: .filter(
+                .setSafetyProfile(SafetyProfile(intolerances: [.gluten]))
+            )
+        )
+
+        #expect(state.safetyProfile.intolerances == [.gluten])
+        #expect(state.filterDraft == FilterDraft(maxMinutes: 45, requireOnePan: true))
+        #expect(state.effectiveFeedFilters == FeedFilters(
+            intolerances: [.gluten],
+            maxMinutes: 45,
+            requireOnePan: true
+        ))
+    }
+
+    @Test("Switching worlds preserves the safety profile")
+    func switchingWorldsPreservesSafetyProfile() {
+        let profile = SafetyProfile(intolerances: [.dairy, .gluten])
+        var state = KartaState(safetyProfile: profile)
+
+        KartaReducer.reduce(&state, action: .selectWorld(.saved))
+        KartaReducer.reduce(&state, action: .selectWorld(.leftovers))
+        KartaReducer.reduce(&state, action: .selectWorld(.forYou))
+
+        #expect(state.safetyProfile == profile)
+        #expect(state.effectiveFeedFilters.intolerances == [.dairy, .gluten])
+    }
+
+    @Test("Editing intolerances is available on the free cookbook tier")
+    func safetyProfileEditingIsNotPremiumGated() {
+        var state = KartaState(
+            cookbook: Cookbook(saveCap: Cookbook.freeSaveCap),
+            safetyProfile: SafetyProfile(intolerances: [.dairy])
+        )
+
+        KartaReducer.reduce(
+            &state,
+            action: .filter(.setSafetyProfile(SafetyProfile(intolerances: [.nuts])))
+        )
+
+        #expect(state.cookbook.saveCap == Cookbook.freeSaveCap)
+        #expect(state.safetyProfile.intolerances == [.nuts])
+        #expect(state.effectiveFeedFilters.intolerances == [.nuts])
     }
 
     @Test("An anchor for a recipe absent from the feed resolves to the top")
