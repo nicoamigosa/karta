@@ -121,13 +121,31 @@ public struct CookingSession: Equatable, Sendable {
     /// from and back to its step.
     public private(set) var timers: [Int: StepTimer]
 
-    public init(recipeID: String, steps: [CookingStep]) {
+    init(
+        recipeID: String,
+        steps: [CookingStep],
+        currentIndex: Int,
+        isExited: Bool,
+        cookedEvent: CookedEvent?,
+        timers: [Int: StepTimer]
+    ) {
         self.recipeID = recipeID
         self.steps = steps
-        self.currentIndex = 0
-        self.isExited = false
-        self.cookedEvent = nil
-        self.timers = [:]
+        self.currentIndex = currentIndex
+        self.isExited = isExited
+        self.cookedEvent = cookedEvent
+        self.timers = timers
+    }
+
+    public init(recipeID: String, steps: [CookingStep]) {
+        self.init(
+            recipeID: recipeID,
+            steps: steps,
+            currentIndex: 0,
+            isExited: false,
+            cookedEvent: nil,
+            timers: [:]
+        )
     }
 
     /// The step currently shown, or `nil` if there are no steps.
