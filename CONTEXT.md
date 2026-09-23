@@ -34,6 +34,21 @@ Un vídeo corto y reutilizable que muestra una técnica concreta (picar cebolla,
 el punto del pollo). Se comparte entre muchas recetas y sólo aparece en pasos no obvios.
 _Avoid_: vídeo, tutorial
 
+**MediaReference**:
+Una referencia validada a un recurso de medios: una URL `https`, una clave `local:` del
+manifest de assets o una ruta `relative:` resuelta sobre la URL base inyectada.
+_Avoid_: string de URL sin validar, ruta absoluta, recurso asumido
+
+**MediaAssetManifest**:
+El mapa de claves `local:` a nombres de recursos empaquetados que permite resolver medios
+locales sin que el catálogo conozca un bundle concreto.
+_Avoid_: bundle implícito, nombre de archivo en el catálogo, ruta fija
+
+**LoadState**:
+El estado observable de una carga de medios: inactiva, cargando, cargada o fallida, con
+identidad de solicitud para descartar respuestas tardías y permitir reintentos.
+_Avoid_: booleano de cargando, error silencioso, respuesta sin solicitud
+
 ### Seguridad
 
 **Alérgeno**:

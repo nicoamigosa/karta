@@ -34,7 +34,7 @@ public enum MediaReference: Codable, Equatable, Hashable, Sendable {
         guard !value.isEmpty else { throw ValidationError.empty }
 
         if value.hasPrefix("local:") {
-            let name = String(value.split(separator: ":", maxSplits: 1)[1])
+            let name = String(value.dropFirst("local:".count))
             guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw ValidationError.invalid(rawValue)
             }

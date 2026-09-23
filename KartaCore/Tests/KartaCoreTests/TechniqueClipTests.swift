@@ -67,6 +67,31 @@ struct TechniqueClipTests {
         }
     }
 
+    @Test("Clip catalog rejects an empty local media source")
+    func emptyLocalClipSourceFailsWithContext() throws {
+        let json = """
+        [{
+            "id": "empty-local-source",
+            "title": "Empty local source",
+            "seconds": 5,
+            "source": "local:"
+        }]
+        """
+
+        do {
+            _ = try TechniqueClipLibrary.decode(from: Data(json.utf8))
+            Issue.record("Expected an empty local media source to be rejected")
+        } catch let error as TechniqueClipDecodingError {
+            #expect(error == .invalidSource(
+                clipID: "empty-local-source",
+                title: "Empty local source",
+                value: "local:"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test("The same clip is shared across recipes by id, never duplicated")
     func sameClipSharedAcrossRecipes() throws {
         let library = try makeLibrary()
