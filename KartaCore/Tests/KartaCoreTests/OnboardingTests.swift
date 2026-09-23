@@ -34,7 +34,7 @@ struct OnboardingFeedSeedTests {
         )
 
         // Non-generic: the intolerance-violating recipe is filtered out from the start.
-        #expect(firstFeed.map(\.id) == ["safe"])
+        #expect(firstFeed.newRecipes.map(\.id) == ["safe"])
     }
 }
 

@@ -40,6 +40,67 @@ public struct FeedFilters: Equatable, Sendable {
     }
 }
 
+/// The ordered stretches of a feed, including the point where new recipes
+/// end and already-seen recipes begin.
+public struct Feed: Equatable, Sendable {
+
+    /// Whether the active filters have anything new to offer, or anything at
+    /// all that is compatible with the user's profile.
+    public enum Status: Equatable, Sendable {
+        case ready
+        case exhausted
+        case noCompatibleRecipes
+    }
+
+    /// One renderable unit in feed order. The frontier is data, not a recipe,
+    /// so the UI can label it without inferring a boundary from array indexes.
+    public enum Item: Equatable, Sendable {
+        case new(Recipe)
+        case frontier
+        case alreadySeen(Recipe)
+    }
+
+    /// Recipes outside the active recency window, in ranking order.
+    public let newRecipes: [Recipe]
+    /// Recipes inside the active recency window, in ranking order.
+    public let alreadySeenRecipes: [Recipe]
+
+    public init(newRecipes: [Recipe], alreadySeenRecipes: [Recipe]) {
+        self.newRecipes = newRecipes
+        self.alreadySeenRecipes = alreadySeenRecipes
+    }
+
+    public var status: Status {
+        if newRecipes.isEmpty && alreadySeenRecipes.isEmpty {
+            .noCompatibleRecipes
+        } else if newRecipes.isEmpty {
+            .exhausted
+        } else {
+            .ready
+        }
+    }
+
+    /// The complete feed, with the frontier between its two recipe stretches.
+    /// A compatible catalog always contributes at least one recipe, even when
+    /// every compatible recipe is already inside the recency window.
+    public var items: [Item] {
+        guard status != .noCompatibleRecipes else { return [] }
+        return newRecipes.map(Item.new)
+            + [.frontier]
+            + alreadySeenRecipes.map(Item.alreadySeen)
+    }
+
+    /// The recipes in feed order, excluding the non-recipe frontier item.
+    public var recipes: [Recipe] {
+        newRecipes + alreadySeenRecipes
+    }
+
+    /// True only when the active profile has no compatible recipe.
+    public var isEmpty: Bool {
+        status == .noCompatibleRecipes
+    }
+}
+
 /// The feed recommendation as a pure function over a recipe set, dated view
 /// history, an explicit recency window, and the active filters. No I/O, no ML
 /// — deterministic and testable.
@@ -51,7 +112,7 @@ public enum FeedQuery {
         recentWindow: TimeInterval,
         clock: any KartaClock,
         filters: FeedFilters
-    ) -> [Recipe] {
+    ) -> Feed {
         // Apply every hard constraint, including the intolerance safety guarantee.
         let eligible = recipes.filter(filters.allows)
 
@@ -63,13 +124,21 @@ public enum FeedQuery {
                 .map(\.recipeID)
         )
 
-        // Don't-repeat: hold back recently-viewed recipes — but never let that
-        // empty the feed. Expired history naturally returns to the feed.
-        let notRecentlyViewed = eligible.filter { !recentlyViewedIDs.contains($0.id) }
-        let visible = notRecentlyViewed.isEmpty ? eligible : notRecentlyViewed
+        // Don't-repeat: put recently-viewed recipes below the frontier. Expired
+        // history naturally returns to the new stretch without restarting the
+        // feed or mutating the view history.
+        let newRecipes = eligible.filter { !recentlyViewedIDs.contains($0.id) }
+        let alreadySeenRecipes = eligible.filter { recentlyViewedIDs.contains($0.id) }
 
         // Most popular first; ties keep their original order (stable & deterministic).
-        return visible
+        return Feed(
+            newRecipes: ranked(newRecipes),
+            alreadySeenRecipes: ranked(alreadySeenRecipes)
+        )
+    }
+
+    private static func ranked(_ recipes: [Recipe]) -> [Recipe] {
+        recipes
             .enumerated()
             .sorted { lhs, rhs in
                 lhs.element.popularity != rhs.element.popularity

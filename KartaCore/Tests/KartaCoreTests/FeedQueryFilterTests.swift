@@ -40,7 +40,7 @@ struct FeedQueryFilterTests {
             filters: FeedFilters(maxMinutes: 30)
         )
 
-        let ids = Set(feed.map(\.id))
+        let ids = Set(feed.newRecipes.map(\.id))
         #expect(ids == ["quick", "borderline"])
     }
 
@@ -60,7 +60,7 @@ struct FeedQueryFilterTests {
             filters: FeedFilters(maxDifficulty: .medium)
         )
 
-        #expect(feed.map(\.id) == ["e", "m"])
+        #expect(feed.newRecipes.map(\.id) == ["e", "m"])
     }
 
     @Test("requireOnePan keeps only recipes tagged one-pan")
@@ -78,7 +78,7 @@ struct FeedQueryFilterTests {
             filters: FeedFilters(requireOnePan: true)
         )
 
-        #expect(feed.map(\.id) == ["one-pan-dish"])
+        #expect(feed.newRecipes.map(\.id) == ["one-pan-dish"])
     }
 
     @Test("Filters compose: time, difficulty and one-pan apply together")
@@ -98,6 +98,24 @@ struct FeedQueryFilterTests {
             filters: FeedFilters(maxMinutes: 30, maxDifficulty: .medium, requireOnePan: true)
         )
 
-        #expect(feed.map(\.id) == ["match"])
+        #expect(feed.newRecipes.map(\.id) == ["match"])
+    }
+
+    @Test("The frontier is recomputed from the active filters")
+    func tighteningFiltersCanSurfaceTheFrontierImmediately() {
+        let notYetSeenButTooSlow = recipe("too-slow", minutes: 60)
+        let alreadySeenAndCompatible = recipe("already-seen", minutes: 15)
+
+        let feed = FeedQuery.feed(
+            recipes: [notYetSeenButTooSlow, alreadySeenAndCompatible],
+            views: [ViewEntry(recipeID: alreadySeenAndCompatible.id, date: testClock.now)],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(maxMinutes: 30)
+        )
+
+        #expect(feed.newRecipes.isEmpty)
+        #expect(feed.items == [.frontier, .alreadySeen(alreadySeenAndCompatible)])
+        #expect(feed.status == .exhausted)
     }
 }

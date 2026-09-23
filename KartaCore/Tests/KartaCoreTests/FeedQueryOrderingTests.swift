@@ -37,6 +37,6 @@ struct FeedQueryOrderingTests {
             filters: FeedFilters()
         )
 
-        #expect(feed.map(\.id) == ["top", "mid", "low"])
+        #expect(feed.newRecipes.map(\.id) == ["top", "mid", "low"])
     }
 }

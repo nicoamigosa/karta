@@ -75,7 +75,7 @@ struct RecipeDecodingTests {
             clock: testClock,
             filters: FeedFilters()
         )
-        #expect(feed.map(\.id) == ["reviewed-safe"])
+        #expect(feed.newRecipes.map(\.id) == ["reviewed-safe"])
     }
 
     @Test("Allergen decoding is closed and normalizes input")

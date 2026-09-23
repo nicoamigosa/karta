@@ -41,7 +41,8 @@ struct HistoryQueryTests {
             filters: FeedFilters()
         )
 
-        #expect(feed.map(\.id) == ["expired"])
+        #expect(feed.newRecipes.map(\.id) == ["expired"])
+        #expect(feed.alreadySeenRecipes.map(\.id) == ["recent"])
     }
 
     @Test("The recency window includes its edge but not future-dated history")
@@ -63,7 +64,45 @@ struct HistoryQueryTests {
             filters: FeedFilters()
         )
 
-        #expect(feed.map(\.id) == ["expired", "future"])
+        #expect(feed.newRecipes.map(\.id) == ["expired", "future"])
+        #expect(feed.alreadySeenRecipes.map(\.id) == ["edge"])
+    }
+
+    @Test("Expired views return to the new stretch and move the frontier down")
+    func feedMovesFrontierAcrossWindowBoundary() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let window: TimeInterval = 7 * 24 * 60 * 60
+        let newRecipe = recipe("new")
+        let recentlyViewed = recipe("recently-viewed")
+        let views = [ViewEntry(recipeID: recentlyViewed.id, date: now)]
+
+        let beforeExpiry = FeedQuery.feed(
+            recipes: [newRecipe, recentlyViewed],
+            views: views,
+            recentWindow: window,
+            clock: TestClock(now: now),
+            filters: FeedFilters()
+        )
+        let afterExpiry = FeedQuery.feed(
+            recipes: [newRecipe, recentlyViewed],
+            views: views,
+            recentWindow: window,
+            clock: TestClock(now: now.addingTimeInterval(window + 1)),
+            filters: FeedFilters()
+        )
+
+        #expect(beforeExpiry.items == [
+            .new(newRecipe),
+            .frontier,
+            .alreadySeen(recentlyViewed),
+        ])
+        #expect(afterExpiry.newRecipes == [newRecipe, recentlyViewed])
+        #expect(afterExpiry.alreadySeenRecipes.isEmpty)
+        #expect(afterExpiry.items == [
+            .new(newRecipe),
+            .new(recentlyViewed),
+            .frontier,
+        ])
     }
 
     @Test("Leftovers use only cooks inside the explicit recency window")
