@@ -117,4 +117,25 @@ struct FeedQuerySafetyTests {
         #expect(feed.isEmpty)
         #expect(feed.items.isEmpty)
     }
+
+    @Test("Taste preferences cannot promote an unsafe recipe into the feed")
+    func tasteCannotBypassSafety() {
+        var calibration = TasteCalibration()
+        calibration.tap("unsafe")
+
+        let feed = FeedQuery.feed(
+            recipes: [
+                recipe("safe"),
+                recipe("unsafe", reviewedAllergens: [.dairy]),
+            ],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(intolerances: [.dairy]),
+            tastePreferences: calibration.preferences
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["safe"])
+        #expect(feed.alreadySeenRecipes.isEmpty)
+    }
 }

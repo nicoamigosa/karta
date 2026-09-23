@@ -111,8 +111,14 @@ public enum FeedQuery {
         views: [ViewEntry],
         recentWindow: TimeInterval,
         clock: any KartaClock,
-        filters: FeedFilters
+        filters: FeedFilters,
+        tastePreferences: TastePreferences = TastePreferences(),
+        householdSize: Int? = nil
     ) -> Feed {
+        if let householdSize {
+            precondition(householdSize > 0, "householdSize must be positive")
+        }
+
         // Apply every hard constraint, including the intolerance safety guarantee.
         let eligible = recipes.filter(filters.allows)
 
@@ -130,18 +136,40 @@ public enum FeedQuery {
         let newRecipes = eligible.filter { !recentlyViewedIDs.contains($0.id) }
         let alreadySeenRecipes = eligible.filter { recentlyViewedIDs.contains($0.id) }
 
-        // Most popular first; ties keep their original order (stable & deterministic).
+        // Taste and household fit lead the ranking; popularity breaks ties.
         return Feed(
-            newRecipes: ranked(newRecipes),
-            alreadySeenRecipes: ranked(alreadySeenRecipes)
+            newRecipes: ranked(
+                newRecipes,
+                tastePreferences: tastePreferences,
+                householdSize: householdSize
+            ),
+            alreadySeenRecipes: ranked(
+                alreadySeenRecipes,
+                tastePreferences: tastePreferences,
+                householdSize: householdSize
+            )
         )
     }
 
-    private static func ranked(_ recipes: [Recipe]) -> [Recipe] {
+    private static func ranked(
+        _ recipes: [Recipe],
+        tastePreferences: TastePreferences,
+        householdSize: Int?
+    ) -> [Recipe] {
         recipes
             .enumerated()
             .sorted { lhs, rhs in
-                lhs.element.popularity != rhs.element.popularity
+                let lhsTaste = tastePreferences.favors(lhs.element)
+                let rhsTaste = tastePreferences.favors(rhs.element)
+                if lhsTaste != rhsTaste { return lhsTaste }
+
+                if let householdSize {
+                    let lhsDistance = abs(lhs.element.servings - householdSize)
+                    let rhsDistance = abs(rhs.element.servings - householdSize)
+                    if lhsDistance != rhsDistance { return lhsDistance < rhsDistance }
+                }
+
+                return lhs.element.popularity != rhs.element.popularity
                     ? lhs.element.popularity > rhs.element.popularity
                     : lhs.offset < rhs.offset
             }

@@ -5,6 +5,7 @@ import KartaCore
 /// The value state shared by the presentation store and its pure reducer.
 public struct KartaState: Equatable, Sendable {
     public var cookbook: Cookbook
+    public var onboarding: OnboardingState
     public var session: CookingSession?
     public var navigation: AppNavigationState
     public var filterState: FilterState
@@ -23,14 +24,38 @@ public struct KartaState: Equatable, Sendable {
     /// Compatibility spelling for the effective query consumed by the shell.
     public var feedFilters: FeedFilters { effectiveFeedFilters }
 
+    /// Build the feed only after onboarding is complete. The active safety
+    /// profile is composed here, while taste and household signals remain
+    /// ranking inputs and never become filters.
+    public func feed(
+        recipes: [Recipe],
+        views: [ViewEntry],
+        recentWindow: TimeInterval,
+        clock: any KartaClock
+    ) -> Feed? {
+        guard onboarding.profile != nil,
+              let householdSize = onboarding.householdSize else { return nil }
+        return FeedQuery.feed(
+            recipes: recipes,
+            views: views,
+            recentWindow: recentWindow,
+            clock: clock,
+            filters: effectiveFeedFilters,
+            tastePreferences: onboarding.tastePreferences,
+            householdSize: householdSize
+        )
+    }
+
     public init(
         cookbook: Cookbook = Cookbook(),
+        onboarding: OnboardingState = OnboardingState(),
         session: CookingSession? = nil,
         navigation: AppNavigationState = AppNavigationState(),
         safetyProfile: SafetyProfile,
         filterDraft: FilterDraft = FilterDraft()
     ) {
         self.cookbook = cookbook
+        self.onboarding = onboarding
         self.session = session
         self.navigation = navigation
         self.filterState = FilterState(
@@ -45,6 +70,7 @@ public enum KartaAction: Sendable {
     case saveRecipe(String)
     case unsaveRecipe(String)
     case downgradeCookbookToFree
+    case onboarding(OnboardingAction)
     case startCooking(Recipe)
     case nextStep
     case previousStep
@@ -70,6 +96,22 @@ public enum KartaReducer {
             state.cookbook.unsave(id)
         case .downgradeCookbookToFree:
             state.cookbook.downgradeToFree()
+        case let .onboarding(action):
+            let previousFilters = state.effectiveFeedFilters
+            switch action {
+            case let .answerIntolerances(intolerances):
+                state.onboarding.answerIntolerances(intolerances)
+                state.filterState.reduce(
+                    .setSafetyProfile(SafetyProfile(intolerances: intolerances))
+                )
+            case let .setHouseholdSize(householdSize):
+                state.onboarding.setHouseholdSize(householdSize)
+            case let .tapCalibration(recipeID):
+                state.onboarding.tapCalibration(recipeID)
+            }
+            if state.effectiveFeedFilters != previousFilters {
+                state.navigation.discardAnchors()
+            }
         case let .startCooking(recipe):
             state.session = recipe.cookingSession()
         case .nextStep:
@@ -122,5 +164,20 @@ public final class KartaStore {
     /// Apply one presentation action through the pure reducer.
     public func send(_ action: Action) {
         KartaReducer.reduce(&state, action: action)
+    }
+
+    /// The shell's read seam for the current feed.
+    public func feed(
+        recipes: [Recipe],
+        views: [ViewEntry],
+        recentWindow: TimeInterval,
+        clock: any KartaClock
+    ) -> Feed? {
+        state.feed(
+            recipes: recipes,
+            views: views,
+            recentWindow: recentWindow,
+            clock: clock
+        )
     }
 }
