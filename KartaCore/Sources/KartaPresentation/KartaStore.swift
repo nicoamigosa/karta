@@ -71,12 +71,12 @@ public enum KartaAction: Sendable {
     case unsaveRecipe(String)
     case downgradeCookbookToFree
     case onboarding(OnboardingAction)
-    case startCooking(Recipe)
-    case nextStep
+    case startCooking(Recipe, startedAt: TimeInterval)
+    case nextStep(now: TimeInterval)
     case previousStep
     case exitCooking
     case respond(CookOutcome)
-    case inferProbablyCooked(dwellSeconds: TimeInterval)
+    case inferProbablyCooked(now: TimeInterval)
     case startTimer(now: TimeInterval)
     case selectWorld(World)
     case setFeedAnchor(ScrollAnchor?, world: World)
@@ -112,18 +112,18 @@ public enum KartaReducer {
             if state.effectiveFeedFilters != previousFilters {
                 state.navigation.discardAnchors()
             }
-        case let .startCooking(recipe):
-            state.session = recipe.cookingSession()
-        case .nextStep:
-            state.session?.next()
+        case let .startCooking(recipe, startedAt):
+            state.session = recipe.cookingSession(startedAt: startedAt)
+        case let .nextStep(now):
+            state.session?.next(at: now)
         case .previousStep:
             state.session?.previous()
         case .exitCooking:
             state.session?.exit()
         case let .respond(outcome):
             state.session?.respond(outcome)
-        case let .inferProbablyCooked(dwellSeconds):
-            state.session?.inferProbablyCooked(dwellSeconds: dwellSeconds)
+        case let .inferProbablyCooked(now):
+            state.session?.inferProbablyCooked(at: now)
         case let .startTimer(now):
             state.session?.startTimer(now: now)
         case let .selectWorld(world):

@@ -50,7 +50,8 @@ public struct ViewHistory: Codable, Equatable, Sendable {
     }
 }
 
-/// A recipe that was cooked, with the date of the event.
+/// A recipe that was cooked, with the date and origin of the event. Both
+/// explicit and inferred cooks remain in history; consumers choose their policy.
 public struct CookEntry: Codable, Equatable, Sendable {
     public let recipeID: String
     public let date: Date

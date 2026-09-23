@@ -77,8 +77,13 @@ extension Recipe {
     /// Open cooking mode for this recipe: a fresh `CookingSession` over its own
     /// structured steps. This is the seam between the static recipe and the
     /// runtime cooking state machine.
-    public func cookingSession() -> CookingSession {
-        CookingSession(recipeID: id, steps: steps)
+    public func cookingSession(startedAt: TimeInterval = 0) -> CookingSession {
+        CookingSession(
+            recipeID: id,
+            steps: steps,
+            declaredDuration: TimeInterval(totalMinutes) * 60,
+            startedAt: startedAt
+        )
     }
 }
 
@@ -94,7 +99,7 @@ public enum CookOutcome: String, Equatable, Sendable {
 public struct CookedEvent: Equatable, Sendable {
     public let recipeID: String
     public let outcome: CookOutcome?
-    /// True when emitted by the "probably cooked" dwell inference rather than a tap.
+    /// True when emitted by the session inference rather than an explicit tap.
     public let wasInferred: Bool
 
     public init(recipeID: String, outcome: CookOutcome?, wasInferred: Bool) {
@@ -108,10 +113,14 @@ public struct CookedEvent: Equatable, Sendable {
 ///
 /// The session walks an ordered list of `CookingStep`s. Navigation clamps at the
 /// boundaries; exiting is terminal. Reaching the last step is the gateway to the
-/// success signal (`cooked`), handled in later slices.
+/// success signal (`cooked`), which may be explicit or inferred from the complete journey.
 public struct CookingSession: Equatable, Sendable {
     public let recipeID: String
     public let steps: [CookingStep]
+    /// The recipe's declared preparation time, in seconds.
+    public let declaredDuration: TimeInterval
+    /// The injected start time used to measure this session deterministically.
+    public let startedAt: TimeInterval
 
     public private(set) var currentIndex: Int
     public private(set) var isExited: Bool
@@ -120,14 +129,28 @@ public struct CookingSession: Equatable, Sendable {
     /// Running timers keyed by step index, so a timer survives navigating away
     /// from and back to its step.
     public private(set) var timers: [Int: StepTimer]
+    /// The furthest step reached during the session. Going back does not erase
+    /// evidence of the journey.
+    private var furthestIndex: Int
+    /// The first injected time at which the session reached the last step.
+    private var lastStepReachedAt: TimeInterval?
 
-    public init(recipeID: String, steps: [CookingStep]) {
+    public init(
+        recipeID: String,
+        steps: [CookingStep],
+        declaredDuration: TimeInterval = 0,
+        startedAt: TimeInterval = 0
+    ) {
         self.recipeID = recipeID
         self.steps = steps
+        self.declaredDuration = declaredDuration
+        self.startedAt = startedAt
         self.currentIndex = 0
         self.isExited = false
         self.cookedEvent = nil
         self.timers = [:]
+        self.furthestIndex = 0
+        self.lastStepReachedAt = nil
     }
 
     /// The step currently shown, or `nil` if there are no steps.
@@ -138,6 +161,18 @@ public struct CookingSession: Equatable, Sendable {
     /// Whether the cook is on the final step.
     public var isOnLastStep: Bool {
         !steps.isEmpty && currentIndex == steps.count - 1
+    }
+
+    /// How far the session progressed through the ordered steps, from zero to
+    /// one. A one-step recipe has no journey to measure.
+    public var stepProgress: Double {
+        guard steps.count > 1 else { return 0 }
+        return Double(furthestIndex) / Double(steps.count - 1)
+    }
+
+    /// Elapsed session time at an injected clock value, never negative.
+    public func sessionDuration(at now: TimeInterval) -> TimeInterval {
+        max(now - startedAt, 0)
     }
 
     /// Whether the "How did it turn out?" prompt should be shown. An inferred
@@ -160,8 +195,25 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Advance to the next step (swipe-right). Clamps at the last step.
     public mutating func next() {
+        advanceToNextStep(at: nil)
+    }
+
+    /// Advance to the next step and record the injected time when the last step
+    /// is reached for the first time. Clamps at the last step.
+    public mutating func next(at now: TimeInterval) {
+        advanceToNextStep(at: now)
+    }
+
+    private mutating func advanceToNextStep(at now: TimeInterval?) {
         guard !isExited else { return }
+        let previousIndex = currentIndex
         currentIndex = min(currentIndex + 1, max(steps.count - 1, 0))
+        furthestIndex = max(furthestIndex, currentIndex)
+        if previousIndex != currentIndex,
+           currentIndex == steps.count - 1,
+           lastStepReachedAt == nil {
+            lastStepReachedAt = now
+        }
     }
 
     /// Go back to the previous step (swipe-left). Clamps at the first step.
@@ -170,17 +222,34 @@ public struct CookingSession: Equatable, Sendable {
         currentIndex = max(currentIndex - 1, 0)
     }
 
-    /// Dwell long enough on the last step (without tapping) to infer the cook
-    /// probably finished. Default threshold: 20s. Won't override an explicit
-    /// response, only fires on the last step, and is ignored after exit.
-    public static let probablyCookedDwellSeconds: TimeInterval = 20
+    /// A session must account for at least this fraction of the recipe's
+    /// declared time before it can be considered a probable cook.
+    public static let probablyCookedMinimumDurationRatio: Double = 0.25
 
+    /// Infer a cook from the complete session rather than time spent on the
+    /// final step. The session must have traversed a real multi-step journey, started
+    /// a declared timer when the recipe has one, and taken long enough to reach
+    /// the final step relative to the recipe's declared time. Time spent idle on
+    /// the final step does not count. Won't override an explicit response and
+    /// is ignored after exit.
     @discardableResult
-    public mutating func inferProbablyCooked(
-        dwellSeconds: TimeInterval,
-        threshold: TimeInterval = CookingSession.probablyCookedDwellSeconds
-    ) -> CookedEvent? {
-        guard isOnLastStep, !isExited, cookedEvent == nil, dwellSeconds >= threshold else { return nil }
+    public mutating func inferProbablyCooked(at now: TimeInterval) -> CookedEvent? {
+        let declaredTimerSteps = steps.indices.filter { steps[$0].timerSeconds != nil }
+        let startedDeclaredTimer = declaredTimerSteps.isEmpty || declaredTimerSteps.contains { timers[$0] != nil }
+        let lastedLongEnough = lastStepReachedAt.map { reachedAt in
+            now >= reachedAt
+                && declaredDuration > 0
+                && sessionDuration(at: reachedAt) >= declaredDuration * Self.probablyCookedMinimumDurationRatio
+        } ?? false
+
+        guard isOnLastStep,
+              !isExited,
+              cookedEvent == nil,
+              stepProgress >= 1,
+              startedDeclaredTimer,
+              lastedLongEnough
+        else { return nil }
+
         let event = CookedEvent(recipeID: recipeID, outcome: nil, wasInferred: true)
         cookedEvent = event
         return event
