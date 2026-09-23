@@ -7,9 +7,13 @@ import KartaPresentation
 @Suite("Karta store")
 struct KartaStoreTests {
 
+    private var noIntolerances: SafetyProfile {
+        SafetyProfile(intolerances: [])
+    }
+
     @Test("A new presentation state starts at the For You root")
     func navigationStartsAtForYouRoot() {
-        let state = KartaState()
+        let state = KartaState(safetyProfile: noIntolerances)
 
         #expect(state.navigation.world == .forYou)
         #expect(state.navigation.routes.isEmpty)
@@ -18,7 +22,7 @@ struct KartaStoreTests {
 
     @Test("Navigation anchors are session-scoped")
     func navigationAnchorIsNotCarriedIntoNewState() {
-        var previousState = KartaState()
+        var previousState = KartaState(safetyProfile: noIntolerances)
         KartaReducer.reduce(
             &previousState,
             action: .setFeedAnchor(
@@ -27,7 +31,7 @@ struct KartaStoreTests {
             )
         )
 
-        let newState = KartaState()
+        let newState = KartaState(safetyProfile: noIntolerances)
 
         #expect(previousState.navigation.anchor(for: .forYou) != nil)
         #expect(newState.navigation.anchor(for: .forYou) == nil)
@@ -35,7 +39,7 @@ struct KartaStoreTests {
 
     @Test("Opening a recipe and returning preserves the world's feed anchor")
     func detailBackPreservesFeedAnchor() {
-        var state = KartaState()
+        var state = KartaState(safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
 
         KartaReducer.reduce(
@@ -55,7 +59,7 @@ struct KartaStoreTests {
 
     @Test("Switching worlds and returning preserves each world's anchor")
     func worldSwitchPreservesForYouAnchor() {
-        var state = KartaState()
+        var state = KartaState(safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
         let savedAnchor = ScrollAnchor(recipeID: "saved-2", relativeOffset: 0.75)
 
@@ -77,7 +81,7 @@ struct KartaStoreTests {
 
     @Test("Changing feed filters discards the session anchors")
     func changingFiltersDiscardsAnchors() {
-        var state = KartaState()
+        var state = KartaState(safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
         KartaReducer.reduce(
             &state,
@@ -201,7 +205,7 @@ struct KartaStoreTests {
 
     @Test("An anchor for a recipe absent from the feed resolves to the top")
     func staleAnchorResolvesToTop() {
-        var state = KartaState()
+        var state = KartaState(safetyProfile: noIntolerances)
         let currentAnchor = ScrollAnchor(recipeID: "recipe-1", relativeOffset: 0.25)
         KartaReducer.reduce(
             &state,
@@ -222,7 +226,7 @@ struct KartaStoreTests {
 
     @Test("The save action is applied by the pure reducer")
     func reducerSavesRecipe() {
-        var state = KartaState()
+        var state = KartaState(safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .saveRecipe("recipe-1"))
 
@@ -233,7 +237,7 @@ struct KartaStoreTests {
     func reducerDowngradesCookbook() {
         var cookbook = Cookbook(saveCap: nil)
         for i in 0..<9 { #expect(cookbook.save("recipe-\(i)") == .saved) }
-        var state = KartaState(cookbook: cookbook)
+        var state = KartaState(cookbook: cookbook, safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .downgradeCookbookToFree)
 
@@ -255,7 +259,7 @@ struct KartaStoreTests {
             steps: ["First step", "Second step"],
             allergenReview: .reviewed([])
         )
-        var state = KartaState()
+        var state = KartaState(safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .startCooking(recipe))
         KartaReducer.reduce(&state, action: .nextStep)
@@ -266,7 +270,7 @@ struct KartaStoreTests {
     @MainActor
     @Test("The store applies an action through its public send entry point")
     func storeSendsSaveAction() {
-        let store = KartaStore()
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
 
         store.send(.saveRecipe("recipe-1"))
 
@@ -277,7 +281,7 @@ struct KartaStoreTests {
     @MainActor
     @Test("The store applies cooking actions through the same send entry point")
     func storeSendsCookingAction() {
-        let store = KartaStore()
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
 
         store.send(.startCooking(recipe()))
         store.send(.nextStep)
@@ -288,7 +292,7 @@ struct KartaStoreTests {
     @MainActor
     @Test("A value mutation through send invalidates an observation")
     func storeNotifiesObservers() {
-        let store = KartaStore()
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
         let changes = Mutex(0)
 
         withObservationTracking {
@@ -305,7 +309,10 @@ struct KartaStoreTests {
     @MainActor
     @Test("A session mutation through send invalidates an observation")
     func storeNotifiesSessionObservers() {
-        let store = KartaStore(state: KartaState(session: recipe().cookingSession()))
+        let store = KartaStore(state: KartaState(
+            session: recipe().cookingSession(),
+            safetyProfile: noIntolerances
+        ))
         let changes = Mutex(0)
 
         withObservationTracking {
@@ -322,7 +329,7 @@ struct KartaStoreTests {
     @MainActor
     @Test("State and actions can be handed to an external task as values")
     func valuesAreSendable() async {
-        let store = KartaStore()
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
         store.send(.saveRecipe("recipe-1"))
         let state = store.state
         let action: KartaStore.Action = .unsaveRecipe("recipe-1")

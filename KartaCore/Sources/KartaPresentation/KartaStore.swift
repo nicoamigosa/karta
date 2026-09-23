@@ -27,7 +27,7 @@ public struct KartaState: Equatable, Sendable {
         cookbook: Cookbook = Cookbook(),
         session: CookingSession? = nil,
         navigation: AppNavigationState = AppNavigationState(),
-        safetyProfile: SafetyProfile = SafetyProfile(intolerances: []),
+        safetyProfile: SafetyProfile,
         filterDraft: FilterDraft = FilterDraft()
     ) {
         self.cookbook = cookbook
@@ -115,7 +115,7 @@ public final class KartaStore {
     /// The active cooking session, exposed as a read-only value snapshot.
     public var session: CookingSession? { state.session }
 
-    public init(state: KartaState = KartaState()) {
+    public init(state: KartaState) {
         self.state = state
     }
 
