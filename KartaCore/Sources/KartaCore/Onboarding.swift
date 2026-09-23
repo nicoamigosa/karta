@@ -38,4 +38,28 @@ public struct TasteCalibration: Equatable, Sendable {
         guard !likedIDs.contains(id) else { return }
         likedIDs.append(id)
     }
+
+    /// The ranking input produced by this calibration. Keeping the conversion
+    /// explicit makes the calibration channel separate from Cookbook saves.
+    public var preferences: TastePreferences {
+        TastePreferences(likedIDs: likedIDs)
+    }
+}
+
+/// Taste signals learned from onboarding interactions. A preference can only
+/// affect the order of recipes that already passed the feed's hard filters.
+public struct TastePreferences: Equatable, Sendable {
+    public let likedIDs: Set<String>
+
+    public init(likedIDs: [String] = []) {
+        self.likedIDs = Set(likedIDs)
+    }
+
+    public init(likedIDs: Set<String>) {
+        self.likedIDs = likedIDs
+    }
+
+    public func favors(_ recipe: Recipe) -> Bool {
+        likedIDs.contains(recipe.id)
+    }
 }

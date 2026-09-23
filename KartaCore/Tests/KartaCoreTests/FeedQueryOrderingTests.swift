@@ -5,14 +5,14 @@ import Foundation
 @Suite("Feed query — ordering")
 struct FeedQueryOrderingTests {
 
-    private func recipe(_ id: String, popularity: Int) -> Recipe {
+    private func recipe(_ id: String, popularity: Int, servings: Int = 4) -> Recipe {
         Recipe(
             id: id,
             name: id,
             heroPhotoURL: "https://img.karta.app/\(id).jpg",
             totalMinutes: 30,
             difficulty: .easy,
-            servings: 4,
+            servings: servings,
             tags: [],
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
@@ -39,5 +39,75 @@ struct FeedQueryOrderingTests {
         )
 
         #expect(feed.newRecipes.map(\.id) == ["top", "mid", "low"])
+    }
+
+    @Test("Taste preferences move calibrated recipes ahead within the safe feed")
+    func ordersCalibratedRecipesFirst() {
+        var calibration = TasteCalibration()
+        calibration.tap("low")
+
+        let feed = FeedQuery.feed(
+            recipes: [
+                recipe("top", popularity: 90),
+                recipe("low", popularity: 10),
+            ],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(),
+            tastePreferences: calibration.preferences
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["low", "top"])
+    }
+
+    @Test("Different calibrations produce different feed orders")
+    func differentCalibrationsChangeOrder() {
+        var firstCalibration = TasteCalibration()
+        firstCalibration.tap("low")
+        var secondCalibration = TasteCalibration()
+        secondCalibration.tap("top")
+        let recipes = [
+            recipe("top", popularity: 50),
+            recipe("low", popularity: 50),
+        ]
+
+        let firstFeed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(),
+            tastePreferences: firstCalibration.preferences
+        )
+        let secondFeed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(),
+            tastePreferences: secondCalibration.preferences
+        )
+
+        #expect(firstFeed.newRecipes.map(\.id) == ["low", "top"])
+        #expect(secondFeed.newRecipes.map(\.id) == ["top", "low"])
+    }
+
+    @Test("Household size moves recipes with matching servings nearer the front")
+    func ordersByHouseholdSizeWithoutFiltering() {
+        let feed = FeedQuery.feed(
+            recipes: [
+                recipe("serves-four", popularity: 90, servings: 4),
+                recipe("serves-two", popularity: 10, servings: 2),
+            ],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(),
+            householdSize: 2
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["serves-two", "serves-four"])
+        #expect(Set(feed.newRecipes.map(\.id)) == ["serves-two", "serves-four"])
     }
 }

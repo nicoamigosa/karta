@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import Synchronization
 import Testing
@@ -280,6 +281,84 @@ struct KartaStoreTests {
     }
 
     @MainActor
+    @Test("Calibration through the store does not save a recipe")
+    func storeCalibratesWithoutSaving() {
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(householdSize: 2),
+            safetyProfile: noIntolerances
+        ))
+
+        for index in 0..<20 {
+            store.send(.onboarding(.tapCalibration("recipe-\(index)")))
+        }
+        store.send(.saveRecipe("real-save"))
+
+        #expect(store.state.onboarding.calibration.likedIDs.count == 20)
+        #expect(store.cookbook.savedIDs == ["real-save"])
+        #expect(store.cookbook.isAtCap == false)
+    }
+
+    @MainActor
+    @Test("Answering onboarding updates the store safety profile")
+    func storeAnswersIntolerances() {
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy])
+        ))
+
+        store.send(.onboarding(.answerIntolerances([])))
+
+        #expect(store.state.onboarding.profile?.intolerances.isEmpty == true)
+        #expect(store.state.safetyProfile.intolerances.isEmpty)
+    }
+
+    @MainActor
+    @Test("The store's calibrated onboarding state changes its feed order")
+    func storeCalibrationFeedsRanking() throws {
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(
+                intoleranceAnswer: .answered([]),
+                householdSize: 2
+            ),
+            safetyProfile: noIntolerances
+        ))
+        store.send(.onboarding(.tapCalibration("low")))
+
+        let feed = try #require(store.feed(
+            recipes: [
+                rankingRecipe("top", popularity: 90),
+                rankingRecipe("low", popularity: 10),
+            ],
+            views: [],
+            recentWindow: 7 * 24 * 60 * 60,
+            clock: StoreTestClock(now: Date(timeIntervalSince1970: 1_000_000))
+        ))
+
+        #expect(feed.newRecipes.map(\.id) == ["low", "top"])
+    }
+
+    @MainActor
+    @Test("The feed uses the active safety profile after onboarding")
+    func feedUsesUpdatedSafetyProfileAfterOnboarding() throws {
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        store.send(.onboarding(.answerIntolerances([])))
+        store.send(.onboarding(.setHouseholdSize(2)))
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy]))))
+
+        let feed = try #require(store.feed(
+            recipes: [
+                allergenRecipe("safe", allergens: []),
+                allergenRecipe("dairy", allergens: [.dairy]),
+            ],
+            views: [],
+            recentWindow: 7 * 24 * 60 * 60,
+            clock: StoreTestClock(now: Date(timeIntervalSince1970: 1_000_000))
+        ))
+
+        #expect(feed.newRecipes.map(\.id) == ["safe"])
+    }
+
+    @MainActor
     @Test("The store applies cooking actions through the same send entry point")
     func storeSendsCookingAction() {
         let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
@@ -361,4 +440,39 @@ struct KartaStoreTests {
             allergenReview: .reviewed([])
         )
     }
+
+    private func rankingRecipe(_ id: String, popularity: Int) -> Recipe {
+        Recipe(
+            id: id,
+            name: id,
+            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "x", quantity: "1")],
+            steps: ["Cook"],
+            allergenReview: .reviewed([]),
+            popularity: popularity
+        )
+    }
+
+    private func allergenRecipe(_ id: String, allergens: Set<Allergen>) -> Recipe {
+        Recipe(
+            id: id,
+            name: id,
+            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "x", quantity: "1")],
+            steps: ["Cook"],
+            allergenReview: .reviewed(allergens)
+        )
+    }
+}
+
+private struct StoreTestClock: KartaClock {
+    let now: Date
 }
