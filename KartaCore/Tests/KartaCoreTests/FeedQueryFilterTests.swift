@@ -17,6 +17,7 @@ struct FeedQueryFilterTests {
             heroPhotoURL: "https://img.karta.app/\(id).jpg",
             totalMinutes: minutes,
             difficulty: difficulty,
+            servings: 4,
             tags: tags,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],

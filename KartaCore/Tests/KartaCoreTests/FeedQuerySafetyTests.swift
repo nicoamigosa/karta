@@ -16,6 +16,7 @@ struct FeedQuerySafetyTests {
             heroPhotoURL: "https://img.karta.app/\(id).jpg",
             totalMinutes: 30,
             difficulty: .easy,
+            servings: 4,
             tags: [],
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],

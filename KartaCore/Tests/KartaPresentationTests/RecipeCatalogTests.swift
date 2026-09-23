@@ -6,19 +6,25 @@ import KartaPresentation
 @Suite("Seed recipe catalog")
 struct RecipeCatalogTests {
 
-    @Test("The catalog decoder rejects the legacy seed's unknown allergen")
-    func legacySeedIsRejected() throws {
-        do {
-            _ = try SeedResourceAdapter().loadRecipes()
-            Issue.record("Expected the legacy lactose tag to be rejected")
-        } catch let error as RecipeDecodingError {
-            #expect(error == .unknownAllergen(
-                recipeID: "ensalada-cesar",
-                recipeName: "Ensalada Cesar",
-                value: "lactose"
-            ))
-        } catch {
-            Issue.record("Unexpected error: \(error)")
+    @Test("The seed contains exactly the expected recipe identities")
+    func seedContainsExpectedRecipes() throws {
+        let expectedIDs: Set<String> = [
+            "tortilla-de-papa",
+            "pollo-al-curry-rapido",
+            "ensalada-cesar",
+            "pasta-al-pesto",
+            "guiso-de-lentejas",
+            "salmon-al-horno",
+            "panqueques-de-banana",
+            "wok-de-vegetales",
+        ]
+        let recipes = try SeedResourceAdapter().loadRecipes()
+
+        #expect(recipes.count == expectedIDs.count)
+        #expect(Set(recipes.map(\.id)) == expectedIDs)
+        for expectedID in expectedIDs {
+            let recipe = try #require(recipes.first { $0.id == expectedID })
+            #expect(recipe.id == expectedID)
         }
     }
 }

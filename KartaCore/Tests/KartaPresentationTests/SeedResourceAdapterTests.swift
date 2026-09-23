@@ -12,22 +12,16 @@ struct SeedResourceAdapterTests {
 
         let clips = try adapter.loadTechniqueClips()
 
-        #expect(clips.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")) != nil)
+        let clip = try #require(clips.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
+        #expect(clip.id == "cuajar-tortilla")
     }
 
-    @Test("The public adapter propagates an unknown allergen from the recipe catalog")
-    func rejectsUnknownRecipeAllergen() throws {
-        do {
-            _ = try SeedResourceAdapter().loadRecipes()
-            Issue.record("Expected the legacy lactose tag to be rejected")
-        } catch let error as RecipeDecodingError {
-            #expect(error == .unknownAllergen(
-                recipeID: "ensalada-cesar",
-                recipeName: "Ensalada Cesar",
-                value: "lactose"
-            ))
-        } catch {
-            Issue.record("Unexpected error: \(error)")
-        }
+    @Test("The public adapter loads the bundled recipe catalog")
+    func loadsBundledRecipes() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+
+        #expect(recipes.count == 8)
+        let tortilla = try #require(recipes.first { $0.id == "tortilla-de-papa" })
+        #expect(tortilla.id == "tortilla-de-papa")
     }
 }

@@ -7,7 +7,7 @@ struct OnboardingFeedSeedTests {
 
     private func recipe(_ id: String, reviewedAllergens: [Allergen] = []) -> Recipe {
         Recipe(
-            id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy,
+            id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy, servings: 4,
             tags: [], ingredients: [Ingredient(name: "x", quantity: "1")], steps: ["s"],
             allergenReview: .reviewed(Set(reviewedAllergens))
         )

@@ -12,6 +12,7 @@ struct CookbookSavingTests {
             heroPhotoURL: "",
             totalMinutes: 10,
             difficulty: .easy,
+            servings: 4,
             tags: [],
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["s"],
@@ -161,7 +162,7 @@ struct CookbookCapTests {
         let catalog = (0..<9).map {
             Recipe(
                 id: "r\($0)", name: "r\($0)", heroPhotoURL: "", totalMinutes: 10,
-                difficulty: .easy, tags: [], ingredients: [], steps: ["s"],
+                difficulty: .easy, servings: 4, tags: [], ingredients: [], steps: ["s"],
                 allergenReview: .reviewed([])
             )
         }
