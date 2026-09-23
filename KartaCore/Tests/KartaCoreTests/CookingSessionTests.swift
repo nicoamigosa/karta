@@ -181,7 +181,7 @@ struct CookingSessionCookedEventTests {
             allergenReview: .reviewed([])
         )
         var session = recipe.cookingSession(startedAt: 0)
-        session.next(); session.next()
+        session.next(at: 10); session.next(at: 900)
 
         #expect(session.inferProbablyCooked(at: 900) == nil)
         #expect(session.cookedEvent == nil)
