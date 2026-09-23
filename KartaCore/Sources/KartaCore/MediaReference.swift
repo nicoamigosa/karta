@@ -33,7 +33,7 @@ public enum MediaReference: Codable, Equatable, Hashable, Sendable {
         let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { throw ValidationError.empty }
 
-        if value.hasPrefix("local:") || value.hasPrefix("bundle:") {
+        if value.hasPrefix("local:") {
             let name = String(value.split(separator: ":", maxSplits: 1)[1])
             guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw ValidationError.invalid(rawValue)
@@ -84,13 +84,4 @@ public enum MediaReference: Codable, Equatable, Hashable, Sendable {
         }
     }
 
-    /// Convenience for callers that already have a validated URL.
-    public static func remoteURL(_ url: URL) throws -> Self {
-        try Self(validating: url.absoluteString)
-    }
-
-    /// Convenience spelling for local asset keys.
-    public static func bundle(name: String) -> Self {
-        .local(name)
-    }
 }

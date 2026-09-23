@@ -11,21 +11,9 @@ public struct MediaAssetManifest: Codable, Equatable, Sendable {
         self.assets = assets
     }
 
-    public init(assets: [String: String]) {
-        self.init(assets)
-    }
-
-    public init(entries: [String: String]) {
-        self.init(entries)
-    }
-
     public init(from decoder: any Decoder) throws {
-        if let container = try? decoder.container(keyedBy: CodingKeys.self),
-           let assets = try container.decodeIfPresent([String: String].self, forKey: .assets) {
-            self.assets = assets
-            return
-        }
-        self.assets = try decoder.singleValueContainer().decode([String: String].self)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.assets = try container.decode([String: String].self, forKey: .assets)
     }
 
     public func resourceName(for key: String) -> String? {
@@ -36,9 +24,6 @@ public struct MediaAssetManifest: Codable, Equatable, Sendable {
         case assets
     }
 }
-
-/// Compatibility spelling for callers that use the shorter domain term.
-public typealias AssetManifest = MediaAssetManifest
 
 public enum MediaResolutionError: Error, Equatable, Hashable, LocalizedError, Sendable {
     case missingAsset(String)
@@ -62,13 +47,7 @@ public enum MediaResolutionError: Error, Equatable, Hashable, LocalizedError, Se
 public enum ResolvedMedia: Equatable, Hashable, Sendable {
     case remote(URL)
     case bundle(resource: String)
-
-    public static func bundle(name: String) -> Self {
-        .bundle(resource: name)
-    }
 }
-
-public typealias ResolvedMediaSource = ResolvedMedia
 
 /// Resolves Core references using injected presentation configuration.
 public struct MediaResolver: Sendable {
@@ -78,14 +57,6 @@ public struct MediaResolver: Sendable {
     public init(manifest: MediaAssetManifest, baseURL: URL?) {
         self.manifest = manifest
         self.baseURL = baseURL
-    }
-
-    public init(assetManifest: MediaAssetManifest, baseURL: URL?) {
-        self.init(manifest: assetManifest, baseURL: baseURL)
-    }
-
-    public init(manifest: [String: String], baseURL: URL?) {
-        self.init(manifest: MediaAssetManifest(manifest), baseURL: baseURL)
     }
 
     public func resolve(_ reference: MediaReference) throws -> ResolvedMedia {

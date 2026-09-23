@@ -36,8 +36,6 @@ public enum LoadState<Value: Equatable & Sendable>: Equatable, Sendable {
     case failed(requestID: MediaRequestID, error: MediaLoadError)
 }
 
-public typealias MediaLoadState<Value: Equatable & Sendable> = LoadState<Value>
-
 /// Pure request lifecycle state. It is intentionally independent of the
 /// network and Bundle so late-response behavior is testable on Linux.
 public struct MediaLoadStateMachine<Value: Equatable & Sendable>: Sendable {
@@ -82,5 +80,3 @@ public struct MediaLoadStateMachine<Value: Equatable & Sendable>: Sendable {
         state = .idle
     }
 }
-
-public typealias LoadStateMachine<Value: Equatable & Sendable> = MediaLoadStateMachine<Value>

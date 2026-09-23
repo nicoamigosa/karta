@@ -231,7 +231,7 @@ struct RecipeStepDecodingTests {
     @Test("A recipe builds a cooking session over its own steps")
     func recipeBuildsCookingSession() throws {
         let recipe = Recipe(
-            id: "r1", name: "Mix", heroPhotoURL: "", totalMinutes: 10, difficulty: .easy, servings: 4,
+            id: "r1", name: "Mix", heroPhoto: .local("test"), totalMinutes: 10, difficulty: .easy, servings: 4,
             tags: [], ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
                 CookingStep(text: "Chop", ingredient: Ingredient(name: "Onion", quantity: "1")),

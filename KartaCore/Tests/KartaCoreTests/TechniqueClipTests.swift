@@ -8,8 +8,18 @@ struct TechniqueClipTests {
 
     private func makeLibrary() throws -> TechniqueClipLibrary {
         try TechniqueClipLibrary(clips: [
-            TechniqueClip(id: "dice-onion", title: "How to dice an onion", seconds: 6),
-            TechniqueClip(id: "check-chicken", title: "Is the chicken done?", seconds: 5),
+            TechniqueClip(
+                id: "dice-onion",
+                title: "How to dice an onion",
+                seconds: 6,
+                source: try MediaReference(validating: "local:clips/dice-onion.mp4")
+            ),
+            TechniqueClip(
+                id: "check-chicken",
+                title: "Is the chicken done?",
+                seconds: 5,
+                source: try MediaReference(validating: "local:clips/check-chicken.mp4")
+            ),
         ])
     }
 

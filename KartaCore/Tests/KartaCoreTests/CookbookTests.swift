@@ -9,7 +9,7 @@ struct CookbookSavingTests {
         Recipe(
             id: id,
             name: id,
-            heroPhotoURL: "",
+            heroPhoto: .local("test"),
             totalMinutes: 10,
             difficulty: .easy,
             servings: 4,
@@ -161,7 +161,7 @@ struct CookbookCapTests {
         cookbook.downgradeToFree()
         let catalog = (0..<9).map {
             Recipe(
-                id: "r\($0)", name: "r\($0)", heroPhotoURL: "", totalMinutes: 10,
+                id: "r\($0)", name: "r\($0)", heroPhoto: .local("test"), totalMinutes: 10,
                 difficulty: .easy, servings: 4, tags: [], ingredients: [], steps: ["s"],
                 allergenReview: .reviewed([])
             )

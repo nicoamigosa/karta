@@ -141,40 +141,6 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         self.popularity = popularity
     }
 
-    /// Compatibility initializer for callers that have not migrated their
-    /// construction site yet. Catalog decoding always uses the validating
-    /// MediaReference initializer below.
-    public init(
-        id: String,
-        name: String,
-        heroPhotoURL: String,
-        totalMinutes: Int,
-        difficulty: Difficulty,
-        servings: Int,
-        tags: [String],
-        ingredients: [Ingredient],
-        steps: [CookingStep],
-        allergenReview: AllergenReview,
-        popularity: Int = 0
-    ) {
-        self.init(
-            id: id,
-            name: name,
-            heroPhoto: (try? MediaReference(validating: heroPhotoURL)) ?? .local(heroPhotoURL),
-            totalMinutes: totalMinutes,
-            difficulty: difficulty,
-            servings: servings,
-            tags: tags,
-            ingredients: ingredients,
-            steps: steps,
-            allergenReview: allergenReview,
-            popularity: popularity
-        )
-    }
-
-    /// Legacy spelling retained as a read-only migration aid for the shell.
-    public var heroPhotoURL: String { heroPhoto.rawValue }
-
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)

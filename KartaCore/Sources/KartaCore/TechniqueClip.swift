@@ -42,12 +42,6 @@ public struct TechniqueClip: Codable, Equatable, Identifiable, Sendable {
         self.source = source
     }
 
-    /// Programmatic clips from older callers get an explicit local key based
-    /// on their identity. Catalog decoding still requires a source field.
-    public init(id: String, title: String, seconds: Int) {
-        self.init(id: id, title: title, seconds: seconds, source: .local(id))
-    }
-
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let id = try c.decode(String.self, forKey: .id)

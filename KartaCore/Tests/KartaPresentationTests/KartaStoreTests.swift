@@ -252,7 +252,7 @@ struct KartaStoreTests {
         let recipe = Recipe(
             id: "recipe-1",
             name: "Recipe",
-            heroPhotoURL: "recipe.jpg",
+            heroPhoto: .local("recipe.jpg"),
             totalMinutes: 10,
             difficulty: .easy,
             servings: 4,
@@ -430,7 +430,7 @@ struct KartaStoreTests {
         Recipe(
             id: "recipe-1",
             name: "Recipe",
-            heroPhotoURL: "recipe.jpg",
+            heroPhoto: .local("recipe.jpg"),
             totalMinutes: 10,
             difficulty: .easy,
             servings: 4,
@@ -445,7 +445,7 @@ struct KartaStoreTests {
         Recipe(
             id: id,
             name: id,
-            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            heroPhoto: .remote(URL(string: "https://img.karta.app/\(id).jpg")!),
             totalMinutes: 10,
             difficulty: .easy,
             servings: 2,
@@ -461,7 +461,7 @@ struct KartaStoreTests {
         Recipe(
             id: id,
             name: id,
-            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            heroPhoto: .remote(URL(string: "https://img.karta.app/\(id).jpg")!),
             totalMinutes: 10,
             difficulty: .easy,
             servings: 2,
