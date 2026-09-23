@@ -94,20 +94,18 @@ struct UserSnapshotTests {
 
     @Test("Restoring a cookbook deduplicates IDs without dropping orphaned saves")
     func preservesValidAndOrphanedSaves() throws {
-        let snapshot = UserSnapshot(
-            profile: OnboardingProfile(intolerances: [], householdSize: 1),
-            cookbook: Cookbook(
-                savedIDs: ["valid-1", "missing-from-catalog", "valid-1", "valid-2"],
-                saveCap: 4
-            )
+        let data = Data(
+            #"{"version":1,"profile":{"intolerances":[],"householdSize":1},"cookbook":{"savedIDs":["valid-1","missing-from-catalog","valid-1","valid-2"],"saveCap":4}}"#.utf8
         )
 
-        let restored = try #require(UserSnapshot.restore(from: try snapshot.encoded()).snapshot)
+        let result = UserSnapshot.restore(from: data)
+        let restored = try #require(result.snapshot)
 
         #expect(restored.cookbook.savedIDs == [
             "valid-1", "missing-from-catalog", "valid-2",
         ])
         #expect(restored.cookbook.saveCap == 4)
+        #expect(result.preservedData == nil)
     }
 
     @Test("The snapshot does not persist session feed position or frontier")
