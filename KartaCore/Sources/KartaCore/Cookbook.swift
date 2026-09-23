@@ -15,11 +15,19 @@ public struct Cookbook: Equatable, Sendable {
     public static let freeSaveCap = 7
 
     public private(set) var savedIDs: [String]
-    /// `nil` means unlimited (e.g. premium). Defaults to the free-tier cap.
-    public let saveCap: Int?
+    /// `nil` means unlimited (e.g. premium). A finite value is the persisted
+    /// ceiling for the free tier.
+    public private(set) var saveCap: Int?
 
     public init(savedIDs: [String] = [], saveCap: Int? = Cookbook.freeSaveCap) {
-        self.savedIDs = savedIDs
+        precondition(saveCap.map { $0 >= 0 } ?? true, "saveCap must not be negative")
+
+        var uniqueIDs: [String] = []
+        uniqueIDs.reserveCapacity(savedIDs.count)
+        for id in savedIDs where !uniqueIDs.contains(id) {
+            uniqueIDs.append(id)
+        }
+        self.savedIDs = uniqueIDs
         self.saveCap = saveCap
     }
 
@@ -28,9 +36,13 @@ public struct Cookbook: Equatable, Sendable {
     }
 
     /// Resolve persisted recipe IDs against the current catalog in saved order.
-    /// Missing and unreviewed recipes are omitted so restored Cookbook entries
-    /// cannot bypass the catalog's safety boundary.
-    public func recipes(from catalog: [Recipe]) -> [Recipe] {
+    /// Missing or unsafe recipes are omitted so restored Cookbook entries
+    /// cannot bypass the catalog's safety boundary. Filtering never mutates
+    /// the saved IDs.
+    public func recipes(
+        from catalog: [Recipe],
+        filters: FeedFilters = FeedFilters()
+    ) -> [Recipe] {
         let recipesByID = Dictionary(
             catalog.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
@@ -38,7 +50,7 @@ public struct Cookbook: Equatable, Sendable {
 
         return savedIDs.compactMap { id in
             guard let recipe = recipesByID[id] else { return nil }
-            guard case .reviewed = recipe.allergenReview else { return nil }
+            guard filters.allows(recipe) else { return nil }
             return recipe
         }
     }
@@ -57,8 +69,21 @@ public struct Cookbook: Equatable, Sendable {
         return .saved
     }
 
-    /// Remove a recipe, freeing a slot.
+    /// Move an unlimited Cookbook to the free tier without deleting saves.
+    /// The ceiling is fixed at the accumulated count, or the normal free cap
+    /// when fewer than seven recipes were saved.
+    public mutating func downgradeToFree() {
+        guard saveCap == nil else { return }
+        saveCap = max(Self.freeSaveCap, savedIDs.count)
+    }
+
+    /// Remove a recipe. A finite ceiling follows the saved count down to the
+    /// normal free cap, so this does not free a slot above that floor.
     public mutating func unsave(_ id: String) {
+        guard isSaved(id) else { return }
         savedIDs.removeAll { $0 == id }
+        if let saveCap {
+            self.saveCap = max(Self.freeSaveCap, min(saveCap, savedIDs.count))
+        }
     }
 }
