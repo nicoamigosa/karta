@@ -106,6 +106,13 @@ struct CookbookCapTests {
         return c
     }
 
+    @Test("A negative save cap is rejected")
+    func negativeSaveCapIsRejected() async {
+        await #expect(processExitsWith: .failure) {
+            _ = Cookbook(saveCap: -1)
+        }
+    }
+
     @Test("The 8th save is blocked at the cap")
     func eighthSaveBlocked() {
         var cookbook = filled(Cookbook.freeSaveCap) // 7 saved

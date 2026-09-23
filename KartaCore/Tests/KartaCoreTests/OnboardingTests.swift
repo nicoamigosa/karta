@@ -13,6 +13,13 @@ struct OnboardingFeedSeedTests {
         )
     }
 
+    @Test("A non-positive household size is rejected")
+    func nonPositiveHouseholdSizeIsRejected() async {
+        await #expect(processExitsWith: .failure) {
+            _ = OnboardingProfile(intolerances: [], householdSize: 0)
+        }
+    }
+
     @Test("Onboarding intolerances seed a non-generic first feed via the engine")
     func intolerancesSeedFirstFeed() {
         let recipes = [recipe("safe"), recipe("glutenous", reviewedAllergens: [.gluten])]
