@@ -9,6 +9,7 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
     case nonPositiveTimerSeconds(recipeID: String, recipeName: String, stepIndex: Int, value: Int)
     case emptyRecipeName(recipeID: String)
     case emptyHeroPhotoURL(recipeID: String, recipeName: String)
+    case invalidHeroPhotoReference(recipeID: String, recipeName: String, value: String)
     case emptyIngredients(recipeID: String, recipeName: String)
     case emptySteps(recipeID: String, recipeName: String)
     case emptyIngredientName(recipeID: String, recipeName: String, ingredientIndex: Int)
@@ -60,6 +61,8 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' has an empty recipe name"
         case let .emptyHeroPhotoURL(recipeID, recipeName):
             return "Recipe '\(recipeID)' ('\(recipeName)') has an empty hero photo URL"
+        case let .invalidHeroPhotoReference(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has invalid hero photo reference '\(value)'"
         case let .emptyIngredients(recipeID, recipeName):
             return "Recipe '\(recipeID)' ('\(recipeName)') has no ingredients"
         case let .emptySteps(recipeID, recipeName):
@@ -97,7 +100,7 @@ public enum AllergenReview: Equatable, Sendable {
 public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let id: String
     public let name: String
-    public let heroPhotoURL: String
+    public let heroPhoto: MediaReference
     public let totalMinutes: Int
     public let difficulty: Difficulty
     public let servings: Int
@@ -115,7 +118,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public init(
         id: String,
         name: String,
-        heroPhotoURL: String,
+        heroPhoto: MediaReference,
         totalMinutes: Int,
         difficulty: Difficulty,
         servings: Int,
@@ -127,7 +130,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     ) {
         self.id = id
         self.name = name
-        self.heroPhotoURL = heroPhotoURL
+        self.heroPhoto = heroPhoto
         self.totalMinutes = totalMinutes
         self.difficulty = difficulty
         self.servings = servings
@@ -148,11 +151,20 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw RecipeDecodingError.emptyRecipeName(recipeID: id)
         }
-        heroPhotoURL = try c.decode(String.self, forKey: .heroPhotoURL)
-        guard !heroPhotoURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        let rawHeroPhoto = try c.decode(String.self, forKey: .heroPhotoURL)
+        guard !rawHeroPhoto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw RecipeDecodingError.emptyHeroPhotoURL(
                 recipeID: id,
                 recipeName: name
+            )
+        }
+        do {
+            heroPhoto = try MediaReference(validating: rawHeroPhoto)
+        } catch {
+            throw RecipeDecodingError.invalidHeroPhotoReference(
+                recipeID: id,
+                recipeName: name,
+                value: rawHeroPhoto
             )
         }
         totalMinutes = try c.decode(Int.self, forKey: .totalMinutes)
@@ -265,7 +277,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(name, forKey: .name)
-        try c.encode(heroPhotoURL, forKey: .heroPhotoURL)
+        try c.encode(heroPhoto.rawValue, forKey: .heroPhotoURL)
         try c.encode(totalMinutes, forKey: .totalMinutes)
         try c.encode(difficulty, forKey: .difficulty)
         try c.encode(servings, forKey: .servings)

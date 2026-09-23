@@ -33,6 +33,12 @@ public struct SeedResourceAdapter {
         try TechniqueClipLibrary.decode(from: data(named: "seed-clips"))
     }
 
+    /// Loads the asset-key to bundle-resource manifest. The app shell can
+    /// combine this with its own Bundle and MediaResolver configuration.
+    public func loadMediaManifest() throws -> MediaAssetManifest {
+        try JSONDecoder().decode(MediaAssetManifest.self, from: data(named: "media-manifest"))
+    }
+
     private func data(named name: String) throws -> Data {
         guard let url = bundle.url(forResource: name, withExtension: "json") else {
             throw Error.resourceMissing(name)

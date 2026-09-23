@@ -9,7 +9,7 @@ struct FeedQueryDontRepeatTests {
         Recipe(
             id: id,
             name: id,
-            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            heroPhoto: .remote(URL(string: "https://img.karta.app/\(id).jpg")!),
             totalMinutes: 30,
             difficulty: .easy,
             servings: 4,
