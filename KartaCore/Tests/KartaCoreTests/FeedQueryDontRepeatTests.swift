@@ -105,11 +105,15 @@ struct FeedQueryDontRepeatTests {
         #expect(feed.status == .ready)
     }
 
-    @Test("Opening a recipe records its first view without renewing it below the frontier")
+    @Test("Opening below the frontier records an opening without renewing the view")
     func openingBelowFrontierRegistersWithoutRenewing() throws {
         let openedRecipe = recipe("opened")
         let otherRecipe = recipe("other")
-        var history = ViewHistory()
+        let firstViewDate = testClock.now.addingTimeInterval(-60)
+        let openingDate = testClock.now
+        var history = ViewHistory(
+            entries: [ViewEntry(recipeID: openedRecipe.id, date: firstViewDate)]
+        )
 
         let beforeOpening = FeedQuery.feed(
             recipes: [openedRecipe, otherRecipe],
@@ -118,24 +122,19 @@ struct FeedQueryDontRepeatTests {
             clock: testClock,
             filters: FeedFilters()
         )
-        #expect(beforeOpening.newRecipes == [openedRecipe, otherRecipe])
+        #expect(beforeOpening.alreadySeenRecipes == [openedRecipe])
 
-        history.recordView(recipeID: openedRecipe.id, at: testClock.now)
-        let afterOpening = FeedQuery.feed(
-            recipes: [openedRecipe, otherRecipe],
-            views: history.entries,
-            recentWindow: testRecentWindow,
-            clock: testClock,
-            filters: FeedFilters()
-        )
-        #expect(afterOpening.newRecipes == [otherRecipe])
-        #expect(afterOpening.alreadySeenRecipes == [openedRecipe])
+        history.recordOpen(recipeID: openedRecipe.id, at: openingDate)
+        #expect(history.openings == [
+            OpenEntry(recipeID: openedRecipe.id, date: openingDate),
+        ])
 
-        let firstEntry = try #require(history.entries.first)
         history.recordView(
             recipeID: openedRecipe.id,
-            at: testClock.now.addingTimeInterval(60)
+            at: openingDate.addingTimeInterval(60)
         )
-        #expect(history.entries == [firstEntry])
+        #expect(history.entries == [
+            ViewEntry(recipeID: openedRecipe.id, date: firstViewDate),
+        ])
     }
 }

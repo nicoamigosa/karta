@@ -79,6 +79,11 @@ se lo comunica al dominio como un hecho ya resuelto, nunca como geometría.
 La fecha se fija la primera vez y no se renueva por volver a verla.
 _Avoid_: impresión, mostrada, servida
 
+**Apertura**:
+La decisión explícita de entrar en una receta desde el feed, con su propia fecha. Se registra
+además de la Vista y no renueva la fecha de esa Vista.
+_Avoid_: toque, click
+
 **Frontera**:
 El punto del feed donde se acaba lo que la usuaria no ha visto todavía. Por debajo siguen
 apareciendo recetas, etiquetadas como ya vistas, para que nunca se quede sin nada que cocinar.
