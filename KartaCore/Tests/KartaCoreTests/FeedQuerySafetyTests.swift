@@ -33,7 +33,7 @@ struct FeedQuerySafetyTests {
             filters: FeedFilters()
         )
 
-        #expect(feed.map(\.id) == ["reviewed"])
+        #expect(feed.newRecipes.map(\.id) == ["reviewed"])
     }
 
     /// Exhaustive guard: derive the test matrix from the closed vocabulary,
@@ -67,7 +67,7 @@ struct FeedQuerySafetyTests {
                 + ([.dairy, .gluten].allSatisfy { !active.contains($0) } ? ["dairy-and-gluten"] : [])
                 + ["safe"]
 
-            #expect(feed.map(\.id) == expectedIDs)
+            #expect(feed.newRecipes.map(\.id) == expectedIDs)
             #expect(!feed.isEmpty)
         }
     }
@@ -99,6 +99,21 @@ struct FeedQuerySafetyTests {
             clock: testClock,
             filters: FeedFilters()
         )
-        #expect(Set(feed.map(\.id)) == ["a", "b"])
+        #expect(Set(feed.newRecipes.map(\.id)) == ["a", "b"])
+    }
+
+    @Test("No compatible recipe is reported separately from an exhausted feed")
+    func reportsContentFailureWhenProfileExcludesEverything() {
+        let feed = FeedQuery.feed(
+            recipes: [recipe("dairy", reviewedAllergens: [.dairy])],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(intolerances: [.dairy])
+        )
+
+        #expect(feed.status == .noCompatibleRecipes)
+        #expect(feed.isEmpty)
+        #expect(feed.items.isEmpty)
     }
 }
