@@ -11,7 +11,7 @@ cocidas" exigiría cantidades estructuradas y raciones base, y eso es trabajo ed
 parser. Las etiquetas pasan a ser un vocabulario cerrado en inglés, igual que los alérgenos;
 lo que la usuaria lee es presentación, nunca el dato.
 
-Los nombres propios de platos no se traducen: "Tortilla de papa" se queda. El diferenciador del
+_(Sustituido por el ADR 0011: los nombres de los platos también van en inglés.)_ Los nombres propios de platos no se traducen: "Tortilla de papa" se queda. El diferenciador del
 producto es la cocina American-Latina y el nombre del plato forma parte de él.
 
 ## Consequences

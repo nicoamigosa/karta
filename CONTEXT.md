@@ -29,6 +29,12 @@ Cuántas personas come una receta, declarado por la editora. Se muestra en la ta
 en el orden del feed las recetas del tamaño del hogar, pero nunca las hace desaparecer.
 _Avoid_: porciones, servings como filtro
 
+**Etiqueta**:
+Un término de un vocabulario cerrado en inglés que describe una receta (`one-pan`, `vegetarian`,
+`quick`…). Es dato, no texto de pantalla: un término desconocido invalida la receta (ADR 0005).
+No es un alérgeno: la seguridad nunca se decide por etiquetas.
+_Avoid_: tag libre, categoría, etiquetas en español
+
 **Clip de técnica**:
 Un vídeo corto y reutilizable que muestra una técnica concreta (picar cebolla, comprobar
 el punto del pollo). Se comparte entre muchas recetas y sólo aparece en pasos no obvios.

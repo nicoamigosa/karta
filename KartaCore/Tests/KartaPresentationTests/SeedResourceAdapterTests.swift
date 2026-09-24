@@ -24,21 +24,10 @@ struct SeedResourceAdapterTests {
             == "clips/cuajar-tortilla.mp4")
     }
 
-    @Test("The public adapter rejects the legacy recipe catalog before editorial migration")
-    func rejectsLegacySeed() throws {
-        do {
-            _ = try SeedResourceAdapter().loadRecipes()
-            Issue.record("Expected the legacy seed to be rejected")
-        } catch let error as RecipeDecodingError {
-            Issue.record("Unexpected typed recipe error: \(error)")
-        } catch let error as DecodingError {
-            guard case let .keyNotFound(key, _) = error else {
-                Issue.record("Unexpected decoding error: \(error)")
-                return
-            }
-            #expect(key.stringValue == "servings")
-        } catch {
-            Issue.record("Unexpected error: \(error)")
-        }
+    @Test("The public adapter loads the bundled recipe catalog")
+    func loadsBundledRecipes() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+
+        #expect(recipes.map(\.id).contains("spanish-tortilla"))
     }
 }

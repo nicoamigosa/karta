@@ -534,11 +534,48 @@ struct RecipeDecodingTests {
         #expect(recipe.name == "Tortilla de papa")
         #expect(recipe.totalMinutes == 35)
         #expect(recipe.difficulty == .easy)
-        #expect(recipe.tags == ["one-pan", "vegetarian"])
+        #expect(recipe.tags == [.onePan, .vegetarian])
         #expect(recipe.ingredients.count == 2)
         let firstIngredient = try #require(recipe.ingredients.first)
         #expect(firstIngredient.name == "Papa")
         #expect(firstIngredient.quantity == "4 unidades")
         #expect(recipe.steps.count == 2)
+    }
+
+    @Test("Recipe decoding names an unknown tag and its recipe")
+    func unknownTagFailsWithContext() {
+        let json = """
+        {
+            "id": "legacy-tags",
+            "name": "Legacy tags",
+            "heroPhotoURL": "https://img.karta.app/legacy-tags.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "servings": 2,
+            "tags": ["one-pan", "vegetariano"],
+            "contains": [],
+            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "steps": ["s"]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected decoding to reject the unknown tag")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .unknownTag(
+                recipeID: "legacy-tags",
+                recipeName: "Legacy tags",
+                value: "vegetariano"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Tag decoding is closed and normalizes input")
+    func tagVocabularyNormalizesInput() {
+        #expect(RecipeTag(rawValue: " One-Pan ") == .onePan)
+        #expect(RecipeTag(rawValue: "vegetariano") == nil)
     }
 }

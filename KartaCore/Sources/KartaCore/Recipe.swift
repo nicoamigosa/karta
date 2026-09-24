@@ -3,6 +3,7 @@ import Foundation
 public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
     case missingAllergenReview(recipeID: String, recipeName: String)
     case unknownAllergen(recipeID: String, recipeName: String, value: String)
+    case unknownTag(recipeID: String, recipeName: String, value: String)
     case emptyRecipeID(recipeName: String)
     case nonPositiveServings(recipeID: String, recipeName: String, value: Int)
     case nonPositiveTotalMinutes(recipeID: String, recipeName: String, value: Int)
@@ -49,6 +50,8 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') is missing its allergen review state"
         case let .unknownAllergen(recipeID, recipeName, value):
             return "Recipe '\(recipeID)' ('\(recipeName)') has unknown allergen '\(value)'"
+        case let .unknownTag(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has unknown tag '\(value)'"
         case let .emptyRecipeID(recipeName):
             return "Recipe ('\(recipeName)') has an empty recipe id"
         case let .nonPositiveServings(recipeID, recipeName, value):
@@ -104,7 +107,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let totalMinutes: Int
     public let difficulty: Difficulty
     public let servings: Int
-    public let tags: [String]
+    public let tags: [RecipeTag]
     public let ingredients: [Ingredient]
     /// Ordered, structured steps. Each step is self-contained and may carry the
     /// exact ingredient it needs, a timer, and a reusable technique clip. Decodes
@@ -122,7 +125,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         totalMinutes: Int,
         difficulty: Difficulty,
         servings: Int,
-        tags: [String],
+        tags: [RecipeTag],
         ingredients: [Ingredient],
         steps: [CookingStep],
         allergenReview: AllergenReview,
@@ -184,7 +187,18 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                 value: servings
             )
         }
-        tags = try c.decode([String].self, forKey: .tags)
+        let recipeID = id
+        let recipeName = name
+        tags = try c.decode([String].self, forKey: .tags).map { rawValue in
+            guard let tag = RecipeTag(rawValue: rawValue) else {
+                throw RecipeDecodingError.unknownTag(
+                    recipeID: recipeID,
+                    recipeName: recipeName,
+                    value: rawValue
+                )
+            }
+            return tag
+        }
         ingredients = try c.decode([Ingredient].self, forKey: .ingredients)
         guard !ingredients.isEmpty else {
             throw RecipeDecodingError.emptyIngredients(recipeID: id, recipeName: name)
@@ -247,8 +261,6 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                 )
             }
         }
-        let recipeID = id
-        let recipeName = name
         guard c.contains(.allergenReview) else {
             throw RecipeDecodingError.missingAllergenReview(
                 recipeID: recipeID,
