@@ -207,4 +207,91 @@ struct UserSnapshotTests {
 
         #expect(restored.cookingSession == session)
     }
+
+    @Test("A clock-aware restore discards an expired session but keeps user state")
+    func discardsExpiredSessionWithoutDroppingUserState() throws {
+        let recipe = cookingRecipe(id: "recipe-1")
+        let session = recipe.cookingSession(startedAt: 0)
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [.dairy], householdSize: 2),
+            cookbook: Cookbook(savedIDs: ["recipe-1"]),
+            cookingSession: session
+        )
+
+        let result = UserSnapshot.restore(
+            from: try snapshot.encoded(),
+            now: 6 * 60 * 60,
+            catalog: [recipe]
+        )
+        let restored = try #require(result.snapshot)
+
+        #expect(result.preservedData == nil)
+        #expect(restored.profile == snapshot.profile)
+        #expect(restored.cookbook == snapshot.cookbook)
+        #expect(restored.cookingSession == nil)
+    }
+
+    @Test("A missing session recipe drops only the session during restore")
+    func discardsSessionWhenRecipeIsMissingFromCatalog() throws {
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 1),
+            cookbook: Cookbook(savedIDs: ["still-saved"]),
+            cookingSession: cookingRecipe(id: "removed").cookingSession(startedAt: 100)
+        )
+
+        let result = UserSnapshot.restore(
+            from: try snapshot.encoded(),
+            now: 200,
+            catalog: []
+        )
+        let restored = try #require(result.snapshot)
+
+        #expect(result.preservedData == nil)
+        #expect(restored.profile == snapshot.profile)
+        #expect(restored.cookbook == snapshot.cookbook)
+        #expect(restored.cookingSession == nil)
+    }
+
+    @Test("A restored timer reports its absence outcome against the injected clock")
+    func restoredTimerUsesStoredStartTime() throws {
+        let recipe = cookingRecipe(id: "recipe-1")
+        var session = recipe.cookingSession(startedAt: 0)
+        session.startTimer(now: 100)
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 1),
+            cookingSession: session
+        )
+
+        let running = try #require(UserSnapshot.restore(
+            from: try snapshot.encoded(),
+            now: 130,
+            catalog: [recipe]
+        ).snapshot?.cookingSession)
+        let fired = try #require(UserSnapshot.restore(
+            from: try snapshot.encoded(),
+            now: 200,
+            catalog: [recipe]
+        ).snapshot?.cookingSession)
+
+        #expect(running.currentStepTimerRemaining(at: 130) == 30)
+        #expect(running.currentStepTimerHasFired(at: 130) == false)
+        #expect(fired.currentStepTimerRemaining(at: 200) == 0)
+        #expect(fired.currentStepTimerHasFired(at: 200))
+        #expect(fired.timers[0] == StepTimer(startedAt: 100, duration: 60))
+    }
+
+    private func cookingRecipe(id: String) -> Recipe {
+        Recipe(
+            id: id,
+            name: "Recipe",
+            heroPhoto: .local("recipe.jpg"),
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [],
+            steps: [CookingStep(text: "Cook", timerSeconds: 60)],
+            allergenReview: .reviewed([])
+        )
+    }
 }
