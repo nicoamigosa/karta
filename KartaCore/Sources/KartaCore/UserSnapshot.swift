@@ -470,37 +470,89 @@ private struct CookingSessionDTO: Codable {
 
 private struct CookingStepDTO: Codable {
     let text: String
-    let ingredient: IngredientDTO?
+    let ingredients: [StepIngredientDTO]
     let timerSeconds: Int?
     let clipID: String?
 
     init(_ step: CookingStep) {
         text = step.text
-        ingredient = step.ingredient.map(IngredientDTO.init)
+        ingredients = step.ingredients.map(StepIngredientDTO.init)
         timerSeconds = step.timerSeconds
         clipID = step.clipID
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decode(String.self, forKey: .text)
+        if let ingredients = try container.decodeIfPresent(
+            [StepIngredientDTO].self,
+            forKey: .ingredients
+        ) {
+            self.ingredients = ingredients
+        } else if let legacyIngredient = try container.decodeIfPresent(
+            LegacyStepIngredientDTO.self,
+            forKey: .ingredient
+        ) {
+            self.ingredients = [
+                StepIngredientDTO(
+                    ingredientID: Ingredient(
+                        name: legacyIngredient.name,
+                        quantity: legacyIngredient.quantity
+                    ).id,
+                    quantity: legacyIngredient.quantity
+                )
+            ]
+        } else {
+            ingredients = []
+        }
+        timerSeconds = try container.decodeIfPresent(Int.self, forKey: .timerSeconds)
+        clipID = try container.decodeIfPresent(String.self, forKey: .clipID)
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .text)
+        try container.encode(ingredients, forKey: .ingredients)
+        try container.encodeIfPresent(timerSeconds, forKey: .timerSeconds)
+        try container.encodeIfPresent(clipID, forKey: .clipID)
     }
 
     var domainValue: CookingStep {
         CookingStep(
             text: text,
-            ingredient: ingredient?.domainValue,
+            ingredients: ingredients.map(\.domainValue),
             timerSeconds: timerSeconds,
             clipID: clipID
         )
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case text, ingredients, ingredient, timerSeconds, clipID
+    }
 }
 
-private struct IngredientDTO: Codable {
-    let name: String
+private struct StepIngredientDTO: Codable {
+    let ingredientID: String
     let quantity: String
 
-    init(_ ingredient: Ingredient) {
-        name = ingredient.name
+    init(ingredientID: String, quantity: String) {
+        self.ingredientID = ingredientID
+        self.quantity = quantity
+    }
+
+    init(_ ingredient: StepIngredient) {
+        ingredientID = ingredient.ingredientID
         quantity = ingredient.quantity
     }
 
-    var domainValue: Ingredient { Ingredient(name: name, quantity: quantity) }
+    var domainValue: StepIngredient {
+        StepIngredient(ingredientID: ingredientID, quantity: quantity)
+    }
+}
+
+private struct LegacyStepIngredientDTO: Decodable {
+    let name: String
+    let quantity: String
 }
 
 private struct CookedEventDTO: Codable {

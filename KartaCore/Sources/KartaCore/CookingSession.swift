@@ -1,10 +1,23 @@
 import Foundation
 
-/// A single self-contained cooking step: instruction plus, optionally, the exact
-/// ingredient + quantity that step needs (so the cook never scrolls back).
+/// An ingredient used by a cooking step, identified by the recipe ingredient's
+/// stable id and carrying the amount used at that step.
+public struct StepIngredient: Codable, Equatable, Sendable {
+    public let ingredientID: String
+    public let quantity: String
+
+    public init(ingredientID: String, quantity: String) {
+        self.ingredientID = ingredientID
+        self.quantity = quantity
+    }
+}
+
+/// A single self-contained cooking step: instruction plus, optionally, the
+/// exact ingredients + quantities that step needs (so the cook never scrolls
+/// back).
 public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLiteral {
     public let text: String
-    public let ingredient: Ingredient?
+    public let ingredients: [StepIngredient]
     /// Optional countdown for a timed action ("simmer 10 min" → 600), in seconds.
     public let timerSeconds: Int?
     /// Optional reference to a reusable technique clip, by id. Steps with no
@@ -14,12 +27,12 @@ public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLite
 
     public init(
         text: String,
-        ingredient: Ingredient? = nil,
+        ingredients: [StepIngredient] = [],
         timerSeconds: Int? = nil,
         clipID: String? = nil
     ) {
         self.text = text
-        self.ingredient = ingredient
+        self.ingredients = ingredients
         self.timerSeconds = timerSeconds
         self.clipID = clipID
     }
@@ -30,7 +43,7 @@ public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLite
     }
 
     private enum CodingKeys: String, CodingKey {
-        case text, ingredient, timerSeconds, clipID
+        case text, ingredients, timerSeconds, clipID
     }
 
     /// Decodes either a bare string (text-only step) or a full object, so the
@@ -44,7 +57,7 @@ public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLite
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
             text: try c.decode(String.self, forKey: .text),
-            ingredient: try c.decodeIfPresent(Ingredient.self, forKey: .ingredient),
+            ingredients: try c.decodeIfPresent([StepIngredient].self, forKey: .ingredients) ?? [],
             timerSeconds: try c.decodeIfPresent(Int.self, forKey: .timerSeconds),
             clipID: try c.decodeIfPresent(String.self, forKey: .clipID)
         )

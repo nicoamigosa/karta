@@ -11,25 +11,46 @@
     "popularity": 95,
     "editorialDate": 1788825600,
     "ingredients": [
-      { "name": "Potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
-      { "name": "Eggs", "quantity": "5 large" },
-      { "name": "Onion", "quantity": "1 medium" },
-      { "name": "Olive oil", "quantity": "as needed for frying" },
-      { "name": "Salt", "quantity": "to taste" }
+      { "id": "potatoes", "name": "Potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+      { "id": "eggs", "name": "Eggs", "quantity": "5 large" },
+      { "id": "onion", "name": "Onion", "quantity": "1 medium" },
+      { "id": "olive-oil", "name": "Olive oil", "quantity": "as needed for frying" },
+      { "id": "salt", "name": "Salt", "quantity": "to taste" }
     ],
     "steps": [
-      "Peel the potatoes and slice them thin. Slice the onion into thin strips.",
+      {
+        "text": "Peel the potatoes and slice them thin. Slice the onion into thin strips.",
+        "ingredients": [
+          { "ingredientID": "potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+          { "ingredientID": "onion", "quantity": "1 medium" }
+        ]
+      },
       {
         "text": "Fry the potatoes and onion over medium heat until tender but not browned.",
-        "ingredient": { "name": "Potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+        "ingredients": [
+          { "ingredientID": "potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+          { "ingredientID": "onion", "quantity": "1 medium" },
+          { "ingredientID": "olive-oil", "quantity": "as needed for frying" }
+        ],
         "timerSeconds": 720
       },
       {
         "text": "Beat the eggs with a pinch of salt and fold in the drained potatoes and onion.",
-        "ingredient": { "name": "Eggs", "quantity": "5 large" }
+        "ingredients": [
+          { "ingredientID": "eggs", "quantity": "5 large" },
+          { "ingredientID": "salt", "quantity": "a pinch" },
+          { "ingredientID": "potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+          { "ingredientID": "onion", "quantity": "1 medium" }
+        ]
       },
       {
         "text": "Set the mixture in the skillet, flip it onto a plate, and slide it back in to brown the other side.",
+        "ingredients": [
+          { "ingredientID": "potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+          { "ingredientID": "eggs", "quantity": "5 large" },
+          { "ingredientID": "onion", "quantity": "1 medium" },
+          { "ingredientID": "olive-oil", "quantity": "as needed for frying" }
+        ],
         "clipID": "cuajar-tortilla"
       }
     ]
@@ -46,23 +67,40 @@
     "popularity": 88,
     "editorialDate": 1788739200,
     "ingredients": [
-      { "name": "Chicken breast", "quantity": "1 lb" },
-      { "name": "Coconut cream", "quantity": "3/4 cup" },
-      { "name": "Curry powder", "quantity": "2 tbsp" },
-      { "name": "Onion", "quantity": "1 medium" },
-      { "name": "Rice", "quantity": "2 cups cooked" }
+      { "id": "chicken-breast", "name": "Chicken breast", "quantity": "1 lb" },
+      { "id": "coconut-cream", "name": "Coconut cream", "quantity": "3/4 cup" },
+      { "id": "curry-powder", "name": "Curry powder", "quantity": "2 tbsp" },
+      { "id": "onion", "name": "Onion", "quantity": "1 medium" },
+      { "id": "rice", "name": "Rice", "quantity": "2 cups cooked" }
     ],
     "steps": [
-      "Cut the chicken into cubes and slice the onion.",
+      {
+        "text": "Cut the chicken into cubes and slice the onion.",
+        "ingredients": [
+          { "ingredientID": "chicken-breast", "quantity": "1 lb" },
+          { "ingredientID": "onion", "quantity": "1 medium" }
+        ]
+      },
       {
         "text": "Sear the chicken in a hot skillet until golden.",
-        "ingredient": { "name": "Chicken breast", "quantity": "1 lb" },
+        "ingredients": [
+          { "ingredientID": "chicken-breast", "quantity": "1 lb" }
+        ],
         "clipID": "sellar-pollo"
       },
-      "Add the onion and curry powder and cook for one minute.",
+      {
+        "text": "Add the onion and curry powder and cook for one minute.",
+        "ingredients": [
+          { "ingredientID": "onion", "quantity": "1 medium" },
+          { "ingredientID": "curry-powder", "quantity": "2 tbsp" }
+        ]
+      },
       {
         "text": "Stir in the coconut cream and simmer until thickened. Serve over rice.",
-        "ingredient": { "name": "Coconut cream", "quantity": "3/4 cup" },
+        "ingredients": [
+          { "ingredientID": "coconut-cream", "quantity": "3/4 cup" },
+          { "ingredientID": "rice", "quantity": "2 cups cooked" }
+        ],
         "timerSeconds": 480
       }
     ]
@@ -79,16 +117,38 @@
     "popularity": 72,
     "editorialDate": 1788652800,
     "ingredients": [
-      { "name": "Romaine lettuce", "quantity": "1 head" },
-      { "name": "Bread", "quantity": "2 slices" },
-      { "name": "Parmesan cheese", "quantity": "1/2 cup shaved" },
-      { "name": "Caesar dressing", "quantity": "1/4 cup" }
+      { "id": "romaine-lettuce", "name": "Romaine lettuce", "quantity": "1 head" },
+      { "id": "bread", "name": "Bread", "quantity": "2 slices" },
+      { "id": "parmesan-cheese", "name": "Parmesan cheese", "quantity": "1/2 cup shaved" },
+      { "id": "caesar-dressing", "name": "Caesar dressing", "quantity": "1/4 cup" }
     ],
     "steps": [
-      "Cut the bread into cubes and toast until golden to make croutons.",
-      "Wash the lettuce and tear it into large pieces.",
-      "Toss the lettuce with the dressing and the croutons.",
-      "Finish with shaved Parmesan."
+      {
+        "text": "Cut the bread into cubes and toast until golden to make croutons.",
+        "ingredients": [
+          { "ingredientID": "bread", "quantity": "2 slices" }
+        ]
+      },
+      {
+        "text": "Wash the lettuce and tear it into large pieces.",
+        "ingredients": [
+          { "ingredientID": "romaine-lettuce", "quantity": "1 head" }
+        ]
+      },
+      {
+        "text": "Toss the lettuce with the dressing and the croutons.",
+        "ingredients": [
+          { "ingredientID": "romaine-lettuce", "quantity": "1 head" },
+          { "ingredientID": "caesar-dressing", "quantity": "1/4 cup" },
+          { "ingredientID": "bread", "quantity": "2 slices" }
+        ]
+      },
+      {
+        "text": "Finish with shaved Parmesan.",
+        "ingredients": [
+          { "ingredientID": "parmesan-cheese", "quantity": "1/2 cup shaved" }
+        ]
+      }
     ]
   },
   {
@@ -103,21 +163,43 @@
     "popularity": 90,
     "editorialDate": 1788566400,
     "ingredients": [
-      { "name": "Pasta", "quantity": "12 oz" },
-      { "name": "Fresh basil", "quantity": "1 cup packed" },
-      { "name": "Parmesan cheese", "quantity": "1/3 cup grated" },
-      { "name": "Walnuts", "quantity": "1/4 cup" },
-      { "name": "Olive oil", "quantity": "1/4 cup" }
+      { "id": "pasta", "name": "Pasta", "quantity": "12 oz" },
+      { "id": "fresh-basil", "name": "Fresh basil", "quantity": "1 cup packed" },
+      { "id": "parmesan-cheese", "name": "Parmesan cheese", "quantity": "1/3 cup grated" },
+      { "id": "walnuts", "name": "Walnuts", "quantity": "1/4 cup" },
+      { "id": "olive-oil", "name": "Olive oil", "quantity": "1/4 cup" },
+      { "id": "salt", "name": "Salt", "quantity": "to taste" }
     ],
     "steps": [
       {
         "text": "Boil the pasta in salted water according to the package.",
-        "ingredient": { "name": "Pasta", "quantity": "12 oz" },
+        "ingredients": [
+          { "ingredientID": "pasta", "quantity": "12 oz" },
+          { "ingredientID": "salt", "quantity": "to taste" }
+        ],
         "timerSeconds": 600
       },
-      "Blend the basil, walnuts, Parmesan and olive oil into a pesto.",
-      "Drain the pasta, saving a little of the cooking water.",
-      "Toss the pasta with the pesto and loosen it with the saved water."
+      {
+        "text": "Blend the basil, walnuts, Parmesan and olive oil into a pesto.",
+        "ingredients": [
+          { "ingredientID": "fresh-basil", "quantity": "1 cup packed" },
+          { "ingredientID": "walnuts", "quantity": "1/4 cup" },
+          { "ingredientID": "parmesan-cheese", "quantity": "1/3 cup grated" },
+          { "ingredientID": "olive-oil", "quantity": "1/4 cup" }
+        ]
+      },
+      {
+        "text": "Drain the pasta, saving a little of the cooking water.",
+        "ingredients": [
+          { "ingredientID": "pasta", "quantity": "12 oz" }
+        ]
+      },
+      {
+        "text": "Toss the pasta with the pesto and loosen it with the saved water.",
+        "ingredients": [
+          { "ingredientID": "pasta", "quantity": "12 oz" }
+        ]
+      }
     ]
   },
   {
@@ -132,20 +214,40 @@
     "popularity": 70,
     "editorialDate": 1788480000,
     "ingredients": [
-      { "name": "Dried lentils", "quantity": "1 1/2 cups" },
-      { "name": "Chorizo", "quantity": "1 link (about 4 oz)" },
-      { "name": "Carrots", "quantity": "2 medium" },
-      { "name": "Potatoes", "quantity": "2 medium" },
-      { "name": "Onion", "quantity": "1 medium" },
-      { "name": "Sweet paprika", "quantity": "1 tsp" }
+      { "id": "dried-lentils", "name": "Dried lentils", "quantity": "1 1/2 cups" },
+      { "id": "chorizo", "name": "Chorizo", "quantity": "1 link (about 4 oz)" },
+      { "id": "carrots", "name": "Carrots", "quantity": "2 medium" },
+      { "id": "potatoes", "name": "Potatoes", "quantity": "2 medium" },
+      { "id": "onion", "name": "Onion", "quantity": "1 medium" },
+      { "id": "sweet-paprika", "name": "Sweet paprika", "quantity": "1 tsp" }
     ],
     "steps": [
-      "Sauté the onion, carrots and chorizo in a pot.",
-      "Add the paprika and the cubed potatoes.",
-      "Add the lentils and cover with water or broth.",
+      {
+        "text": "Sauté the onion, carrots and chorizo in a pot.",
+        "ingredients": [
+          { "ingredientID": "onion", "quantity": "1 medium" },
+          { "ingredientID": "carrots", "quantity": "2 medium" },
+          { "ingredientID": "chorizo", "quantity": "1 link (about 4 oz)" }
+        ]
+      },
+      {
+        "text": "Add the paprika and the cubed potatoes.",
+        "ingredients": [
+          { "ingredientID": "sweet-paprika", "quantity": "1 tsp" },
+          { "ingredientID": "potatoes", "quantity": "2 medium" }
+        ]
+      },
+      {
+        "text": "Add the lentils and cover with water or broth.",
+        "ingredients": [
+          { "ingredientID": "dried-lentils", "quantity": "1 1/2 cups" }
+        ]
+      },
       {
         "text": "Simmer over low heat until the lentils are tender.",
-        "ingredient": { "name": "Dried lentils", "quantity": "1 1/2 cups" },
+        "ingredients": [
+          { "ingredientID": "dried-lentils", "quantity": "1 1/2 cups" }
+        ],
         "timerSeconds": 2400
       }
     ]
@@ -162,18 +264,34 @@
     "popularity": 75,
     "editorialDate": 1788393600,
     "ingredients": [
-      { "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
-      { "name": "Lemon", "quantity": "1" },
-      { "name": "Fresh dill", "quantity": "a few sprigs" },
-      { "name": "Olive oil", "quantity": "2 tbsp" }
+      { "id": "salmon-fillets", "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
+      { "id": "lemon", "name": "Lemon", "quantity": "1" },
+      { "id": "fresh-dill", "name": "Fresh dill", "quantity": "a few sprigs" },
+      { "id": "olive-oil", "name": "Olive oil", "quantity": "2 tbsp" },
+      { "id": "salt", "name": "Salt", "quantity": "to taste" }
     ],
     "steps": [
       "Preheat the oven to 400 °F.",
-      "Place the salmon in a baking dish with the olive oil, salt and lemon slices.",
-      "Scatter the dill on top.",
+      {
+        "text": "Place the salmon in a baking dish with the olive oil, salt and lemon slices.",
+        "ingredients": [
+          { "ingredientID": "salmon-fillets", "quantity": "2 (about 6 oz each)" },
+          { "ingredientID": "olive-oil", "quantity": "2 tbsp" },
+          { "ingredientID": "salt", "quantity": "to taste" },
+          { "ingredientID": "lemon", "quantity": "1" }
+        ]
+      },
+      {
+        "text": "Scatter the dill on top.",
+        "ingredients": [
+          { "ingredientID": "fresh-dill", "quantity": "a few sprigs" }
+        ]
+      },
       {
         "text": "Bake until the salmon flakes easily.",
-        "ingredient": { "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
+        "ingredients": [
+          { "ingredientID": "salmon-fillets", "quantity": "2 (about 6 oz each)" }
+        ],
         "timerSeconds": 1020,
         "clipID": "punto-salmon"
       }
@@ -191,17 +309,48 @@
     "popularity": 85,
     "editorialDate": 1788307200,
     "ingredients": [
-      { "name": "Ripe bananas", "quantity": "2" },
-      { "name": "Eggs", "quantity": "2 large" },
-      { "name": "All-purpose flour", "quantity": "1 1/4 cups" },
-      { "name": "Milk", "quantity": "3/4 cup" },
-      { "name": "Baking powder", "quantity": "1 tsp" }
+      { "id": "ripe-bananas", "name": "Ripe bananas", "quantity": "2" },
+      { "id": "eggs", "name": "Eggs", "quantity": "2 large" },
+      { "id": "all-purpose-flour", "name": "All-purpose flour", "quantity": "1 1/4 cups" },
+      { "id": "milk", "name": "Milk", "quantity": "3/4 cup" },
+      { "id": "baking-powder", "name": "Baking powder", "quantity": "1 tsp" }
     ],
     "steps": [
-      "Mash the bananas and whisk them with the eggs and milk.",
-      "Stir in the flour and baking powder until just combined.",
-      "Cook small rounds in a hot, lightly oiled skillet.",
-      "Flip when bubbles appear and brown the other side."
+      {
+        "text": "Mash the bananas and whisk them with the eggs and milk.",
+        "ingredients": [
+          { "ingredientID": "ripe-bananas", "quantity": "2" },
+          { "ingredientID": "eggs", "quantity": "2 large" },
+          { "ingredientID": "milk", "quantity": "3/4 cup" }
+        ]
+      },
+      {
+        "text": "Stir in the flour and baking powder until just combined.",
+        "ingredients": [
+          { "ingredientID": "all-purpose-flour", "quantity": "1 1/4 cups" },
+          { "ingredientID": "baking-powder", "quantity": "1 tsp" }
+        ]
+      },
+      {
+        "text": "Cook small rounds in a hot, lightly oiled skillet.",
+        "ingredients": [
+          { "ingredientID": "ripe-bananas", "quantity": "2" },
+          { "ingredientID": "eggs", "quantity": "2 large" },
+          { "ingredientID": "all-purpose-flour", "quantity": "1 1/4 cups" },
+          { "ingredientID": "milk", "quantity": "3/4 cup" },
+          { "ingredientID": "baking-powder", "quantity": "1 tsp" }
+        ]
+      },
+      {
+        "text": "Flip when bubbles appear and brown the other side.",
+        "ingredients": [
+          { "ingredientID": "ripe-bananas", "quantity": "2" },
+          { "ingredientID": "eggs", "quantity": "2 large" },
+          { "ingredientID": "all-purpose-flour", "quantity": "1 1/4 cups" },
+          { "ingredientID": "milk", "quantity": "3/4 cup" },
+          { "ingredientID": "baking-powder", "quantity": "1 tsp" }
+        ]
+      }
     ]
   },
   {
@@ -216,17 +365,40 @@
     "popularity": 80,
     "editorialDate": 1788220800,
     "ingredients": [
-      { "name": "Rice noodles", "quantity": "8 oz" },
-      { "name": "Broccoli", "quantity": "1 head" },
-      { "name": "Carrot", "quantity": "1 medium" },
-      { "name": "Red bell pepper", "quantity": "1" },
-      { "name": "Soy sauce", "quantity": "1/4 cup" }
+      { "id": "rice-noodles", "name": "Rice noodles", "quantity": "8 oz" },
+      { "id": "broccoli", "name": "Broccoli", "quantity": "1 head" },
+      { "id": "carrot", "name": "Carrot", "quantity": "1 medium" },
+      { "id": "red-bell-pepper", "name": "Red bell pepper", "quantity": "1" },
+      { "id": "soy-sauce", "name": "Soy sauce", "quantity": "1/4 cup" }
     ],
     "steps": [
-      "Soak the rice noodles according to the package.",
-      "Stir-fry the carrot, broccoli and bell pepper strips over high heat.",
-      "Add the drained noodles to the wok.",
-      "Add the soy sauce and stir-fry for a couple more minutes."
+      {
+        "text": "Soak the rice noodles according to the package.",
+        "ingredients": [
+          { "ingredientID": "rice-noodles", "quantity": "8 oz" }
+        ]
+      },
+      {
+        "text": "Stir-fry the carrot, broccoli and bell pepper strips over high heat.",
+        "ingredients": [
+          { "ingredientID": "carrot", "quantity": "1 medium" },
+          { "ingredientID": "broccoli", "quantity": "1 head" },
+          { "ingredientID": "red-bell-pepper", "quantity": "1" }
+        ]
+      },
+      {
+        "text": "Add the drained noodles to the wok.",
+        "ingredients": [
+          { "ingredientID": "rice-noodles", "quantity": "8 oz" }
+        ]
+      },
+      {
+        "text": "Add the soy sauce and stir-fry for a couple more minutes.",
+        "ingredients": [
+          { "ingredientID": "soy-sauce", "quantity": "1/4 cup" },
+          { "ingredientID": "rice-noodles", "quantity": "8 oz" }
+        ]
+      }
     ]
   }
 ]

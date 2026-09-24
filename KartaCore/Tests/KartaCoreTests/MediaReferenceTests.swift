@@ -17,7 +17,7 @@ struct MediaReferenceTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "Potato", "quantity": "1" }],
+            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
             "steps": ["Cook"]
         }]
         """
@@ -39,7 +39,7 @@ struct MediaReferenceTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "Potato", "quantity": "1" }],
+            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
             "steps": ["Cook"]
         }]
         """
@@ -70,7 +70,7 @@ struct MediaReferenceTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "Potato", "quantity": "1" }],
+            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
             "steps": ["Cook"]
         }]
         """

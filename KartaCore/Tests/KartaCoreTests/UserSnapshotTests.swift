@@ -124,6 +124,18 @@ struct UserSnapshotTests {
         #expect(result.preservedData == malformedData)
     }
 
+    @Test("A version-one session migrates its legacy single step ingredient")
+    func migratesLegacyStepIngredient() throws {
+        let data = Data(
+            #"{"version":1,"profile":{"intolerances":[],"householdSize":1},"cookingSession":{"recipeID":"recipe-1","steps":[{"text":"Add onion","ingredient":{"name":"Onion","quantity":"1"}}]}}"#.utf8
+        )
+
+        let session = try #require(UserSnapshot.restore(from: data).snapshot?.cookingSession)
+        #expect(session.steps[0].ingredients == [
+            StepIngredient(ingredientID: "onion", quantity: "1")
+        ])
+    }
+
     @Test("Restoring a cookbook deduplicates IDs without dropping orphaned saves")
     func preservesValidAndOrphanedSaves() throws {
         let data = Data(

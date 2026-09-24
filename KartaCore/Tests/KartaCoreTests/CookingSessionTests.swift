@@ -2,9 +2,13 @@ import Testing
 @testable import KartaCore
 
 private let sampleSteps = [
-    CookingStep(text: "Chop the onion", ingredient: Ingredient(name: "Onion", quantity: "1")),
-    CookingStep(text: "Fry it", ingredient: Ingredient(name: "Oil", quantity: "1 tbsp")),
-    CookingStep(text: "Serve", ingredient: nil),
+    CookingStep(text: "Chop the onion", ingredients: [
+        StepIngredient(ingredientID: "onion", quantity: "1")
+    ]),
+    CookingStep(text: "Fry it", ingredients: [
+        StepIngredient(ingredientID: "oil", quantity: "1 tbsp")
+    ]),
+    CookingStep(text: "Serve"),
 ]
 
 /// Cooking-mode state machine, exercised independently of any UI.
