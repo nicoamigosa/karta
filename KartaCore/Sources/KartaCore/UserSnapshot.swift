@@ -207,6 +207,14 @@ private struct CookbookDTO: Codable {
             : Cookbook.freeSaveCap
     }
 
+    /// Always writes `saveCap`, as `null` when unlimited: an absent key would
+    /// read back as legacy data and restore the free ceiling.
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(savedIDs, forKey: .savedIDs)
+        try container.encode(saveCap, forKey: .saveCap)
+    }
+
     private enum CodingKeys: String, CodingKey {
         case savedIDs
         case saveCap

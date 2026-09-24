@@ -99,10 +99,22 @@ struct UserSnapshotTests {
         #expect(result.preservedData == futureData)
     }
 
+    @Test("An unlimited cookbook round-trips as unlimited, not as the free ceiling")
+    func roundTripsUnlimitedCookbook() throws {
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 1),
+            cookbook: Cookbook(savedIDs: ["a"], saveCap: nil)
+        )
+
+        let restored = try #require(UserSnapshot.restore(from: try snapshot.encoded()).snapshot)
+
+        #expect(restored.cookbook.saveCap == nil)
+    }
+
     @Test("Malformed session timer data is treated as unreadable")
     func preservesMalformedSessionData() {
         let malformedData = Data(
-            #"{"version":1,"cookingSession":{"recipeID":"recipe-1","steps":[{"text":"Wait"}],"timers":[{"stepIndex":0,"startedAt":1,"duration":2},{"stepIndex":0,"startedAt":3,"duration":4}]}}"#.utf8
+            #"{"version":1,"profile":{"intolerances":[],"householdSize":1},"cookingSession":{"recipeID":"recipe-1","steps":[{"text":"Wait"}],"timers":[{"stepIndex":0,"startedAt":1,"duration":2},{"stepIndex":0,"startedAt":3,"duration":4}]}}"#.utf8
         )
 
         let result = UserSnapshot.restore(from: malformedData)
