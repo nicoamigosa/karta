@@ -131,9 +131,33 @@ public struct CookingSession: Equatable, Sendable {
     public private(set) var timers: [Int: StepTimer]
     /// The furthest step reached during the session. Going back does not erase
     /// evidence of the journey.
-    private var furthestIndex: Int
+    private(set) var furthestIndex: Int
     /// The first injected time at which the session reached the last step.
-    private var lastStepReachedAt: TimeInterval?
+    private(set) var lastStepReachedAt: TimeInterval?
+
+    init(
+        recipeID: String,
+        steps: [CookingStep],
+        declaredDuration: TimeInterval,
+        startedAt: TimeInterval,
+        currentIndex: Int,
+        isExited: Bool,
+        cookedEvent: CookedEvent?,
+        timers: [Int: StepTimer],
+        furthestIndex: Int,
+        lastStepReachedAt: TimeInterval?
+    ) {
+        self.recipeID = recipeID
+        self.steps = steps
+        self.declaredDuration = declaredDuration
+        self.startedAt = startedAt
+        self.currentIndex = currentIndex
+        self.isExited = isExited
+        self.cookedEvent = cookedEvent
+        self.timers = timers
+        self.furthestIndex = furthestIndex
+        self.lastStepReachedAt = lastStepReachedAt
+    }
 
     public init(
         recipeID: String,
@@ -141,16 +165,18 @@ public struct CookingSession: Equatable, Sendable {
         declaredDuration: TimeInterval = 0,
         startedAt: TimeInterval = 0
     ) {
-        self.recipeID = recipeID
-        self.steps = steps
-        self.declaredDuration = declaredDuration
-        self.startedAt = startedAt
-        self.currentIndex = 0
-        self.isExited = false
-        self.cookedEvent = nil
-        self.timers = [:]
-        self.furthestIndex = 0
-        self.lastStepReachedAt = nil
+        self.init(
+            recipeID: recipeID,
+            steps: steps,
+            declaredDuration: declaredDuration,
+            startedAt: startedAt,
+            currentIndex: 0,
+            isExited: false,
+            cookedEvent: nil,
+            timers: [:],
+            furthestIndex: 0,
+            lastStepReachedAt: nil
+        )
     }
 
     /// The step currently shown, or `nil` if there are no steps.
