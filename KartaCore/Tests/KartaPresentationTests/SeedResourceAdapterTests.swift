@@ -28,6 +28,6 @@ struct SeedResourceAdapterTests {
     func loadsBundledRecipes() throws {
         let recipes = try SeedResourceAdapter().loadRecipes()
 
-        #expect(recipes.map(\.id).contains("tortilla-de-papa"))
+        #expect(recipes.map(\.id).contains("spanish-tortilla"))
     }
 }

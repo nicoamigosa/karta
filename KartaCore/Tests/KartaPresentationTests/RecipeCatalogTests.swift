@@ -11,7 +11,7 @@ struct RecipeCatalogTests {
     private let expectedAllergens: [String: Set<Allergen>] = [
         "spanish-tortilla": [.egg],
         "quick-chicken-curry": [],
-        "caesar-salad": [.gluten, .dairy, .egg],
+        "caesar-salad": [.gluten, .dairy, .egg, .fish],
         "pesto-pasta": [.gluten, .dairy, .nuts],
         "lentil-stew": [],
         "baked-salmon-with-lemon": [.fish],

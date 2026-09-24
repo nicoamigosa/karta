@@ -73,7 +73,7 @@
     "difficulty": "easy",
     "servings": 2,
     "tags": ["fresh"],
-    "contains": ["gluten", "dairy", "egg"],
+    "contains": ["gluten", "dairy", "egg", "fish"],
     "popularity": 72,
     "ingredients": [
       { "name": "Romaine lettuce", "quantity": "1 head" },
