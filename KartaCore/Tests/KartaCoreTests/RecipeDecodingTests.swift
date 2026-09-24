@@ -16,7 +16,7 @@ struct RecipeDecodingTests {
             "difficulty": "easy",
             "servings": 4,
             "tags": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["paso"]
         }
         """
@@ -47,7 +47,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "tags": [],
                 "contains": [],
-                "ingredients": [{ "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["s"]
             },
             {
@@ -59,7 +59,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "tags": [],
                 "contains": null,
-                "ingredients": [{ "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["s"]
             }
         ]
@@ -97,7 +97,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "tags": [],
             "contains": [" DaIrY "],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["paso"]
         }
         """
@@ -118,7 +118,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "tags": [],
             "contains": ["lactose"],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["paso"]
         }
         """
@@ -150,7 +150,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "tags": [],
                 "contains": [],
-                "ingredients": [{ "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["Cook"]
             },
             {
@@ -162,7 +162,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "tags": [],
                 "contains": [],
-                "ingredients": [{ "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["Cook"]
             }
         ]
@@ -220,7 +220,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "  ", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "blank-name", "name": "  ", "quantity": "1 cup" }],
             "steps": ["Cook"]
         }
         """
@@ -251,7 +251,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "Flour", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": []
         }
         """
@@ -281,7 +281,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
         }
         """
@@ -308,7 +308,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
         }
         """
@@ -330,7 +330,7 @@ struct RecipeDecodingTests {
             "servings": 0,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
         }
         """
@@ -361,7 +361,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
         }
         """
@@ -392,7 +392,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
         }
         """
@@ -419,7 +419,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
         }
         """
@@ -449,7 +449,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "Flour", "quantity": "  " }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "  " }],
             "steps": ["Cook"]
         }
         """
@@ -481,7 +481,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": [],
             "contains": [],
-            "ingredients": [{ "name": "Flour", "quantity": "0 cups" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "0 cups" }],
             "steps": ["Cook"]
         }
         """
@@ -518,8 +518,8 @@ struct RecipeDecodingTests {
             "tags": ["one-pan", "vegetarian"],
             "contains": [],
             "ingredients": [
-                { "name": "Papa", "quantity": "4 unidades" },
-                { "name": "Huevo", "quantity": "5 unidades" }
+                { "id": "papa", "name": "Papa", "quantity": "4 unidades" },
+                { "id": "huevo", "name": "Huevo", "quantity": "5 unidades" }
             ],
             "steps": [
                 "Pelar y cortar las papas en rodajas finas.",
@@ -577,7 +577,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "tags": ["one-pan", "vegetariano"],
             "contains": [],
-            "ingredients": [{ "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["s"]
         }
         """

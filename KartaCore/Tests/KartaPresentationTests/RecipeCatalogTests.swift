@@ -75,10 +75,22 @@ struct RecipeCatalogTests {
         let recipes = try SeedResourceAdapter().loadRecipes()
         let quantities = recipes.flatMap { recipe in
             recipe.ingredients.map(\.quantity)
-                + recipe.steps.compactMap { $0.ingredient?.quantity }
+                + recipe.steps.flatMap { $0.ingredients.map(\.quantity) }
         }
         let metric = try Regex(#"\d\s*(g|kg|ml|l)\b"#)
 
         #expect(quantities.filter { $0.contains(metric) }.isEmpty)
+    }
+
+    @Test("Seed steps keep multiple ingredient quantities self-contained")
+    func seedStepsUseStableIngredientReferences() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let curry = try #require(recipes.first { $0.id == "quick-chicken-curry" })
+        let addSpices = try #require(curry.steps.first { $0.text.hasPrefix("Add the onion") })
+
+        #expect(addSpices.ingredients == [
+            StepIngredient(ingredientID: "onion", quantity: "1 medium"),
+            StepIngredient(ingredientID: "curry-powder", quantity: "2 tbsp"),
+        ])
     }
 }

@@ -14,6 +14,8 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
     case emptyIngredients(recipeID: String, recipeName: String)
     case emptySteps(recipeID: String, recipeName: String)
     case emptyIngredientName(recipeID: String, recipeName: String, ingredientIndex: Int)
+    case emptyIngredientID(recipeID: String, recipeName: String, ingredientIndex: Int)
+    case duplicateIngredientID(recipeID: String, recipeName: String, ingredientID: String)
     case emptyIngredientQuantity(
         recipeID: String,
         recipeName: String,
@@ -27,18 +29,24 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
         ingredientName: String,
         value: String
     )
-    case emptyStepIngredientName(recipeID: String, recipeName: String, stepIndex: Int)
+    case emptyStepIngredientID(recipeID: String, recipeName: String, stepIndex: Int)
+    case unknownStepIngredientID(
+        recipeID: String,
+        recipeName: String,
+        stepIndex: Int,
+        ingredientID: String
+    )
     case emptyStepIngredientQuantity(
         recipeID: String,
         recipeName: String,
         stepIndex: Int,
-        ingredientName: String
+        ingredientID: String
     )
     case nonPositiveStepIngredientQuantity(
         recipeID: String,
         recipeName: String,
         stepIndex: Int,
-        ingredientName: String,
+        ingredientID: String,
         value: String
     )
     case emptyStepText(recipeID: String, recipeName: String, stepIndex: Int)
@@ -72,16 +80,22 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') has no steps"
         case let .emptyIngredientName(recipeID, recipeName, ingredientIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) has an empty name"
+        case let .emptyIngredientID(recipeID, recipeName, ingredientIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) has an empty id"
+        case let .duplicateIngredientID(recipeID, recipeName, ingredientID):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has duplicate ingredient id '\(ingredientID)'"
         case let .emptyIngredientQuantity(recipeID, recipeName, ingredientIndex, ingredientName):
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) '\(ingredientName)' has an empty quantity"
         case let .nonPositiveIngredientQuantity(recipeID, recipeName, ingredientIndex, ingredientName, value):
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) '\(ingredientName)' has non-positive quantity '\(value)'"
-        case let .emptyStepIngredientName(recipeID, recipeName, stepIndex):
-            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an ingredient with an empty name"
-        case let .emptyStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientName):
-            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientName)' has an empty quantity"
-        case let .nonPositiveStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientName, value):
-            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientName)' has non-positive quantity '\(value)'"
+        case let .emptyStepIngredientID(recipeID, recipeName, stepIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an ingredient with an empty id"
+        case let .unknownStepIngredientID(recipeID, recipeName, stepIndex, ingredientID):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) references unknown ingredient id '\(ingredientID)'"
+        case let .emptyStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientID):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientID)' has an empty quantity"
+        case let .nonPositiveStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientID, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientID)' has non-positive quantity '\(value)'"
         case let .emptyStepText(recipeID, recipeName, stepIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has empty text"
         case let .emptyStepClipID(recipeID, recipeName, stepIndex):
@@ -110,7 +124,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let tags: [RecipeTag]
     public let ingredients: [Ingredient]
     /// Ordered, structured steps. Each step is self-contained and may carry the
-    /// exact ingredient it needs, a timer, and a reusable technique clip. Decodes
+    /// exact ingredients it needs, a timer, and a reusable technique clip. Decodes
     /// backward-compatibly from a bare string (text-only step).
     public let steps: [CookingStep]
     /// The editor's explicit allergen review decision.
@@ -207,6 +221,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         guard !ingredients.isEmpty else {
             throw RecipeDecodingError.emptyIngredients(recipeID: id, recipeName: name)
         }
+        var ingredientIDs = Set<String>()
         for (index, ingredient) in ingredients.enumerated() {
             guard !ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw RecipeDecodingError.emptyIngredientName(
@@ -215,11 +230,25 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                     ingredientIndex: index
                 )
             }
-            try validateIngredientQuantity(
+            guard !ingredient.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw RecipeDecodingError.emptyIngredientID(
+                    recipeID: id,
+                    recipeName: name,
+                    ingredientIndex: index
+                )
+            }
+            guard ingredientIDs.insert(ingredient.id).inserted else {
+                throw RecipeDecodingError.duplicateIngredientID(
+                    recipeID: id,
+                    recipeName: name,
+                    ingredientID: ingredient.id
+                )
+            }
+            try validateRecipeIngredientQuantity(
                 ingredient,
                 recipeID: id,
                 recipeName: name,
-                location: .recipe(index: index)
+                ingredientIndex: index
             )
         }
         steps = try c.decode([CookingStep].self, forKey: .steps)
@@ -249,20 +278,31 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                     value: timerSeconds
                 )
             }
-            if let ingredient = step.ingredient {
-                guard !ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    throw RecipeDecodingError.emptyStepIngredientName(
+            for ingredient in step.ingredients {
+                let ingredientID = ingredient.ingredientID.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+                guard !ingredientID.isEmpty else {
+                    throw RecipeDecodingError.emptyStepIngredientID(
                         recipeID: id,
                         recipeName: name,
                         stepIndex: index
                     )
                 }
-                try validateIngredientQuantity(
+                try validateStepIngredientQuantity(
                     ingredient,
                     recipeID: id,
                     recipeName: name,
-                    location: .step(index: index)
+                    stepIndex: index
                 )
+                guard ingredientIDs.contains(ingredient.ingredientID) else {
+                    throw RecipeDecodingError.unknownStepIngredientID(
+                        recipeID: id,
+                        recipeName: name,
+                        stepIndex: index,
+                        ingredientID: ingredient.ingredientID
+                    )
+                }
             }
         }
         guard c.contains(.allergenReview) else {
@@ -329,47 +369,62 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-/// An ingredient line shown both in the detail view and, self-contained,
-/// inside each cooking step.
+/// An ingredient line shown in a recipe's ingredient list. Cooking steps refer
+/// back to these lines by `id` and carry their own per-step quantity.
 public struct Ingredient: Codable, Equatable, Sendable {
+    public let id: String
     public let name: String
     public let quantity: String
 
-    public init(name: String, quantity: String) {
+    public init(id: String, name: String, quantity: String) {
+        self.id = id
         self.name = name
         self.quantity = quantity
     }
+
+    /// Compatibility for programmatic recipes created before ingredient ids
+    /// were part of the catalog contract. Catalog data must declare `id`
+    /// explicitly.
+    public init(name: String, quantity: String) {
+        self.init(id: Self.derivedID(from: name), name: name, quantity: quantity)
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let name = try container.decode(String.self, forKey: .name)
+        self.init(
+            id: try container.decode(String.self, forKey: .id),
+            name: name,
+            quantity: try container.decode(String.self, forKey: .quantity)
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, quantity
+    }
+
+    private static func derivedID(from name: String) -> String {
+        name
+            .split { !$0.isLetter && !$0.isNumber }
+            .map { $0.lowercased() }
+            .joined(separator: "-")
+    }
 }
 
-private enum IngredientQuantityLocation {
-    case recipe(index: Int)
-    case step(index: Int)
-}
-
-private func validateIngredientQuantity(
+private func validateRecipeIngredientQuantity(
     _ ingredient: Ingredient,
     recipeID: String,
     recipeName: String,
-    location: IngredientQuantityLocation
+    ingredientIndex: Int
 ) throws {
     let quantity = ingredient.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !quantity.isEmpty else {
-        switch location {
-        case let .recipe(index):
-            throw RecipeDecodingError.emptyIngredientQuantity(
-                recipeID: recipeID,
-                recipeName: recipeName,
-                ingredientIndex: index,
-                ingredientName: ingredient.name
-            )
-        case let .step(index):
-            throw RecipeDecodingError.emptyStepIngredientQuantity(
-                recipeID: recipeID,
-                recipeName: recipeName,
-                stepIndex: index,
-                ingredientName: ingredient.name
-            )
-        }
+        throw RecipeDecodingError.emptyIngredientQuantity(
+            recipeID: recipeID,
+            recipeName: recipeName,
+            ingredientIndex: ingredientIndex,
+            ingredientName: ingredient.name
+        )
     }
 
     let numericPrefix = String(quantity.prefix { character in
@@ -377,24 +432,44 @@ private func validateIngredientQuantity(
             || character.isNumber
     })
     if let numericValue = Double(numericPrefix), numericValue <= 0 {
-        switch location {
-        case let .recipe(index):
-            throw RecipeDecodingError.nonPositiveIngredientQuantity(
-                recipeID: recipeID,
-                recipeName: recipeName,
-                ingredientIndex: index,
-                ingredientName: ingredient.name,
-                value: ingredient.quantity
-            )
-        case let .step(index):
-            throw RecipeDecodingError.nonPositiveStepIngredientQuantity(
-                recipeID: recipeID,
-                recipeName: recipeName,
-                stepIndex: index,
-                ingredientName: ingredient.name,
-                value: ingredient.quantity
-            )
-        }
+        throw RecipeDecodingError.nonPositiveIngredientQuantity(
+            recipeID: recipeID,
+            recipeName: recipeName,
+            ingredientIndex: ingredientIndex,
+            ingredientName: ingredient.name,
+            value: ingredient.quantity
+        )
+    }
+}
+
+private func validateStepIngredientQuantity(
+    _ ingredient: StepIngredient,
+    recipeID: String,
+    recipeName: String,
+    stepIndex: Int
+) throws {
+    let quantity = ingredient.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !quantity.isEmpty else {
+        throw RecipeDecodingError.emptyStepIngredientQuantity(
+            recipeID: recipeID,
+            recipeName: recipeName,
+            stepIndex: stepIndex,
+            ingredientID: ingredient.ingredientID
+        )
+    }
+
+    let numericPrefix = String(quantity.prefix { character in
+        character == "." || character == "-" || character == "+"
+            || character.isNumber
+    })
+    if let numericValue = Double(numericPrefix), numericValue <= 0 {
+        throw RecipeDecodingError.nonPositiveStepIngredientQuantity(
+            recipeID: recipeID,
+            recipeName: recipeName,
+            stepIndex: stepIndex,
+            ingredientID: ingredient.ingredientID,
+            value: ingredient.quantity
+        )
     }
 }
 

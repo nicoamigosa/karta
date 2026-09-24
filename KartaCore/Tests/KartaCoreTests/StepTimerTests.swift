@@ -7,9 +7,9 @@ import Testing
 struct StepTimerTests {
 
     private let steps = [
-        CookingStep(text: "Chop", ingredient: nil),
-        CookingStep(text: "Simmer 10 min", ingredient: nil, timerSeconds: 600),
-        CookingStep(text: "Serve", ingredient: nil),
+        CookingStep(text: "Chop"),
+        CookingStep(text: "Simmer 10 min", timerSeconds: 600),
+        CookingStep(text: "Serve"),
     ]
 
     @Test("Starting a timer on a timed step counts down")
