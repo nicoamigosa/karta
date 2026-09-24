@@ -167,13 +167,15 @@
       { "id": "fresh-basil", "name": "Fresh basil", "quantity": "1 cup packed" },
       { "id": "parmesan-cheese", "name": "Parmesan cheese", "quantity": "1/3 cup grated" },
       { "id": "walnuts", "name": "Walnuts", "quantity": "1/4 cup" },
-      { "id": "olive-oil", "name": "Olive oil", "quantity": "1/4 cup" }
+      { "id": "olive-oil", "name": "Olive oil", "quantity": "1/4 cup" },
+      { "id": "salt", "name": "Salt", "quantity": "to taste" }
     ],
     "steps": [
       {
         "text": "Boil the pasta in salted water according to the package.",
         "ingredients": [
-          { "ingredientID": "pasta", "quantity": "12 oz" }
+          { "ingredientID": "pasta", "quantity": "12 oz" },
+          { "ingredientID": "salt", "quantity": "to taste" }
         ],
         "timerSeconds": 600
       },
@@ -265,7 +267,8 @@
       { "id": "salmon-fillets", "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
       { "id": "lemon", "name": "Lemon", "quantity": "1" },
       { "id": "fresh-dill", "name": "Fresh dill", "quantity": "a few sprigs" },
-      { "id": "olive-oil", "name": "Olive oil", "quantity": "2 tbsp" }
+      { "id": "olive-oil", "name": "Olive oil", "quantity": "2 tbsp" },
+      { "id": "salt", "name": "Salt", "quantity": "to taste" }
     ],
     "steps": [
       "Preheat the oven to 400 °F.",
@@ -274,6 +277,7 @@
         "ingredients": [
           { "ingredientID": "salmon-fillets", "quantity": "2 (about 6 oz each)" },
           { "ingredientID": "olive-oil", "quantity": "2 tbsp" },
+          { "ingredientID": "salt", "quantity": "to taste" },
           { "ingredientID": "lemon", "quantity": "1" }
         ]
       },
