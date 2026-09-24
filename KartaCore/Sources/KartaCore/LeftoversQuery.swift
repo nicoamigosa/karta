@@ -34,9 +34,8 @@ public enum LeftoversQuery {
             .filter { !cookedRecipeIDs.contains($0.id) }   // don't re-suggest cooked
             .filter(filters.allows)                        // safety always applies
             .compactMap { recipe -> (Recipe, Int, Int)? in
-                let overlap = recipe.ingredients
-                    .filter { cookedIngredients.contains(normalize($0.name)) }
-                    .count
+                let recipeIngredients = Set(recipe.ingredients.map { normalize($0.name) })
+                let overlap = recipeIngredients.intersection(cookedIngredients).count
                 return overlap > 0 ? (recipe, overlap, 0) : nil
             }
             .enumerated()

@@ -61,6 +61,13 @@ struct RecipeCatalogTests {
         ])
     }
 
+    @Test("Every seed recipe declares an editorial date")
+    func seedRecipesDeclareEditorialDates() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+
+        #expect(recipes.allSatisfy { $0.editorialDate != .distantPast })
+    }
+
     @Test("Seed quantities use US customary units, not metric")
     func seedQuantitiesAreUSCustomary() throws {
         let recipes = try SeedResourceAdapter().loadRecipes()

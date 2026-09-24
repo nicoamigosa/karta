@@ -10,11 +10,14 @@ struct LeftoversQueryTests {
         _ id: String,
         ingredients: [String],
         reviewedAllergens: [Allergen] = [],
-        review: AllergenReview = .reviewed([])
+        review: AllergenReview = .reviewed([]),
+        totalMinutes: Int = 10,
+        difficulty: Difficulty = .easy,
+        tags: [RecipeTag] = []
     ) -> Recipe {
         Recipe(
-            id: id, name: id, heroPhoto: .local("test"), totalMinutes: 10, difficulty: .easy, servings: 4,
-            tags: [], ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
+            id: id, name: id, heroPhoto: .local("test"), totalMinutes: totalMinutes, difficulty: difficulty, servings: 4,
+            tags: tags, ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
             steps: ["s"],
             allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
         )
@@ -54,6 +57,23 @@ struct LeftoversQueryTests {
         )
 
         #expect(result.map(\.id) == ["two", "one"]) // overlap 2 then 1; no-match excluded
+    }
+
+    @Test("Duplicate ingredient rows count once in Leftovers overlap")
+    func duplicateIngredientDoesNotInflateOverlap() {
+        let cooked = recipe("cooked", ingredients: ["onion", "rice"])
+        let duplicate = recipe("duplicate", ingredients: ["onion", "onion", "onion"])
+        let genuine = recipe("genuine", ingredients: ["onion", "rice"])
+
+        let result = LeftoversQuery.suggestions(
+            recipes: [cooked, duplicate, genuine],
+            cooks: cookEntries(for: ["cooked"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
+
+        #expect(result.map(\.id) == ["genuine", "duplicate"])
     }
 
     @Test("Every vocabulary allergen is excluded from leftovers", arguments: Allergen.allCases)
@@ -112,6 +132,36 @@ struct LeftoversQueryTests {
         )
 
         #expect(result.isEmpty)
+    }
+
+    @Test("Leftovers applies every active safety and hard filter")
+    func appliesFullSafetyProfile() {
+        let cooked = recipe("cooked", ingredients: ["onion"])
+        let safe = recipe("safe", ingredients: ["onion"], tags: [.onePan])
+        let tooLong = recipe("too-long", ingredients: ["onion"], totalMinutes: 30, tags: [.onePan])
+        let tooDifficult = recipe("too-difficult", ingredients: ["onion"], difficulty: .medium, tags: [.onePan])
+        let notOnePan = recipe("not-one-pan", ingredients: ["onion"])
+        let unsafe = recipe(
+            "unsafe",
+            ingredients: ["onion"],
+            reviewedAllergens: [.dairy],
+            tags: [.onePan]
+        )
+
+        let result = LeftoversQuery.suggestions(
+            recipes: [cooked, safe, tooLong, tooDifficult, notOnePan, unsafe],
+            cooks: cookEntries(for: ["cooked"]),
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(
+                intolerances: [.dairy],
+                maxMinutes: 10,
+                maxDifficulty: .easy,
+                requireOnePan: true
+            )
+        )
+
+        #expect(result.map(\.id) == ["safe"])
     }
 
 }

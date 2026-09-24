@@ -133,17 +133,20 @@ public enum FeedQuery {
         let newRecipes = eligible.filter { !recentlyViewedIDs.contains($0.id) }
         let alreadySeenRecipes = eligible.filter { recentlyViewedIDs.contains($0.id) }
 
-        // Taste and household fit lead the ranking; popularity breaks ties.
+        // Taste and editorial freshness lead the ranking. Household fit and
+        // popularity then refine the order without filtering any recipe out.
         return Feed(
             newRecipes: ranked(
                 newRecipes,
                 tastePreferences: tastePreferences,
-                householdSize: householdSize
+                householdSize: householdSize,
+                now: now
             ),
             alreadySeenRecipes: ranked(
                 alreadySeenRecipes,
                 tastePreferences: tastePreferences,
-                householdSize: householdSize
+                householdSize: householdSize,
+                now: now
             )
         )
     }
@@ -151,7 +154,8 @@ public enum FeedQuery {
     private static func ranked(
         _ recipes: [Recipe],
         tastePreferences: TastePreferences,
-        householdSize: Int?
+        householdSize: Int?,
+        now: Date
     ) -> [Recipe] {
         recipes
             .enumerated()
@@ -159,6 +163,16 @@ public enum FeedQuery {
                 let lhsTaste = tastePreferences.favors(lhs.element)
                 let rhsTaste = tastePreferences.favors(rhs.element)
                 if lhsTaste != rhsTaste { return lhsTaste }
+
+                let lhsFreshness = FreshnessPolicy.score(
+                    editorialDate: lhs.element.editorialDate,
+                    at: now
+                )
+                let rhsFreshness = FreshnessPolicy.score(
+                    editorialDate: rhs.element.editorialDate,
+                    at: now
+                )
+                if lhsFreshness != rhsFreshness { return lhsFreshness > rhsFreshness }
 
                 if let householdSize {
                     let lhsDistance = abs(lhs.element.servings - householdSize)
@@ -171,5 +185,26 @@ public enum FeedQuery {
                     : lhs.offset < rhs.offset
             }
             .map(\.element)
+    }
+}
+
+/// Editorial freshness deliberately uses age bands so tiny date differences do
+/// not churn a feed. A recipe published within seven days is fresh, one within
+/// thirty days is recent, and older content falls back to popularity. Dates in
+/// the future are treated as fresh until the catalog catches up with them.
+private enum FreshnessPolicy {
+    private static let freshWindow: TimeInterval = 7 * 24 * 60 * 60
+    private static let recentWindow: TimeInterval = 30 * 24 * 60 * 60
+
+    static func score(editorialDate: Date, at now: Date) -> Int {
+        let age = max(0, now.timeIntervalSince(editorialDate))
+        switch age {
+        case ...freshWindow:
+            return 2
+        case ...recentWindow:
+            return 1
+        default:
+            return 0
+        }
     }
 }
