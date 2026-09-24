@@ -66,6 +66,8 @@ struct RecipeCatalogTests {
         let recipes = try SeedResourceAdapter().loadRecipes()
 
         #expect(recipes.allSatisfy { $0.editorialDate != .distantPast })
+        let spanishTortilla = try #require(recipes.first { $0.id == "spanish-tortilla" })
+        #expect(spanishTortilla.editorialDate == Date(timeIntervalSince1970: 1_788_825_600))
     }
 
     @Test("Seed quantities use US customary units, not metric")

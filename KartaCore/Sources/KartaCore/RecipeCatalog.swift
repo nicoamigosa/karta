@@ -16,7 +16,9 @@ public enum RecipeCatalog {
 
     /// Decodes a recipe catalog from raw JSON. Pure: no I/O, easy to unit test.
     public static func decode(from data: Data) throws -> [Recipe] {
-        let recipes = try JSONDecoder().decode([Recipe].self, from: data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        let recipes = try decoder.decode([Recipe].self, from: data)
         var ids = Set<String>()
         for recipe in recipes where !ids.insert(recipe.id).inserted {
             throw RecipeCatalogDecodingError.duplicateRecipeID(recipe.id)
