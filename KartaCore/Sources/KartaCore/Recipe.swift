@@ -115,7 +115,9 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let steps: [CookingStep]
     /// The editor's explicit allergen review decision.
     public let allergenReview: AllergenReview
-    /// Precalculated popularity score; the feed orders by this (higher first).
+    /// The date the editor published this recipe for feed freshness ranking.
+    public let editorialDate: Date
+    /// Precalculated popularity score; the feed uses this after freshness and fit.
     public let popularity: Int
 
     public init(
@@ -129,6 +131,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         ingredients: [Ingredient],
         steps: [CookingStep],
         allergenReview: AllergenReview,
+        editorialDate: Date = .distantPast,
         popularity: Int = 0
     ) {
         self.id = id
@@ -141,6 +144,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         self.ingredients = ingredients
         self.steps = steps
         self.allergenReview = allergenReview
+        self.editorialDate = editorialDate
         self.popularity = popularity
     }
 
@@ -282,6 +286,9 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                 return allergen
             }))
         }
+        // Recipes constructed before editorial dates existed remain valid and
+        // intentionally rank as the oldest content until the catalog supplies one.
+        editorialDate = try c.decodeIfPresent(Date.self, forKey: .editorialDate) ?? .distantPast
         popularity = try c.decodeIfPresent(Int.self, forKey: .popularity) ?? 0
     }
 
@@ -302,6 +309,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         case .unreviewed:
             try c.encodeNil(forKey: .allergenReview)
         }
+        try c.encode(editorialDate, forKey: .editorialDate)
         try c.encode(popularity, forKey: .popularity)
     }
 
@@ -316,6 +324,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         case ingredients
         case steps
         case allergenReview = "contains"
+        case editorialDate
         case popularity
     }
 }

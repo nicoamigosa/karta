@@ -542,6 +542,29 @@ struct RecipeDecodingTests {
         #expect(recipe.steps.count == 2)
     }
 
+    @Test("A recipe preserves its editorial date through Codable")
+    func editorialDateRoundTrips() throws {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let recipe = Recipe(
+            id: "dated-recipe",
+            name: "Dated recipe",
+            heroPhoto: .local("dated-recipe"),
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            tags: [],
+            ingredients: [Ingredient(name: "x", quantity: "1")],
+            steps: ["Cook"],
+            allergenReview: .reviewed([]),
+            editorialDate: date
+        )
+
+        let data = try JSONEncoder().encode(recipe)
+        let decoded = try JSONDecoder().decode(Recipe.self, from: data)
+
+        #expect(decoded.editorialDate == date)
+    }
+
     @Test("Recipe decoding names an unknown tag and its recipe")
     func unknownTagFailsWithContext() {
         let json = """

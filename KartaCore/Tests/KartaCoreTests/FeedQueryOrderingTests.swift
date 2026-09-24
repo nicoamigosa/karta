@@ -5,7 +5,12 @@ import Foundation
 @Suite("Feed query — ordering")
 struct FeedQueryOrderingTests {
 
-    private func recipe(_ id: String, popularity: Int, servings: Int = 4) -> Recipe {
+    private func recipe(
+        _ id: String,
+        popularity: Int,
+        servings: Int = 4,
+        editorialDate: Date = .distantPast
+    ) -> Recipe {
         Recipe(
             id: id,
             name: id,
@@ -17,6 +22,7 @@ struct FeedQueryOrderingTests {
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
             allergenReview: .reviewed([]),
+            editorialDate: editorialDate,
             popularity: popularity
         )
     }
@@ -109,5 +115,56 @@ struct FeedQueryOrderingTests {
 
         #expect(feed.newRecipes.map(\.id) == ["serves-two", "serves-four"])
         #expect(Set(feed.newRecipes.map(\.id)) == ["serves-two", "serves-four"])
+    }
+
+    @Test("Fresh recipes outrank older recipes before popularity breaks the tie")
+    func freshnessContributesToRankingAtInjectedTime() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let feed = FeedQuery.feed(
+            recipes: [
+                recipe(
+                    "popular-but-old",
+                    popularity: 100,
+                    editorialDate: now.addingTimeInterval(-31 * 24 * 60 * 60)
+                ),
+                recipe(
+                    "fresh-but-less-popular",
+                    popularity: 1,
+                    editorialDate: now.addingTimeInterval(-24 * 60 * 60)
+                ),
+            ],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: TestClock(now: now),
+            filters: FeedFilters()
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["fresh-but-less-popular", "popular-but-old"])
+    }
+
+    @Test("Equal ranking signals preserve the input order deterministically")
+    func equalRanksKeepStableOrder() {
+        let recipes = [
+            recipe("first", popularity: 50),
+            recipe("second", popularity: 50),
+        ]
+
+        let firstFeed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
+        let secondFeed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
+
+        #expect(firstFeed.newRecipes.map(\.id) == ["first", "second"])
+        #expect(secondFeed.newRecipes.map(\.id) == ["first", "second"])
     }
 }

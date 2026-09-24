@@ -9,6 +9,7 @@
     "tags": ["one-pan", "vegetarian", "classic"],
     "contains": ["egg"],
     "popularity": 95,
+    "editorialDate": 1788825600,
     "ingredients": [
       { "name": "Potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
       { "name": "Eggs", "quantity": "5 large" },
@@ -43,6 +44,7 @@
     "tags": ["one-pan", "quick"],
     "contains": [],
     "popularity": 88,
+    "editorialDate": 1788739200,
     "ingredients": [
       { "name": "Chicken breast", "quantity": "1 lb" },
       { "name": "Coconut cream", "quantity": "3/4 cup" },
@@ -75,6 +77,7 @@
     "tags": ["fresh"],
     "contains": ["gluten", "dairy", "egg", "fish"],
     "popularity": 72,
+    "editorialDate": 1788652800,
     "ingredients": [
       { "name": "Romaine lettuce", "quantity": "1 head" },
       { "name": "Bread", "quantity": "2 slices" },
@@ -98,6 +101,7 @@
     "tags": ["quick", "vegetarian"],
     "contains": ["gluten", "dairy", "nuts"],
     "popularity": 90,
+    "editorialDate": 1788566400,
     "ingredients": [
       { "name": "Pasta", "quantity": "12 oz" },
       { "name": "Fresh basil", "quantity": "1 cup packed" },
@@ -126,6 +130,7 @@
     "tags": ["one-pan", "hearty"],
     "contains": [],
     "popularity": 70,
+    "editorialDate": 1788480000,
     "ingredients": [
       { "name": "Dried lentils", "quantity": "1 1/2 cups" },
       { "name": "Chorizo", "quantity": "1 link (about 4 oz)" },
@@ -155,6 +160,7 @@
     "tags": ["oven"],
     "contains": ["fish"],
     "popularity": 75,
+    "editorialDate": 1788393600,
     "ingredients": [
       { "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
       { "name": "Lemon", "quantity": "1" },
@@ -183,6 +189,7 @@
     "tags": ["sweet", "breakfast", "vegetarian"],
     "contains": ["gluten", "dairy", "egg"],
     "popularity": 85,
+    "editorialDate": 1788307200,
     "ingredients": [
       { "name": "Ripe bananas", "quantity": "2" },
       { "name": "Eggs", "quantity": "2 large" },
@@ -207,6 +214,7 @@
     "tags": ["one-pan", "vegetarian", "quick"],
     "contains": ["gluten"],
     "popularity": 80,
+    "editorialDate": 1788220800,
     "ingredients": [
       { "name": "Rice noodles", "quantity": "8 oz" },
       { "name": "Broccoli", "quantity": "1 head" },
