@@ -119,7 +119,11 @@ private struct UserSnapshotDTO: Codable {
     let cookingSession: CookingSessionDTO?
 
     func snapshot() throws -> UserSnapshot {
-        let profileDTO = profile ?? ProfileDTO(intolerances: [], householdSize: 1)
+        // Intolerances are safety-critical: a snapshot that does not state them
+        // is unreadable, never "no intolerances" (ADR 0010).
+        guard let profileDTO = profile else {
+            throw SnapshotDecodingError.invalidValue
+        }
         let allergens = try Set(profileDTO.intolerances.map { rawValue in
             guard let allergen = Allergen(rawValue: rawValue) else {
                 throw SnapshotDecodingError.invalidValue
@@ -174,7 +178,7 @@ private struct ProfileDTO: Codable {
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        intolerances = try container.decodeIfPresent([String].self, forKey: .intolerances) ?? []
+        intolerances = try container.decode([String].self, forKey: .intolerances)
         householdSize = try container.decodeIfPresent(Int.self, forKey: .householdSize) ?? 1
     }
 

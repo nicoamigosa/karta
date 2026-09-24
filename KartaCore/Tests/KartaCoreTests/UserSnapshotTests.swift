@@ -68,6 +68,26 @@ struct UserSnapshotTests {
         #expect(result.snapshot == nil)
     }
 
+    @Test("A snapshot without a profile is preserved instead of restored as no intolerances")
+    func missingProfileIsUnreadable() {
+        let data = Data(#"{"version":1}"#.utf8)
+
+        let result = UserSnapshot.restore(from: data)
+
+        #expect(result.snapshot == nil)
+        #expect(result.preservedData == data)
+    }
+
+    @Test("A profile without intolerances is preserved instead of restored as no intolerances")
+    func missingIntolerancesIsUnreadable() {
+        let data = Data(#"{"version":0,"profile":{"householdSize":2}}"#.utf8)
+
+        let result = UserSnapshot.restore(from: data)
+
+        #expect(result.snapshot == nil)
+        #expect(result.preservedData == data)
+    }
+
     @Test("A snapshot version that this app cannot understand is preserved")
     func preservesUnsupportedVersion() {
         let futureData = Data(#"{"version":2,"newField":{"meaning":"unknown"}}"#.utf8)
