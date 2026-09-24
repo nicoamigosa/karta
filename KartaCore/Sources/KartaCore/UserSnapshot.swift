@@ -307,7 +307,11 @@ private struct TasteCalibrationDTO: Codable {
 private struct CookingSessionDTO: Codable {
     let recipeID: String
     let steps: [CookingStepDTO]
+    let declaredDuration: TimeInterval
+    let startedAt: TimeInterval
     let currentIndex: Int
+    let furthestIndex: Int
+    let lastStepReachedAt: TimeInterval?
     let isExited: Bool
     let cookedEvent: CookedEventDTO?
     let timers: [StepTimerDTO]
@@ -315,7 +319,11 @@ private struct CookingSessionDTO: Codable {
     init(_ session: CookingSession) {
         recipeID = session.recipeID
         steps = session.steps.map(CookingStepDTO.init)
+        declaredDuration = session.declaredDuration
+        startedAt = session.startedAt
         currentIndex = session.currentIndex
+        furthestIndex = session.furthestIndex
+        lastStepReachedAt = session.lastStepReachedAt
         isExited = session.isExited
         cookedEvent = session.cookedEvent.map(CookedEventDTO.init)
         timers = session.timers
@@ -327,7 +335,20 @@ private struct CookingSessionDTO: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         recipeID = try container.decode(String.self, forKey: .recipeID)
         steps = try container.decode([CookingStepDTO].self, forKey: .steps)
+        // A session without timing evidence can never be inferred as cooked:
+        // inference requires a positive declared duration.
+        declaredDuration = try container.decodeIfPresent(
+            TimeInterval.self,
+            forKey: .declaredDuration
+        ) ?? 0
+        startedAt = try container.decodeIfPresent(TimeInterval.self, forKey: .startedAt) ?? 0
         currentIndex = try container.decodeIfPresent(Int.self, forKey: .currentIndex) ?? 0
+        furthestIndex = try container.decodeIfPresent(Int.self, forKey: .furthestIndex)
+            ?? currentIndex
+        lastStepReachedAt = try container.decodeIfPresent(
+            TimeInterval.self,
+            forKey: .lastStepReachedAt
+        )
         isExited = try container.decodeIfPresent(Bool.self, forKey: .isExited) ?? false
         cookedEvent = try container.decodeIfPresent(CookedEventDTO.self, forKey: .cookedEvent)
         timers = try container.decodeIfPresent([StepTimerDTO].self, forKey: .timers) ?? []
@@ -338,6 +359,12 @@ private struct CookingSessionDTO: Codable {
             guard currentIndex >= 0,
                   (steps.isEmpty && currentIndex == 0)
                     || (!steps.isEmpty && steps.indices.contains(currentIndex)) else {
+                throw SnapshotDecodingError.invalidValue
+            }
+            guard declaredDuration.isFinite, declaredDuration >= 0, startedAt.isFinite,
+                  furthestIndex >= currentIndex,
+                  steps.isEmpty ? furthestIndex == 0 : steps.indices.contains(furthestIndex),
+                  lastStepReachedAt?.isFinite ?? true else {
                 throw SnapshotDecodingError.invalidValue
             }
 
@@ -359,10 +386,14 @@ private struct CookingSessionDTO: Codable {
             return CookingSession(
                 recipeID: recipeID,
                 steps: steps.map(\.domainValue),
+                declaredDuration: declaredDuration,
+                startedAt: startedAt,
                 currentIndex: currentIndex,
                 isExited: isExited,
                 cookedEvent: try cookedEvent?.domainValue,
-                timers: timersByStep
+                timers: timersByStep,
+                furthestIndex: furthestIndex,
+                lastStepReachedAt: lastStepReachedAt
             )
         }
     }
@@ -370,7 +401,11 @@ private struct CookingSessionDTO: Codable {
     private enum CodingKeys: String, CodingKey {
         case recipeID
         case steps
+        case declaredDuration
+        case startedAt
         case currentIndex
+        case furthestIndex
+        case lastStepReachedAt
         case isExited
         case cookedEvent
         case timers

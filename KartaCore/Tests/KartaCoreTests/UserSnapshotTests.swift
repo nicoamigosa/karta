@@ -128,6 +128,33 @@ struct UserSnapshotTests {
         #expect(result.preservedData == nil)
     }
 
+    @Test("A restored session keeps the journey evidence that cook inference needs")
+    func restoredSessionStillInfersCook() throws {
+        let steps = [
+            CookingStep(text: "Chop"),
+            CookingStep(text: "Simmer"),
+        ]
+        var session = CookingSession(
+            recipeID: "recipe-1",
+            steps: steps,
+            declaredDuration: 100,
+            startedAt: 0
+        )
+        session.next(at: 60)
+        session.previous()
+
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 2),
+            cookingSession: session
+        )
+        var restored = try #require(
+            UserSnapshot.restore(from: try snapshot.encoded()).snapshot?.cookingSession
+        )
+        restored.next()
+
+        #expect(restored.inferProbablyCooked(at: 200) != nil)
+    }
+
     @Test("The snapshot does not persist session feed position or frontier")
     func excludesSessionFeedState() throws {
         let snapshot = UserSnapshot(
@@ -148,11 +175,16 @@ struct UserSnapshotTests {
             CookingStep(text: "Chop", timerSeconds: 30),
             CookingStep(text: "Simmer", timerSeconds: 90),
         ]
-        var session = CookingSession(recipeID: "recipe-1", steps: steps)
+        var session = CookingSession(
+            recipeID: "recipe-1",
+            steps: steps,
+            declaredDuration: 100,
+            startedAt: 0
+        )
         session.startTimer(now: 100)
-        session.next()
+        session.next(at: 105)
         session.startTimer(now: 110)
-        session.inferProbablyCooked(dwellSeconds: 30)
+        #expect(session.inferProbablyCooked(at: 120) != nil)
 
         let snapshot = UserSnapshot(
             profile: OnboardingProfile(intolerances: [], householdSize: 2),

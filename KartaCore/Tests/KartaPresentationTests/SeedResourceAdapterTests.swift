@@ -16,6 +16,14 @@ struct SeedResourceAdapterTests {
         #expect(clip.id == "cuajar-tortilla")
     }
 
+    @Test("The public adapter loads the injected media asset manifest")
+    func loadsMediaManifest() throws {
+        let manifest = try SeedResourceAdapter().loadMediaManifest()
+
+        #expect(manifest.resourceName(for: "clips/cuajar-tortilla.mp4")
+            == "clips/cuajar-tortilla.mp4")
+    }
+
     @Test("The public adapter rejects the legacy recipe catalog before editorial migration")
     func rejectsLegacySeed() throws {
         do {

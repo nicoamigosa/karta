@@ -8,8 +8,18 @@ struct TechniqueClipTests {
 
     private func makeLibrary() throws -> TechniqueClipLibrary {
         try TechniqueClipLibrary(clips: [
-            TechniqueClip(id: "dice-onion", title: "How to dice an onion", seconds: 6),
-            TechniqueClip(id: "check-chicken", title: "Is the chicken done?", seconds: 5),
+            TechniqueClip(
+                id: "dice-onion",
+                title: "How to dice an onion",
+                seconds: 6,
+                source: try MediaReference(validating: "local:clips/dice-onion.mp4")
+            ),
+            TechniqueClip(
+                id: "check-chicken",
+                title: "Is the chicken done?",
+                seconds: 5,
+                source: try MediaReference(validating: "local:clips/check-chicken.mp4")
+            ),
         ])
     }
 
@@ -22,6 +32,64 @@ struct TechniqueClipTests {
         let clip = try #require(library.clip(for: withClip))
         #expect(clip.title == "How to dice an onion")
         #expect(library.clip(for: textOnly) == nil)
+    }
+
+    @Test("A technique clip carries a validated media source")
+    func decodesClipSource() throws {
+        let json = """
+        [{
+            "id": "dice-onion",
+            "title": "How to dice an onion",
+            "seconds": 6,
+            "source": "https://video.karta.app/dice-onion.mp4"
+        }]
+        """
+
+        let library = try TechniqueClipLibrary.decode(from: Data(json.utf8))
+        let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "dice-onion")))
+
+        #expect(clip.source == .remote(URL(string: "https://video.karta.app/dice-onion.mp4")!))
+    }
+
+    @Test("Clip catalog decoding rejects a missing media source")
+    func missingClipSourceFailsWithContext() throws {
+        let json = """
+        [{ "id": "source-less", "title": "Source-less", "seconds": 5 }]
+        """
+
+        do {
+            _ = try TechniqueClipLibrary.decode(from: Data(json.utf8))
+            Issue.record("Expected a technique clip without a source to be rejected")
+        } catch let error as TechniqueClipDecodingError {
+            #expect(error == .missingSource(clipID: "source-less", title: "Source-less"))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Clip catalog rejects an empty local media source")
+    func emptyLocalClipSourceFailsWithContext() throws {
+        let json = """
+        [{
+            "id": "empty-local-source",
+            "title": "Empty local source",
+            "seconds": 5,
+            "source": "local:"
+        }]
+        """
+
+        do {
+            _ = try TechniqueClipLibrary.decode(from: Data(json.utf8))
+            Issue.record("Expected an empty local media source to be rejected")
+        } catch let error as TechniqueClipDecodingError {
+            #expect(error == .invalidSource(
+                clipID: "empty-local-source",
+                title: "Empty local source",
+                value: "local:"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
     }
 
     @Test("The same clip is shared across recipes by id, never duplicated")
@@ -47,8 +115,8 @@ struct TechniqueClipTests {
     func duplicateClipIDsFailWithContext() throws {
         let json = """
         [
-            { "id": "repeat-clip", "title": "First", "seconds": 5 },
-            { "id": "repeat-clip", "title": "Second", "seconds": 6 }
+            { "id": "repeat-clip", "title": "First", "seconds": 5, "source": "https://video.karta.app/first.mp4" },
+            { "id": "repeat-clip", "title": "Second", "seconds": 6, "source": "https://video.karta.app/second.mp4" }
         ]
         """
 

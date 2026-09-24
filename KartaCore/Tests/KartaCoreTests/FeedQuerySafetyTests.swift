@@ -13,7 +13,7 @@ struct FeedQuerySafetyTests {
         Recipe(
             id: id,
             name: id,
-            heroPhotoURL: "https://img.karta.app/\(id).jpg",
+            heroPhoto: .remote(URL(string: "https://img.karta.app/\(id).jpg")!),
             totalMinutes: 30,
             difficulty: .easy,
             servings: 4,
@@ -116,5 +116,26 @@ struct FeedQuerySafetyTests {
         #expect(feed.status == .noCompatibleRecipes)
         #expect(feed.isEmpty)
         #expect(feed.items.isEmpty)
+    }
+
+    @Test("Taste preferences cannot promote an unsafe recipe into the feed")
+    func tasteCannotBypassSafety() {
+        var calibration = TasteCalibration()
+        calibration.tap("unsafe")
+
+        let feed = FeedQuery.feed(
+            recipes: [
+                recipe("safe"),
+                recipe("unsafe", reviewedAllergens: [.dairy]),
+            ],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(intolerances: [.dairy]),
+            tastePreferences: calibration.preferences
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["safe"])
+        #expect(feed.alreadySeenRecipes.isEmpty)
     }
 }

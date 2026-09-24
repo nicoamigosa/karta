@@ -8,7 +8,7 @@ struct RecipeShareTests {
 
     private func recipe(_ id: String, _ name: String) -> Recipe {
         Recipe(
-            id: id, name: name, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy, servings: 4,
+            id: id, name: name, heroPhoto: .local("test"), totalMinutes: 10, difficulty: .easy, servings: 4,
             tags: [], ingredients: [Ingredient(name: "x", quantity: "1")], steps: ["s"],
             allergenReview: .reviewed([])
         )

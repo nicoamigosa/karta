@@ -13,7 +13,7 @@ struct LeftoversQueryTests {
         review: AllergenReview = .reviewed([])
     ) -> Recipe {
         Recipe(
-            id: id, name: id, heroPhotoURL: "", totalMinutes: 10, difficulty: .easy, servings: 4,
+            id: id, name: id, heroPhoto: .local("test"), totalMinutes: 10, difficulty: .easy, servings: 4,
             tags: [], ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
             steps: ["s"],
             allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
@@ -86,6 +86,26 @@ struct LeftoversQueryTests {
         let result = LeftoversQuery.suggestions(
             recipes: all,
             cooks: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters()
+        )
+
+        #expect(result.isEmpty)
+    }
+
+    @Test("An inferred cook never supplies ingredients to Leftovers")
+    func inferredCookNoSuggestions() {
+        let cooked = recipe("cooked", ingredients: ["onion"])
+        let reuse = recipe("reuse", ingredients: ["onion"])
+        let inferred = CookEntry(
+            event: CookedEvent(recipeID: "cooked", outcome: nil, wasInferred: true),
+            date: testClock.now
+        )
+
+        let result = LeftoversQuery.suggestions(
+            recipes: [cooked, reuse],
+            cooks: [inferred],
             recentWindow: testRecentWindow,
             clock: testClock,
             filters: FeedFilters()

@@ -28,4 +28,22 @@ struct HistoryTests {
         #expect(entry.date == date)
         #expect(entry.wasInferred)
     }
+
+    @Test("Cooking history preserves explicit and inferred cooks distinctly")
+    func historyPreservesCookOrigin() {
+        let date = Date(timeIntervalSince1970: 3_000)
+        let entries = [
+            CookEntry(
+                event: CookedEvent(recipeID: "explicit", outcome: .thumbsUp, wasInferred: false),
+                date: date
+            ),
+            CookEntry(
+                event: CookedEvent(recipeID: "inferred", outcome: nil, wasInferred: true),
+                date: date
+            ),
+        ]
+
+        #expect(entries.map(\.recipeID) == ["explicit", "inferred"])
+        #expect(entries.map(\.wasInferred) == [false, true])
+    }
 }
