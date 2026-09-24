@@ -3,27 +3,19 @@ import Foundation
 import KartaCore
 import KartaPresentation
 
-/// Checks the resource boundary while the legacy seed is awaiting the
-/// editorial rewrite in issue #32.
+/// Checks that the bundled seeds load through the resource boundary and agree
+/// with each other.
 @Suite("Seed integration")
 struct SeedIntegrationTests {
 
-    @Test("The legacy seed is rejected before editorial migration")
-    func legacySeedFailsLoudly() throws {
-        do {
-            _ = try SeedResourceAdapter().loadRecipes()
-            Issue.record("Expected the legacy seed to be rejected")
-        } catch let error as RecipeDecodingError {
-            Issue.record("Unexpected typed recipe error: \(error)")
-        } catch let error as DecodingError {
-            guard case let .keyNotFound(key, _) = error else {
-                Issue.record("Unexpected decoding error: \(error)")
-                return
-            }
-            #expect(key.stringValue == "servings")
-        } catch {
-            Issue.record("Unexpected error: \(error)")
-        }
+    @Test("Every clip a seed step references exists in the bundled clip catalog")
+    func seedClipReferencesResolve() throws {
+        let adapter = SeedResourceAdapter()
+        let library = try adapter.loadTechniqueClips()
+        let steps = try adapter.loadRecipes().flatMap(\.steps).filter { $0.clipID != nil }
+
+        #expect(!steps.isEmpty)
+        #expect(steps.allSatisfy { library.clip(for: $0) != nil })
     }
 
     @Test("The bundled clip catalog remains loadable")

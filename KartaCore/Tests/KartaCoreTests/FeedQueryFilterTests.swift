@@ -9,7 +9,7 @@ struct FeedQueryFilterTests {
         _ id: String,
         minutes: Int = 30,
         difficulty: Difficulty = .easy,
-        tags: [String] = []
+        tags: [RecipeTag] = []
     ) -> Recipe {
         Recipe(
             id: id,
@@ -67,8 +67,8 @@ struct FeedQueryFilterTests {
     @Test("requireOnePan keeps only recipes tagged one-pan")
     func filtersByOnePan() {
         let recipes = [
-            recipe("one-pan-dish", tags: ["one-pan", "rapido"]),
-            recipe("many-pans", tags: ["rapido"]),
+            recipe("one-pan-dish", tags: [.onePan, .quick]),
+            recipe("many-pans", tags: [.quick]),
         ]
 
         let feed = FeedQuery.feed(
@@ -85,9 +85,9 @@ struct FeedQueryFilterTests {
     @Test("Filters compose: time, difficulty and one-pan apply together")
     func filtersCompose() {
         let recipes = [
-            recipe("match", minutes: 20, difficulty: .easy, tags: ["one-pan"]),
-            recipe("too-slow", minutes: 90, difficulty: .easy, tags: ["one-pan"]),
-            recipe("too-hard", minutes: 20, difficulty: .hard, tags: ["one-pan"]),
+            recipe("match", minutes: 20, difficulty: .easy, tags: [.onePan]),
+            recipe("too-slow", minutes: 90, difficulty: .easy, tags: [.onePan]),
+            recipe("too-hard", minutes: 20, difficulty: .hard, tags: [.onePan]),
             recipe("many-pans", minutes: 20, difficulty: .easy, tags: []),
         ]
 

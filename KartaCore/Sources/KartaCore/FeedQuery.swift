@@ -11,9 +11,6 @@ public struct FeedFilters: Equatable, Sendable {
     /// When true, only recipes tagged one-pan are shown.
     public var requireOnePan: Bool
 
-    /// The tag a recipe carries to mark it as a single-pan dish.
-    public static let onePanTag = "one-pan"
-
     public init(
         intolerances: Set<Allergen> = [],
         maxMinutes: Int? = nil,
@@ -36,7 +33,7 @@ public struct FeedFilters: Equatable, Sendable {
         return allergens.isDisjoint(with: intolerances)
             && (maxMinutes.map { recipe.totalMinutes <= $0 } ?? true)
             && (maxDifficulty.map { recipe.difficulty <= $0 } ?? true)
-            && (!requireOnePan || recipe.tags.contains(Self.onePanTag))
+            && (!requireOnePan || recipe.tags.contains(.onePan))
     }
 }
 

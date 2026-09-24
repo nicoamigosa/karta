@@ -5,29 +5,30 @@
     "heroPhotoURL": "https://img.karta.app/tortilla-de-papa.jpg",
     "totalMinutes": 35,
     "difficulty": "easy",
-    "tags": ["one-pan", "vegetariano", "clasico"],
+    "servings": 4,
+    "tags": ["one-pan", "vegetarian", "classic"],
     "contains": ["egg"],
     "popularity": 95,
     "ingredients": [
-      { "name": "Papa", "quantity": "4 unidades medianas" },
-      { "name": "Huevo", "quantity": "5 unidades" },
-      { "name": "Cebolla", "quantity": "1 unidad" },
-      { "name": "Aceite de oliva", "quantity": "c/n" },
-      { "name": "Sal", "quantity": "a gusto" }
+      { "name": "Potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
+      { "name": "Eggs", "quantity": "5 large" },
+      { "name": "Onion", "quantity": "1 medium" },
+      { "name": "Olive oil", "quantity": "as needed for frying" },
+      { "name": "Salt", "quantity": "to taste" }
     ],
     "steps": [
-      "Pelar y cortar las papas en rodajas finas y la cebolla en juliana.",
+      "Peel the potatoes and slice them thin. Slice the onion into thin strips.",
       {
-        "text": "Freir las papas y la cebolla a fuego medio hasta que esten tiernas.",
-        "ingredient": { "name": "Papa", "quantity": "4 unidades medianas" },
+        "text": "Fry the potatoes and onion over medium heat until tender but not browned.",
+        "ingredient": { "name": "Potatoes", "quantity": "4 medium (about 1 1/2 lb)" },
         "timerSeconds": 720
       },
       {
-        "text": "Batir los huevos con sal y mezclar con las papas escurridas.",
-        "ingredient": { "name": "Huevo", "quantity": "5 unidades" }
+        "text": "Beat the eggs with a pinch of salt and fold in the drained potatoes and onion.",
+        "ingredient": { "name": "Eggs", "quantity": "5 large" }
       },
       {
-        "text": "Cuajar la mezcla en la sarten, dar vuelta con un plato y dorar el otro lado.",
+        "text": "Set the mixture in the skillet, flip it onto a plate, and slide it back in to brown the other side.",
         "clipID": "cuajar-tortilla"
       }
     ]
@@ -38,27 +39,28 @@
     "heroPhotoURL": "https://img.karta.app/pollo-al-curry-rapido.jpg",
     "totalMinutes": 25,
     "difficulty": "easy",
-    "tags": ["one-pan", "rapido"],
+    "servings": 4,
+    "tags": ["one-pan", "quick"],
     "contains": [],
     "popularity": 88,
     "ingredients": [
-      { "name": "Pechuga de pollo", "quantity": "500 g" },
-      { "name": "Crema de coco", "quantity": "200 ml" },
-      { "name": "Curry en polvo", "quantity": "2 cucharadas" },
-      { "name": "Cebolla", "quantity": "1 unidad" },
-      { "name": "Arroz", "quantity": "2 tazas cocidas" }
+      { "name": "Chicken breast", "quantity": "1 lb" },
+      { "name": "Coconut cream", "quantity": "3/4 cup" },
+      { "name": "Curry powder", "quantity": "2 tbsp" },
+      { "name": "Onion", "quantity": "1 medium" },
+      { "name": "Rice", "quantity": "2 cups cooked" }
     ],
     "steps": [
-      "Cortar el pollo en cubos y la cebolla en pluma.",
+      "Cut the chicken into cubes and slice the onion.",
       {
-        "text": "Sellar el pollo en una sarten caliente hasta dorar.",
-        "ingredient": { "name": "Pechuga de pollo", "quantity": "500 g" },
+        "text": "Sear the chicken in a hot skillet until golden.",
+        "ingredient": { "name": "Chicken breast", "quantity": "1 lb" },
         "clipID": "sellar-pollo"
       },
-      "Agregar la cebolla y el curry, cocinar un minuto.",
+      "Add the onion and curry powder and cook for one minute.",
       {
-        "text": "Sumar la crema de coco y cocinar hasta espesar. Servir con arroz.",
-        "ingredient": { "name": "Crema de coco", "quantity": "200 ml" },
+        "text": "Stir in the coconut cream and simmer until thickened. Serve over rice.",
+        "ingredient": { "name": "Coconut cream", "quantity": "3/4 cup" },
         "timerSeconds": 480
       }
     ]
@@ -69,20 +71,21 @@
     "heroPhotoURL": "https://img.karta.app/ensalada-cesar.jpg",
     "totalMinutes": 20,
     "difficulty": "easy",
-    "tags": ["fresco", "sin-coccion-parcial"],
-    "contains": ["gluten", "lactose", "egg", "fish"],
+    "servings": 2,
+    "tags": ["fresh"],
+    "contains": ["gluten", "dairy", "egg", "fish"],
     "popularity": 72,
     "ingredients": [
-      { "name": "Lechuga romana", "quantity": "1 planta" },
-      { "name": "Pan", "quantity": "2 rebanadas" },
-      { "name": "Queso parmesano", "quantity": "50 g" },
-      { "name": "Aderezo Cesar", "quantity": "4 cucharadas" }
+      { "name": "Romaine lettuce", "quantity": "1 head" },
+      { "name": "Bread", "quantity": "2 slices" },
+      { "name": "Parmesan cheese", "quantity": "1/2 cup shaved" },
+      { "name": "Caesar dressing", "quantity": "1/4 cup" }
     ],
     "steps": [
-      "Cortar el pan en cubos y tostar hasta dorar para los croutones.",
-      "Lavar y cortar la lechuga en trozos grandes.",
-      "Mezclar la lechuga con el aderezo y los croutones.",
-      "Terminar con parmesano en escamas."
+      "Cut the bread into cubes and toast until golden to make croutons.",
+      "Wash the lettuce and tear it into large pieces.",
+      "Toss the lettuce with the dressing and the croutons.",
+      "Finish with shaved Parmesan."
     ]
   },
   {
@@ -91,25 +94,26 @@
     "heroPhotoURL": "https://img.karta.app/pasta-al-pesto.jpg",
     "totalMinutes": 20,
     "difficulty": "easy",
-    "tags": ["rapido", "vegetariano"],
-    "contains": ["gluten", "lactose", "nuts"],
+    "servings": 4,
+    "tags": ["quick", "vegetarian"],
+    "contains": ["gluten", "dairy", "nuts"],
     "popularity": 90,
     "ingredients": [
-      { "name": "Fideos", "quantity": "320 g" },
-      { "name": "Albahaca fresca", "quantity": "1 taza" },
-      { "name": "Queso parmesano", "quantity": "40 g" },
-      { "name": "Nuez", "quantity": "30 g" },
-      { "name": "Aceite de oliva", "quantity": "60 ml" }
+      { "name": "Pasta", "quantity": "12 oz" },
+      { "name": "Fresh basil", "quantity": "1 cup packed" },
+      { "name": "Parmesan cheese", "quantity": "1/3 cup grated" },
+      { "name": "Walnuts", "quantity": "1/4 cup" },
+      { "name": "Olive oil", "quantity": "1/4 cup" }
     ],
     "steps": [
       {
-        "text": "Hervir los fideos en agua con sal segun el paquete.",
-        "ingredient": { "name": "Fideos", "quantity": "320 g" },
+        "text": "Boil the pasta in salted water according to the package.",
+        "ingredient": { "name": "Pasta", "quantity": "12 oz" },
         "timerSeconds": 600
       },
-      "Procesar albahaca, nueces, parmesano y aceite hasta formar el pesto.",
-      "Escurrir la pasta reservando un poco del agua de coccion.",
-      "Mezclar la pasta con el pesto y ajustar con el agua reservada."
+      "Blend the basil, walnuts, Parmesan and olive oil into a pesto.",
+      "Drain the pasta, saving a little of the cooking water.",
+      "Toss the pasta with the pesto and loosen it with the saved water."
     ]
   },
   {
@@ -118,24 +122,25 @@
     "heroPhotoURL": "https://img.karta.app/guiso-de-lentejas.jpg",
     "totalMinutes": 50,
     "difficulty": "medium",
-    "tags": ["one-pan", "abundante", "invierno"],
+    "servings": 6,
+    "tags": ["one-pan", "hearty"],
     "contains": [],
     "popularity": 70,
     "ingredients": [
-      { "name": "Lentejas", "quantity": "300 g" },
-      { "name": "Chorizo colorado", "quantity": "1 unidad" },
-      { "name": "Zanahoria", "quantity": "2 unidades" },
-      { "name": "Papa", "quantity": "2 unidades" },
-      { "name": "Cebolla", "quantity": "1 unidad" },
-      { "name": "Pimenton", "quantity": "1 cucharadita" }
+      { "name": "Dried lentils", "quantity": "1 1/2 cups" },
+      { "name": "Chorizo colorado", "quantity": "1 link (about 4 oz)" },
+      { "name": "Carrots", "quantity": "2 medium" },
+      { "name": "Potatoes", "quantity": "2 medium" },
+      { "name": "Onion", "quantity": "1 medium" },
+      { "name": "Sweet paprika", "quantity": "1 tsp" }
     ],
     "steps": [
-      "Rehogar la cebolla, la zanahoria y el chorizo en una olla.",
-      "Agregar el pimenton y las papas en cubos.",
-      "Sumar las lentejas y cubrir con agua o caldo.",
+      "Sauté the onion, carrots and chorizo in a pot.",
+      "Add the paprika and the cubed potatoes.",
+      "Add the lentils and cover with water or broth.",
       {
-        "text": "Cocinar a fuego bajo hasta que las lentejas esten tiernas.",
-        "ingredient": { "name": "Lentejas", "quantity": "300 g" },
+        "text": "Simmer over low heat until the lentils are tender.",
+        "ingredient": { "name": "Dried lentils", "quantity": "1 1/2 cups" },
         "timerSeconds": 2400
       }
     ]
@@ -146,22 +151,23 @@
     "heroPhotoURL": "https://img.karta.app/salmon-al-horno.jpg",
     "totalMinutes": 30,
     "difficulty": "medium",
-    "tags": ["saludable", "horno"],
+    "servings": 2,
+    "tags": ["oven"],
     "contains": ["fish"],
     "popularity": 75,
     "ingredients": [
-      { "name": "Filet de salmon", "quantity": "2 unidades" },
-      { "name": "Limon", "quantity": "1 unidad" },
-      { "name": "Eneldo", "quantity": "c/n" },
-      { "name": "Aceite de oliva", "quantity": "2 cucharadas" }
+      { "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
+      { "name": "Lemon", "quantity": "1" },
+      { "name": "Fresh dill", "quantity": "a few sprigs" },
+      { "name": "Olive oil", "quantity": "2 tbsp" }
     ],
     "steps": [
-      "Precalentar el horno a 200 grados.",
-      "Colocar el salmon en una fuente con aceite, sal y rodajas de limon.",
-      "Espolvorear eneldo por encima.",
+      "Preheat the oven to 400 °F.",
+      "Place the salmon in a baking dish with the olive oil, salt and lemon slices.",
+      "Scatter the dill on top.",
       {
-        "text": "Hornear hasta que el salmon se desmenuce facil.",
-        "ingredient": { "name": "Filet de salmon", "quantity": "2 unidades" },
+        "text": "Bake until the salmon flakes easily.",
+        "ingredient": { "name": "Salmon fillets", "quantity": "2 (about 6 oz each)" },
         "timerSeconds": 1020,
         "clipID": "punto-salmon"
       }
@@ -173,21 +179,22 @@
     "heroPhotoURL": "https://img.karta.app/panqueques-de-banana.jpg",
     "totalMinutes": 20,
     "difficulty": "easy",
-    "tags": ["dulce", "desayuno", "vegetariano"],
-    "contains": ["gluten", "lactose", "egg"],
+    "servings": 2,
+    "tags": ["sweet", "breakfast", "vegetarian"],
+    "contains": ["gluten", "dairy", "egg"],
     "popularity": 85,
     "ingredients": [
-      { "name": "Banana", "quantity": "2 unidades" },
-      { "name": "Huevo", "quantity": "2 unidades" },
-      { "name": "Harina", "quantity": "150 g" },
-      { "name": "Leche", "quantity": "200 ml" },
-      { "name": "Polvo de hornear", "quantity": "1 cucharadita" }
+      { "name": "Ripe bananas", "quantity": "2" },
+      { "name": "Eggs", "quantity": "2 large" },
+      { "name": "All-purpose flour", "quantity": "1 1/4 cups" },
+      { "name": "Milk", "quantity": "3/4 cup" },
+      { "name": "Baking powder", "quantity": "1 tsp" }
     ],
     "steps": [
-      "Pisar las bananas y mezclar con los huevos y la leche.",
-      "Incorporar la harina con el polvo de hornear hasta integrar.",
-      "Cocinar pequenas porciones en sarten caliente apenas aceitada.",
-      "Dar vuelta cuando aparezcan burbujas y dorar el otro lado."
+      "Mash the bananas and whisk them with the eggs and milk.",
+      "Stir in the flour and baking powder until just combined.",
+      "Cook small rounds in a hot, lightly oiled skillet.",
+      "Flip when bubbles appear and brown the other side."
     ]
   },
   {
@@ -196,21 +203,22 @@
     "heroPhotoURL": "https://img.karta.app/wok-de-vegetales.jpg",
     "totalMinutes": 25,
     "difficulty": "easy",
-    "tags": ["one-pan", "vegetariano", "rapido"],
+    "servings": 3,
+    "tags": ["one-pan", "vegetarian", "quick"],
     "contains": ["gluten"],
     "popularity": 80,
     "ingredients": [
-      { "name": "Fideos de arroz", "quantity": "250 g" },
-      { "name": "Brocoli", "quantity": "1 planta" },
-      { "name": "Zanahoria", "quantity": "1 unidad" },
-      { "name": "Morron", "quantity": "1 unidad" },
-      { "name": "Salsa de soja", "quantity": "4 cucharadas" }
+      { "name": "Rice noodles", "quantity": "8 oz" },
+      { "name": "Broccoli", "quantity": "1 head" },
+      { "name": "Carrot", "quantity": "1 medium" },
+      { "name": "Red bell pepper", "quantity": "1" },
+      { "name": "Soy sauce", "quantity": "1/4 cup" }
     ],
     "steps": [
-      "Hidratar los fideos de arroz segun el paquete.",
-      "Saltear a fuego fuerte la zanahoria, el brocoli y el morron en tiras.",
-      "Agregar los fideos escurridos al wok.",
-      "Sumar la salsa de soja y saltear un par de minutos mas."
+      "Soak the rice noodles according to the package.",
+      "Stir-fry the carrot, broccoli and bell pepper strips over high heat.",
+      "Add the drained noodles to the wok.",
+      "Add the soy sauce and stir-fry for a couple more minutes."
     ]
   }
 ]

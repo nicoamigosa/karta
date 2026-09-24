@@ -6,56 +6,70 @@ import KartaPresentation
 @Suite("Seed recipe catalog")
 struct RecipeCatalogTests {
 
-    @Test("A valid seed fixture contains exactly the expected recipe identities")
-    func seedFixtureContainsExpectedRecipes() throws {
-        let expectedIDs: Set<String> = [
-            "tortilla-de-papa",
-            "pollo-al-curry-rapido",
-            "ensalada-cesar",
-            "pasta-al-pesto",
-            "guiso-de-lentejas",
-            "salmon-al-horno",
-            "panqueques-de-banana",
-            "wok-de-vegetales",
-        ]
-        let json = """
-        [
-            { "id": "tortilla-de-papa", "name": "Tortilla de papa", "heroPhotoURL": "https://img.karta.app/tortilla.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Potato", "quantity": "1" }], "steps": ["Cook"] },
-            { "id": "pollo-al-curry-rapido", "name": "Pollo al curry rapido", "heroPhotoURL": "https://img.karta.app/pollo.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Chicken", "quantity": "1" }], "steps": ["Cook"] },
-            { "id": "ensalada-cesar", "name": "Ensalada Cesar", "heroPhotoURL": "https://img.karta.app/ensalada.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Lettuce", "quantity": "1" }], "steps": ["Mix"] },
-            { "id": "pasta-al-pesto", "name": "Pasta al pesto", "heroPhotoURL": "https://img.karta.app/pasta.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Pasta", "quantity": "1" }], "steps": ["Cook"] },
-            { "id": "guiso-de-lentejas", "name": "Guiso de lentejas", "heroPhotoURL": "https://img.karta.app/guiso.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Lentils", "quantity": "1" }], "steps": ["Cook"] },
-            { "id": "salmon-al-horno", "name": "Salmon al horno", "heroPhotoURL": "https://img.karta.app/salmon.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Salmon", "quantity": "1" }], "steps": ["Cook"] },
-            { "id": "panqueques-de-banana", "name": "Panqueques de banana", "heroPhotoURL": "https://img.karta.app/panqueques.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Banana", "quantity": "1" }], "steps": ["Cook"] },
-            { "id": "wok-de-vegetales", "name": "Wok de vegetales", "heroPhotoURL": "https://img.karta.app/wok.jpg", "totalMinutes": 10, "difficulty": "easy", "servings": 2, "tags": [], "contains": [], "ingredients": [{ "name": "Vegetables", "quantity": "1" }], "steps": ["Cook"] }
-        ]
-        """
+    /// The editor-approved allergen set of every seed recipe. A change here is
+    /// a safety decision and must go through the editor, never a refactor.
+    private let expectedAllergens: [String: Set<Allergen>] = [
+        "tortilla-de-papa": [.egg],
+        "pollo-al-curry-rapido": [],
+        "ensalada-cesar": [.gluten, .dairy, .egg, .fish],
+        "pasta-al-pesto": [.gluten, .dairy, .nuts],
+        "guiso-de-lentejas": [],
+        "salmon-al-horno": [.fish],
+        "panqueques-de-banana": [.gluten, .dairy, .egg],
+        "wok-de-vegetales": [.gluten],
+    ]
 
-        let recipes = try RecipeCatalog.decode(from: Data(json.utf8))
+    @Test("The seed holds exactly the eight expected recipes, each reviewed with its allergens")
+    func seedRecipesAreReviewed() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
 
-        #expect(recipes.count == expectedIDs.count)
-        #expect(Set(recipes.map(\.id)) == expectedIDs)
-        for expectedID in expectedIDs {
-            let recipe = try #require(recipes.first { $0.id == expectedID })
-            #expect(recipe.id == expectedID)
-        }
+        #expect(recipes.count == 8)
+        #expect(Dictionary(uniqueKeysWithValues: recipes.map { ($0.id, $0.allergenReview) })
+            == expectedAllergens.mapValues { .reviewed($0) })
     }
 
-    @Test("The catalog decoder rejects the legacy seed before editorial migration")
-    func legacySeedIsRejected() throws {
-        do {
-            _ = try SeedResourceAdapter().loadRecipes()
-            Issue.record("Expected the legacy seed to be rejected")
-        } catch let error as RecipeDecodingError {
-            Issue.record("Unexpected typed recipe error: \(error)")
-        } catch let error as DecodingError {
-            guard case let .keyNotFound(key, _) = error else {
-                Issue.record("Unexpected decoding error: \(error)")
-                return
-            }
-            #expect(key.stringValue == "servings")
-        } catch {
-            Issue.record("Unexpected error: \(error)")
+    @Test("Seed dish names stay in their original language")
+    func dishNamesAreNotTranslated() throws {
+        let names = try SeedResourceAdapter().loadRecipes().map(\.name)
+
+        #expect(names == [
+            "Tortilla de papa",
+            "Pollo al curry rapido",
+            "Ensalada Cesar",
+            "Pasta al pesto",
+            "Guiso de lentejas",
+            "Salmon al horno con limon",
+            "Panqueques de banana",
+            "Wok de vegetales y fideos",
+        ])
+    }
+
+    @Test("Every seed recipe declares its servings")
+    func seedRecipesDeclareServings() throws {
+        let servings = Dictionary(uniqueKeysWithValues:
+            try SeedResourceAdapter().loadRecipes().map { ($0.id, $0.servings) })
+
+        #expect(servings == [
+            "tortilla-de-papa": 4,
+            "pollo-al-curry-rapido": 4,
+            "ensalada-cesar": 2,
+            "pasta-al-pesto": 4,
+            "guiso-de-lentejas": 6,
+            "salmon-al-horno": 2,
+            "panqueques-de-banana": 2,
+            "wok-de-vegetales": 3,
+        ])
+    }
+
+    @Test("Seed quantities use US customary units, not metric")
+    func seedQuantitiesAreUSCustomary() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let quantities = recipes.flatMap { recipe in
+            recipe.ingredients.map(\.quantity)
+                + recipe.steps.compactMap { $0.ingredient?.quantity }
         }
+        let metric = try Regex(#"\d\s*(g|kg|ml|l)\b"#)
+
+        #expect(quantities.filter { $0.contains(metric) }.isEmpty)
     }
 }
