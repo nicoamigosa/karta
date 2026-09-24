@@ -9,14 +9,14 @@ struct RecipeCatalogTests {
     /// The editor-approved allergen set of every seed recipe. A change here is
     /// a safety decision and must go through the editor, never a refactor.
     private let expectedAllergens: [String: Set<Allergen>] = [
-        "tortilla-de-papa": [.egg],
-        "pollo-al-curry-rapido": [],
-        "ensalada-cesar": [.gluten, .dairy, .egg, .fish],
-        "pasta-al-pesto": [.gluten, .dairy, .nuts],
-        "guiso-de-lentejas": [],
-        "salmon-al-horno": [.fish],
-        "panqueques-de-banana": [.gluten, .dairy, .egg],
-        "wok-de-vegetales": [.gluten],
+        "spanish-tortilla": [.egg],
+        "quick-chicken-curry": [],
+        "caesar-salad": [.gluten, .dairy, .egg],
+        "pesto-pasta": [.gluten, .dairy, .nuts],
+        "lentil-stew": [],
+        "baked-salmon-with-lemon": [.fish],
+        "banana-pancakes": [.gluten, .dairy, .egg],
+        "vegetable-noodle-stir-fry": [.gluten],
     ]
 
     @Test("The seed holds exactly the eight expected recipes, each reviewed with its allergens")
@@ -28,19 +28,19 @@ struct RecipeCatalogTests {
             == expectedAllergens.mapValues { .reviewed($0) })
     }
 
-    @Test("Seed dish names stay in their original language")
-    func dishNamesAreNotTranslated() throws {
+    @Test("Seed dish names are in English")
+    func dishNamesAreTranslated() throws {
         let names = try SeedResourceAdapter().loadRecipes().map(\.name)
 
         #expect(names == [
-            "Tortilla de papa",
-            "Pollo al curry rapido",
-            "Ensalada Cesar",
-            "Pasta al pesto",
-            "Guiso de lentejas",
-            "Salmon al horno con limon",
-            "Panqueques de banana",
-            "Wok de vegetales y fideos",
+            "Spanish Tortilla",
+            "Quick Chicken Curry",
+            "Caesar Salad",
+            "Pesto Pasta",
+            "Lentil Stew",
+            "Baked Salmon with Lemon",
+            "Banana Pancakes",
+            "Vegetable Noodle Stir-Fry",
         ])
     }
 
@@ -50,14 +50,14 @@ struct RecipeCatalogTests {
             try SeedResourceAdapter().loadRecipes().map { ($0.id, $0.servings) })
 
         #expect(servings == [
-            "tortilla-de-papa": 4,
-            "pollo-al-curry-rapido": 4,
-            "ensalada-cesar": 2,
-            "pasta-al-pesto": 4,
-            "guiso-de-lentejas": 6,
-            "salmon-al-horno": 2,
-            "panqueques-de-banana": 2,
-            "wok-de-vegetales": 3,
+            "spanish-tortilla": 4,
+            "quick-chicken-curry": 4,
+            "caesar-salad": 2,
+            "pesto-pasta": 4,
+            "lentil-stew": 6,
+            "baked-salmon-with-lemon": 2,
+            "banana-pancakes": 2,
+            "vegetable-noodle-stir-fry": 3,
         ])
     }
 

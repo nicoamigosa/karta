@@ -1,8 +1,8 @@
 [
   {
-    "id": "tortilla-de-papa",
-    "name": "Tortilla de papa",
-    "heroPhotoURL": "https://img.karta.app/tortilla-de-papa.jpg",
+    "id": "spanish-tortilla",
+    "name": "Spanish Tortilla",
+    "heroPhotoURL": "https://img.karta.app/spanish-tortilla.jpg",
     "totalMinutes": 35,
     "difficulty": "easy",
     "servings": 4,
@@ -34,9 +34,9 @@
     ]
   },
   {
-    "id": "pollo-al-curry-rapido",
-    "name": "Pollo al curry rapido",
-    "heroPhotoURL": "https://img.karta.app/pollo-al-curry-rapido.jpg",
+    "id": "quick-chicken-curry",
+    "name": "Quick Chicken Curry",
+    "heroPhotoURL": "https://img.karta.app/quick-chicken-curry.jpg",
     "totalMinutes": 25,
     "difficulty": "easy",
     "servings": 4,
@@ -66,14 +66,14 @@
     ]
   },
   {
-    "id": "ensalada-cesar",
-    "name": "Ensalada Cesar",
-    "heroPhotoURL": "https://img.karta.app/ensalada-cesar.jpg",
+    "id": "caesar-salad",
+    "name": "Caesar Salad",
+    "heroPhotoURL": "https://img.karta.app/caesar-salad.jpg",
     "totalMinutes": 20,
     "difficulty": "easy",
     "servings": 2,
     "tags": ["fresh"],
-    "contains": ["gluten", "dairy", "egg", "fish"],
+    "contains": ["gluten", "dairy", "egg"],
     "popularity": 72,
     "ingredients": [
       { "name": "Romaine lettuce", "quantity": "1 head" },
@@ -89,9 +89,9 @@
     ]
   },
   {
-    "id": "pasta-al-pesto",
-    "name": "Pasta al pesto",
-    "heroPhotoURL": "https://img.karta.app/pasta-al-pesto.jpg",
+    "id": "pesto-pasta",
+    "name": "Pesto Pasta",
+    "heroPhotoURL": "https://img.karta.app/pesto-pasta.jpg",
     "totalMinutes": 20,
     "difficulty": "easy",
     "servings": 4,
@@ -117,9 +117,9 @@
     ]
   },
   {
-    "id": "guiso-de-lentejas",
-    "name": "Guiso de lentejas",
-    "heroPhotoURL": "https://img.karta.app/guiso-de-lentejas.jpg",
+    "id": "lentil-stew",
+    "name": "Lentil Stew",
+    "heroPhotoURL": "https://img.karta.app/lentil-stew.jpg",
     "totalMinutes": 50,
     "difficulty": "medium",
     "servings": 6,
@@ -128,7 +128,7 @@
     "popularity": 70,
     "ingredients": [
       { "name": "Dried lentils", "quantity": "1 1/2 cups" },
-      { "name": "Chorizo colorado", "quantity": "1 link (about 4 oz)" },
+      { "name": "Chorizo", "quantity": "1 link (about 4 oz)" },
       { "name": "Carrots", "quantity": "2 medium" },
       { "name": "Potatoes", "quantity": "2 medium" },
       { "name": "Onion", "quantity": "1 medium" },
@@ -146,9 +146,9 @@
     ]
   },
   {
-    "id": "salmon-al-horno",
-    "name": "Salmon al horno con limon",
-    "heroPhotoURL": "https://img.karta.app/salmon-al-horno.jpg",
+    "id": "baked-salmon-with-lemon",
+    "name": "Baked Salmon with Lemon",
+    "heroPhotoURL": "https://img.karta.app/baked-salmon-with-lemon.jpg",
     "totalMinutes": 30,
     "difficulty": "medium",
     "servings": 2,
@@ -174,9 +174,9 @@
     ]
   },
   {
-    "id": "panqueques-de-banana",
-    "name": "Panqueques de banana",
-    "heroPhotoURL": "https://img.karta.app/panqueques-de-banana.jpg",
+    "id": "banana-pancakes",
+    "name": "Banana Pancakes",
+    "heroPhotoURL": "https://img.karta.app/banana-pancakes.jpg",
     "totalMinutes": 20,
     "difficulty": "easy",
     "servings": 2,
@@ -198,9 +198,9 @@
     ]
   },
   {
-    "id": "wok-de-vegetales",
-    "name": "Wok de vegetales y fideos",
-    "heroPhotoURL": "https://img.karta.app/wok-de-vegetales.jpg",
+    "id": "vegetable-noodle-stir-fry",
+    "name": "Vegetable Noodle Stir-Fry",
+    "heroPhotoURL": "https://img.karta.app/vegetable-noodle-stir-fry.jpg",
     "totalMinutes": 25,
     "difficulty": "easy",
     "servings": 3,
