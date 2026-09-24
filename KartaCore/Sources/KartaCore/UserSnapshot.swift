@@ -66,6 +66,32 @@ public struct UserSnapshot: Equatable, Sendable {
     /// callers must complete onboarding again before showing any recipe
     /// surfaces.
     public static func restore(from data: Data) -> SnapshotRestoreResult {
+        restore(from: data, sessionPolicy: nil)
+    }
+
+    /// Restore user state while deciding whether a persisted cooking session is
+    /// still actionable. The session is the only part of the snapshot that is
+    /// dependent on the current catalog and on elapsed wall-clock time; an
+    /// unavailable or expired session is discarded without discarding the rest
+    /// of the user's state.
+    public static func restore(
+        from data: Data,
+        now: TimeInterval,
+        catalog: [Recipe]
+    ) -> SnapshotRestoreResult {
+        restore(
+            from: data,
+            sessionPolicy: SessionRestorePolicy(
+                now: now,
+                catalogIDs: Set(catalog.map(\.id))
+            )
+        )
+    }
+
+    private static func restore(
+        from data: Data,
+        sessionPolicy: SessionRestorePolicy?
+    ) -> SnapshotRestoreResult {
         do {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .secondsSince1970
@@ -74,7 +100,10 @@ public struct UserSnapshot: Equatable, Sendable {
                 throw SnapshotDecodingError.unsupportedVersion(version)
             }
             let dto = try decoder.decode(UserSnapshotDTO.self, from: data)
-            return SnapshotRestoreResult(snapshot: try dto.snapshot(), preservedData: nil)
+            return SnapshotRestoreResult(
+                snapshot: try dto.snapshot(sessionPolicy: sessionPolicy),
+                preservedData: nil
+            )
         } catch {
             return SnapshotRestoreResult(snapshot: nil, preservedData: data)
         }
@@ -107,6 +136,20 @@ private struct VersionDTO: Decodable {
     let version: Int
 }
 
+private struct SessionRestorePolicy {
+    /// After six hours, returning to the persisted session is no longer the
+    /// same cooking attempt.
+    static let maximumAge: TimeInterval = 6 * 60 * 60
+
+    let now: TimeInterval
+    let catalogIDs: Set<String>
+
+    func accepts(_ session: CookingSession) -> Bool {
+        catalogIDs.contains(session.recipeID)
+            && now - session.startedAt < Self.maximumAge
+    }
+}
+
 // MARK: - Version 1 wire DTOs
 
 private struct UserSnapshotDTO: Codable {
@@ -118,7 +161,7 @@ private struct UserSnapshotDTO: Codable {
     let tasteCalibration: TasteCalibrationDTO?
     let cookingSession: CookingSessionDTO?
 
-    func snapshot() throws -> UserSnapshot {
+    func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
         // Intolerances are safety-critical: a snapshot that does not state them
         // is unreadable, never "no intolerances" (ADR 0010).
         guard let profileDTO = profile else {
@@ -148,6 +191,11 @@ private struct UserSnapshotDTO: Codable {
             openings: historyDTO.openings.map { $0.domainValue }
         )
 
+        let session = try cookingSession?.domainValue
+        let retainedSession = sessionPolicy.map { policy in
+            session.flatMap { policy.accepts($0) ? $0 : nil }
+        } ?? session
+
         return UserSnapshot(
             profile: OnboardingProfile(
                 intolerances: allergens,
@@ -162,7 +210,7 @@ private struct UserSnapshotDTO: Codable {
             tasteCalibration: TasteCalibration(
                 likedIDs: tasteCalibration?.likedIDs ?? []
             ),
-            cookingSession: try cookingSession?.domainValue
+            cookingSession: retainedSession
         )
     }
 }
