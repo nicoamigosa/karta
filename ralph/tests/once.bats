@@ -739,6 +739,30 @@ load test_helper
   grep -Fq 'Actual billing is not inferred' "$RUN_DIR/summary.md"
 }
 
+@test "implementer uses GPT-6 Luna with max reasoning by default" {
+  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/happy-path.json"
+  export FAKE_CODEX_CREATE_PR=1
+  export RALPH_CI_POLICY=none
+
+  run_once
+
+  [ "$status" -eq 0 ]
+  grep -Fq -- 'codex exec --json --model gpt-6-luna' "$FAKE_AGENT_LOG"
+  grep -Fq -- 'model_reasoning_effort="max"' "$FAKE_AGENT_LOG"
+}
+
+@test "reviewer uses the latest Claude Opus with medium effort by default" {
+  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/happy-path.json"
+  export FAKE_CODEX_CREATE_PR=1
+  export RALPH_SMOKE_TEST=1
+  export RALPH_CI_POLICY=none
+
+  run_once
+
+  [ "$status" -eq 0 ]
+  [ "$(grep -c -F -- 'claude --model opus --effort medium' "$FAKE_AGENT_LOG")" -eq 2 ]
+}
+
 @test "configured claude budget is passed to every claude invocation" {
   export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/happy-path.json"
   export FAKE_CODEX_CREATE_PR=1
@@ -748,7 +772,7 @@ load test_helper
   run_once
 
   [ "$status" -eq 0 ]
-  grep -Fq -- 'claude --model opus --max-budget-usd 0.75' "$FAKE_AGENT_LOG"
+  grep -Fq -- 'claude --model opus --effort medium --max-budget-usd 0.75' "$FAKE_AGENT_LOG"
 }
 
 @test "configured claude budget is passed to the claude smoke invocation" {
@@ -761,7 +785,7 @@ load test_helper
   run_once
 
   [ "$status" -eq 0 ]
-  [ "$(grep -c -F -- 'claude --model opus --max-budget-usd 0.75' "$FAKE_AGENT_LOG")" -eq 2 ]
+  [ "$(grep -c -F -- 'claude --model opus --effort medium --max-budget-usd 0.75' "$FAKE_AGENT_LOG")" -eq 2 ]
 }
 
 @test "run budget stops before another agent after claude cost reaches the cap" {
@@ -1496,6 +1520,7 @@ load test_helper
   git -C "$TEST_REPO" switch -q main
   git -C "$TEST_REPO" add summary.json
   git -C "$TEST_REPO" commit -q -m 'test summary'
+  git -C "$TEST_REPO" push -q origin main
 
   bash -c 'cd "$1" && exec bash "$2/once.sh"' _ "$TEST_REPO" "$PROJECT_ROOT" \
     > "$TEST_ROOT/runner.log" 2>&1 &
@@ -1728,6 +1753,7 @@ load test_helper
   printf '%s\n' 'Base review requirement.' > "$TEST_REPO/.ralph/prompt_review.local.md"
   git -C "$TEST_REPO" add .ralph
   git -C "$TEST_REPO" commit -q -m 'test base prompt'
+  git -C "$TEST_REPO" push -q origin main
 
   run_once
 
@@ -1857,6 +1883,32 @@ load test_helper
   [ "$(git -C "$TEST_REPO" config --get branch.ralph/issue-1.remote)" = origin ]
   [ "$(git -C "$TEST_REPO" config --get branch.ralph/issue-1.merge)" = refs/heads/ralph/issue-1 ]
   [[ "$output" == *"rama remota 'ralph/issue-1' recuperada"* ]]
+}
+
+@test "a new issue branch starts at origin/main even when the local main is behind" {
+  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/happy-path.json"
+  export FAKE_CODEX_CREATE_PR=1
+  export FAKE_CODEX_HEAD_FILE="$TEST_ROOT/codex-head"
+  export FAKE_CLAUDE_RESULT=$'1. Falta un test.\n<verdict>CHANGES_REQUESTED</verdict>'
+  export RALPH_MAX_ROUNDS=1
+
+  other="$TEST_ROOT/other-clone"
+  git clone -q -b main "$TEST_ORIGIN" "$other"
+  git -C "$other" config user.email "ralph-tests@example.invalid"
+  git -C "$other" config user.name "ralph tests"
+  printf '%s\n' 'merged on GitHub' > "$other/remote-advance.txt"
+  git -C "$other" add remote-advance.txt
+  git -C "$other" commit -q -m 'advance origin main'
+  git -C "$other" push -q origin main
+  advanced="$(git -C "$other" rev-parse HEAD)"
+  local_main_before="$(git -C "$TEST_REPO" rev-parse main)"
+
+  run_once
+
+  [ "$status" -eq 0 ]
+  [ -s "$FAKE_CODEX_HEAD_FILE" ]
+  git -C "$TEST_REPO" merge-base --is-ancestor "$advanced" "$(head -n 1 "$FAKE_CODEX_HEAD_FILE")"
+  [ "$(git -C "$TEST_REPO" rev-parse main)" = "$local_main_before" ]
 }
 
 @test "PR mergeado con issue abierto se reconcilia sin crear rama ni invocar agentes" {
@@ -2558,6 +2610,18 @@ load test_helper
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"RALPH_CLOSE_POLICY debe ser exactamente verified o never"* ]]
+  [ ! -s "$FAKE_AGENT_LOG" ]
+  [ ! -s "$GH_MUTATION_LOG" ]
+}
+
+@test "invalid claude effort fails in preflight" {
+  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/happy-path.json"
+  export RALPH_CLAUDE_EFFORT=extreme
+
+  run_once
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"RALPH_CLAUDE_EFFORT debe ser exactamente low, medium, high, xhigh o max"* ]]
   [ ! -s "$FAKE_AGENT_LOG" ]
   [ ! -s "$GH_MUTATION_LOG" ]
 }
