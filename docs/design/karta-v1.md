@@ -62,7 +62,13 @@ at 100) and **Figtree** (UI). Card roles: `rank` (the minutes), `rankUnit`
   120 ms), `back2` moves to `back1`, and the following card slides in as the
   new `back2`. **Previous** plays it in reverse. 460 ms, curve
   `(0.22, 1, 0.36, 1)`; a vertical swipe past 40 pt commits.
-- **Reduce Motion:** replace the movement with a cross-fade.
+- **Entry nudge (teaches the gesture, no overlay):** when the deck first
+  appears, the front card lifts slightly (`deck.entryNudge`), shows the card
+  beneath and settles back, twice, then stops; it stops at once on the first
+  touch. Under the deck a hint ("Swipe up or down") fades out after 3 s. There
+  is no tutorial pop-up.
+- **Reduce Motion:** replace the movement with a cross-fade and skip the nudge.
+- **Direction is pending #86** (vertical vs horizontal usability test).
 - A card counts as a **Vista** only once it has settled in the front slot.
 
 ## Suits (Course icons)
