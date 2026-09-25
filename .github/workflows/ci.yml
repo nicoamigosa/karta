@@ -25,17 +25,85 @@ jobs:
       - name: swift test
         run: swift test --package-path KartaCore
 
+  detect:
+    name: Detect docs-only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      run_ios: ${{ steps.check.outputs.run_ios }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: check
+        shell: bash
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          run_ios=true
+          if [ -n "$BASE" ] && git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            changed="$(git diff --name-only "$BASE"...HEAD)"
+            if [ -n "$changed" ] && ! grep -vqE '^docs/|\.md$|^\.github/ISSUE_TEMPLATE/' <<<"$changed"; then
+              run_ios=false
+            fi
+          fi
+          echo "run_ios=$run_ios" >> "$GITHUB_OUTPUT"
+
+  ios:
+    name: Karta app (iOS Simulator)
+    needs: detect
+    if: needs.detect.outputs.run_ios == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: brew install xcodegen xcbeautify
+      - name: Generate project (fails if the scaffold is missing)
+        run: xcodegen generate --spec Karta/project.yml
+      - name: Test on the first available iPhone
+        shell: bash
+        run: |
+          set -euo pipefail
+          udid="$(xcrun simctl list devices available -j \
+            | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')"
+          [ -n "$udid" ] && [ "$udid" != null ]
+          mkdir -p artifacts
+          xcodebuild -project Karta/Karta.xcodeproj -scheme Karta \
+            -destination "id=$udid" -resultBundlePath artifacts/Karta.xcresult \
+            CODE_SIGNING_ALLOWED=NO test 2>&1 \
+            | tee artifacts/xcodebuild.log | xcbeautify --renderer github-actions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-results
+          path: artifacts
+          retention-days: 7
+
   # The only check that the ruleset and ralph require. It fails unless every
-  # required job succeeded. Issue #1 adds detect + ios to its needs.
+  # required job succeeded, except iOS for docs-only changes.
   gate:
     name: gate
     runs-on: ubuntu-24.04
     timeout-minutes: 2
-    needs: [core]
+    needs: [core, detect, ios]
     if: always()
     steps:
       - name: Require every job
         shell: bash
         env:
           CORE_RESULT: ${{ needs.core.result }}
-        run: test "$CORE_RESULT" = success
+          DETECT_RESULT: ${{ needs.detect.result }}
+          RUN_IOS: ${{ needs.detect.outputs.run_ios }}
+          IOS_RESULT: ${{ needs.ios.result }}
+        run: |
+          set -euo pipefail
+          test "$CORE_RESULT" = success
+          test "$DETECT_RESULT" = success
+          case "$RUN_IOS:$IOS_RESULT" in
+            true:success|false:skipped) ;;
+            *) exit 1 ;;
+          esac
