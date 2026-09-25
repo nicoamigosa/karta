@@ -1,7 +1,7 @@
 import Testing
 import Foundation
 import KartaCore
-import KartaPresentation
+@testable import KartaPresentation
 
 /// Checks that the bundled seeds load through the resource boundary and agree
 /// with each other.
@@ -16,6 +16,25 @@ struct SeedIntegrationTests {
 
         #expect(!steps.isEmpty)
         #expect(steps.allSatisfy { library.clip(for: $0) != nil })
+    }
+
+    @Test("Every local hero photo in the seed resolves to a file bundled with the app")
+    func seedHeroPhotosResolveToBundledFiles() throws {
+        let adapter = SeedResourceAdapter()
+        let resolver = MediaResolver(manifest: try adapter.loadMediaManifest(), baseURL: nil)
+        let localPhotos = try adapter.loadRecipes().map(\.heroPhoto).filter {
+            if case .local = $0 { return true } else { return false }
+        }
+
+        #expect(!localPhotos.isEmpty)
+        for photo in localPhotos {
+            guard case let .bundle(resource) = try resolver.resolve(photo) else {
+                Issue.record("\(photo.rawValue) did not resolve to a bundle resource")
+                continue
+            }
+            #expect(Bundle.module.url(forResource: resource, withExtension: nil) != nil,
+                    "\(resource) is not in the bundle")
+        }
     }
 
     @Test("The bundled clip catalog remains loadable")
