@@ -2,7 +2,7 @@
   {
     "id": "spanish-tortilla",
     "name": "Spanish Tortilla",
-    "heroPhotoURL": "https://img.karta.app/spanish-tortilla.jpg",
+    "heroPhotoURL": "local:photos/spanish-tortilla",
     "totalMinutes": 35,
     "difficulty": "easy",
     "servings": 4,
@@ -108,7 +108,7 @@
   {
     "id": "caesar-salad",
     "name": "Caesar Salad",
-    "heroPhotoURL": "https://img.karta.app/caesar-salad.jpg",
+    "heroPhotoURL": "local:photos/caesar-salad",
     "totalMinutes": 20,
     "difficulty": "easy",
     "servings": 2,
@@ -154,7 +154,7 @@
   {
     "id": "pesto-pasta",
     "name": "Pesto Pasta",
-    "heroPhotoURL": "https://img.karta.app/pesto-pasta.jpg",
+    "heroPhotoURL": "local:photos/pesto-pasta",
     "totalMinutes": 20,
     "difficulty": "easy",
     "servings": 4,
@@ -205,7 +205,7 @@
   {
     "id": "lentil-stew",
     "name": "Lentil Stew",
-    "heroPhotoURL": "https://img.karta.app/lentil-stew.jpg",
+    "heroPhotoURL": "local:photos/lentil-stew",
     "totalMinutes": 50,
     "difficulty": "medium",
     "servings": 6,
@@ -255,7 +255,7 @@
   {
     "id": "baked-salmon-with-lemon",
     "name": "Baked Salmon with Lemon",
-    "heroPhotoURL": "https://img.karta.app/baked-salmon-with-lemon.jpg",
+    "heroPhotoURL": "local:photos/baked-salmon-with-lemon",
     "totalMinutes": 30,
     "difficulty": "medium",
     "servings": 2,
@@ -300,7 +300,7 @@
   {
     "id": "banana-pancakes",
     "name": "Banana Pancakes",
-    "heroPhotoURL": "https://img.karta.app/banana-pancakes.jpg",
+    "heroPhotoURL": "local:photos/banana-pancakes",
     "totalMinutes": 20,
     "difficulty": "easy",
     "servings": 2,
@@ -356,7 +356,7 @@
   {
     "id": "vegetable-noodle-stir-fry",
     "name": "Vegetable Noodle Stir-Fry",
-    "heroPhotoURL": "https://img.karta.app/vegetable-noodle-stir-fry.jpg",
+    "heroPhotoURL": "local:photos/vegetable-noodle-stir-fry",
     "totalMinutes": 25,
     "difficulty": "easy",
     "servings": 3,

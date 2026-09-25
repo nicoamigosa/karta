@@ -2,6 +2,13 @@
   "assets": {
     "clips/cuajar-tortilla.mp4": "clips/cuajar-tortilla.mp4",
     "clips/sellar-pollo.mp4": "clips/sellar-pollo.mp4",
-    "clips/punto-salmon.mp4": "clips/punto-salmon.mp4"
+    "clips/punto-salmon.mp4": "clips/punto-salmon.mp4",
+    "photos/spanish-tortilla": "spanish-tortilla.jpg",
+    "photos/caesar-salad": "caesar-salad.jpg",
+    "photos/pesto-pasta": "pesto-pasta.jpg",
+    "photos/lentil-stew": "lentil-stew.jpg",
+    "photos/baked-salmon-with-lemon": "baked-salmon-with-lemon.jpg",
+    "photos/banana-pancakes": "banana-pancakes.jpg",
+    "photos/vegetable-noodle-stir-fry": "vegetable-noodle-stir-fry.jpg"
   }
 }
