@@ -1,0 +1,49 @@
+name: Karta
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  KartaCore:
+    path: ../KartaCore
+targets:
+  Karta:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.karta.Karta
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - package: KartaCore
+        product: KartaCore
+      - package: KartaCore
+        product: KartaPresentation
+  KartaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.karta.KartaTests
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_VERSION: "6.0"
+    dependencies:
+      - target: Karta
+      - package: KartaCore
+        product: KartaPresentation
+schemes:
+  Karta:
+    build:
+      targets:
+        Karta: all
+    test:
+      targets:
+        - KartaTests
