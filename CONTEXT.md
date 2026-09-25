@@ -25,7 +25,7 @@ aprobada la receta no está completa.
 _Avoid_: imagen, hero, thumbnail, placeholder como foto final
 
 **Raciones**:
-Cuántas personas come una receta, declarado por la editora. Se muestra en la tarjeta y acerca
+Cuántas personas come una receta, declarado por la editora. Se muestra en la Card y acerca
 en el orden del feed las recetas del tamaño del hogar, pero nunca las hace desaparecer.
 _Avoid_: porciones, servings como filtro
 
@@ -92,11 +92,22 @@ La secuencia de recetas elegibles que se le ofrece a la usuaria para decidir. Nu
 limita artificialmente: limitarlo contradice el objetivo de decidir rápido.
 _Avoid_: timeline, muro, recomendaciones
 
+**Card**:
+Una receta tal como se presenta en el Feed: un bloque único de foto, nombre e información
+clave que ocupa la pantalla entera y se mueve entero. El Feed avanza de card en card en
+vertical, como quien pasa una baraja, nunca como una lista de varias recetas a la vez. Pasar
+de card no es un veredicto: no hay "sí" ni "no" al deslizar. La foto protagoniza, pero la
+card no es sólo la foto. La información clave es siempre tiempo, raciones y dificultad:
+claves para decidir si abrir la receta, no una descripción de ella; lo descriptivo vive tras
+la Apertura. Toma la mecánica de los reels, pero es una foto, no un vídeo.
+_Avoid_: tarjeta, carta, post, reel, celda, fila
+
 **Vista**:
 Una receta que estuvo realmente en pantalla ante la usuaria durante un instante, con su
 fecha. No es una receta que el feed devolvió ni una que se abrió: pasar de largo cuenta,
 y es además la señal negativa suave del PRD. Quien decide que algo fue visto es la UI, que
 se lo comunica al dominio como un hecho ya resuelto, nunca como geometría.
+En el Feed, una Vista es cada Card que llegó a asentarse en pantalla.
 La fecha se fija la primera vez y no se renueva por volver a verla.
 _Avoid_: impresión, mostrada, servida
 
@@ -117,7 +128,7 @@ _Avoid_: pestaña, sección, tab
 
 **Cookbook**:
 El repertorio personal de recetas guardadas. Guardar es un acto explícito y deliberado,
-distinto de que algo simplemente guste.
+distinto de que algo simplemente guste, y sólo ocurre tras la Apertura: nunca desde la Card.
 _Avoid_: favoritos, likes, guardados
 
 **Cupo**:

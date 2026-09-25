@@ -23,7 +23,7 @@ The core emotional state to relieve is **decision anxiety**, not boredom. The en
 
 **Karta** is an iOS app that helps Paola **decide what to cook — fast** — and then cook it successfully, using a familiar card/feed format but optimized for *deciding*, not for endless scrolling.
 
-- A vertical feed of recipe **cards** (appetizing hero photo + name + key info). She browses, and when one grabs her, she opens it and can **cook it step by step**.
+- A vertical **deck** of full-screen recipe **cards** (appetizing hero photo + name + key info), one card per screen, passed like a deck of cards (ADR 0012). She browses, and when one grabs her, she opens it and can **cook it step by step**.
 - Every recipe is **curated and verified** so it is complete and actually works — the opposite of the unreliable social recipes. This trust is the core differentiator versus TikTok/Instagram, where Karta can never win on quantity.
 - Recommendations come from **hard filters + popularity/freshness + don't-repeat** logic (no ML at launch).
 - A **step-by-step cooking mode** built for real kitchen conditions (messy hands, multitasking).
@@ -34,8 +34,8 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 ## User Stories
 
 ### Browsing & deciding (the core loop)
-1. As Paola, I want a vertical feed of recipe cards I can scroll, so that browsing feels familiar and low-effort.
-2. As Paola, I want each card to show an appetizing photo, the name, and key info (time, difficulty, key attributes), so that I can judge quickly whether it interests me.
+1. As Paola, I want a vertical deck of full-screen recipe cards I pass one at a time (like Reels/Shorts, but photos), so that browsing feels familiar and low-effort.
+2. As Paola, I want each card to show an appetizing photo, the name, and key info (time, servings, difficulty), so that I can judge quickly whether to open it. The card gives cues, not a description; tags and details live behind the open.
 3. As Paola, I want to tap a card (or swipe right) to open the full recipe, so that I can see ingredients and the complete method.
 4. As Paola, I want the feed to *not* repeat recipes I've already seen recently, so that browsing feels fresh day after day.
 5. As Paola, I want to reach a dinner decision in a couple of minutes, so that I stop suffering over the choice.
@@ -113,14 +113,15 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 - **North-star metric:** % of sessions that end in a decision (entered cooking mode / reached recipe end), with time-to-decide as a secondary quality metric. The feed is intentionally low-cardinality (decide in ~10–15 cards), so it is **never capped** — capping the feed would fight the "decide fast" goal.
 
 ### The card
+- On the feed, a **Card** is one full-screen block (photo + name + time · servings · difficulty) that moves as a unit; the feed advances card by card vertically, with a deck-of-cards transition. Swiping is never a verdict (no Tinder yes/no). See ADR 0012.
 - Card = **high-quality hero photo + complete text steps + reusable technique clips** at non-obvious steps. No bespoke per-recipe video in MVP.
 - Two distinct visual quality bars: **hero photo = high production / appetizing** (pro / stock / AI); **technique clips = clarity over production** (DIY phone, overhead, natural light, ~6s, reusable across many recipes). Steps with no useful clip stay text-only.
 
 ### Interaction & gesture model
 - **Navigation = gestures; actions = buttons.**
-- Feed: vertical scroll = move between recipes; tap card or swipe right = open/cook; scroll-past = soft negative signal.
+- Feed: vertical swipe = next/previous card (one full-screen card at a time); tap card or swipe right = open/cook; scroll-past = soft negative signal.
 - Cooking mode: swipe right = next step; swipe left = previous step; swipe down = exit.
-- **Save = visible button** with a kitchen/recipe-box icon (explicitly *not* a heart, to avoid like-vs-save confusion) + animation. Optional double-tap shortcut deferred to v2.
+- **Save = visible button** in the recipe detail only (never on the feed card, ADR 0012) with a kitchen/recipe-box icon (explicitly *not* a heart, to avoid like-vs-save confusion) + animation. Optional double-tap shortcut deferred to v2.
 - There is **no separate "like."** Only **Save** (explicit) + implicit behavioral signals (open, cook, scroll-past).
 
 ### Cooking mode
@@ -167,13 +168,16 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 ### Platform & tech
 - **iOS-only MVP**, **native SwiftUI** (best feel for a gesture/animation-led product). Android is a later rewrite.
 
-### Look & feel (v0 direction; the designer owns the detail)
-- Direction = **A+B blend**: warm editorial photography over a calm, minimal, low-stress base.
-- First-second feeling: *"breathe, I'll solve dinner for you."* Calm > stimulation.
-- **Photo leads, chrome recedes.** Warm/earthy palette, generous whitespace, friendly legible type, soft corners.
-- **Light/warm background**, full-bleed photos (food pops on neutral, dies on black).
-- **Avoid TikTok aesthetic** (neon, high contrast, overstimulation).
-- Personality: warm, trustworthy, American-Latina homey; neither clinical-tech nor childish.
+### Look & feel (v1 direction, 2026-09-25 session; founder + designer decide)
+- The v0 build (PR #78) read as **generic and flat**. v1 keeps the calm goal but asks for a far more **original, colourful, alive, friendly, homey, soft** identity, with **some relief** without losing modernity. Reference for *spirit* (not imitation): PostHog.
+- **Brand concept:** *karta* = a card of a deck **and** *à la carte* / *la carta* (the menu). Each recipe is a card; the feed is a deck you pass. The concept drives the wordmark, the app icon, the card transition and the relief.
+- **Palette:** warm light base (cream/paper) + two or three **saturated earthy accents**. Colourful ≠ stimulating: **no neon, no harsh high contrast**, no TikTok aesthetic.
+- **Relief:** tactile, slightly retro UI — visible card edges, solid soft shadows, buttons that look pressable. Cards feel like physical cards in a stack.
+- Humour in copy and a mascot/illustrations are **optional**: explored in at most one direction, never childish.
+- **Photo leads**: the food photo is the hero of every card, but the card is a block (photo + info), not photo-only.
+- **Light mode only** in the MVP (the app ignores system dark mode).
+- Personality: warm, trustworthy, American-Latina homey; neither clinical-tech nor childish. Launch market is the US, so all brand language is English-first.
+- Process (#15): 3–4 visual directions prototyped (moodboard, palette, type, a Card, the deck transition, wordmark + app icon), filtered by a separate visual critic, chosen and signed off by the founder and the designer, then turned into shared style tokens.
 
 ## Testing Decisions
 
