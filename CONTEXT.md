@@ -29,11 +29,29 @@ Cuántas personas come una receta, declarado por la editora. Se muestra en la Ca
 en el orden del feed las recetas del tamaño del hogar, pero nunca las hace desaparecer.
 _Avoid_: porciones, servings como filtro
 
+**Course**:
+La sección de la carta a la que pertenece una receta: `breakfast`, `lunch`, `dinner` o
+`dessert`. Cada receta tiene exactamente un Course principal, elegido por la editora
+respondiendo a "¿cuándo la cocinaría la usuaria?", y puede encajar además en otros Courses,
+que sólo sirven para filtrar. Como en la carta de un restaurante, el principal es una
+decisión editorial, no una verdad: la tortilla vive en `dinner` aunque también sirva de `lunch`.
+En la Card el Course principal es el palo, igual que el tiempo es el número.
+_Avoid_: comida, momento, categoría, meal type, palo como término del dominio
+
 **Etiqueta**:
-Un término de un vocabulario cerrado en inglés que describe una receta (`one-pan`, `vegetarian`,
-`quick`…). Es dato, no texto de pantalla: un término desconocido invalida la receta (ADR 0005).
-No es un alérgeno: la seguridad nunca se decide por etiquetas.
-_Avoid_: tag libre, categoría, etiquetas en español
+Un término de un vocabulario cerrado en inglés que nombra una restricción práctica de la
+receta: `one-pan`, `oven`, `make-ahead`, `shareable`. Sólo existe si alimenta un filtro que
+ayuda a decidir; no describe ánimo ni estilo, no repite lo que ya dice el tiempo, el Course o
+la Dieta, y nunca aparece en la Card. Es dato, no texto de pantalla: un término desconocido
+invalida la receta (ADR 0005, ADR 0013). No es un alérgeno: la seguridad nunca se decide por
+etiquetas.
+_Avoid_: tag libre, categoría, etiquetas en español, `quick`, `breakfast` como etiqueta
+
+**Dieta**:
+El régimen alimentario para el que una receta es apta: `vegetarian` o `vegan`, donde
+vegan implica vegetarian. Es un filtro para decidir, no una garantía: la única garantía dura
+es la Intolerancia.
+_Avoid_: etiqueta de dieta, restricción, preferencia
 
 **Clip de técnica**:
 Un vídeo corto y reutilizable que muestra una técnica concreta (picar cebolla, comprobar
@@ -97,9 +115,10 @@ Una receta tal como se presenta en el Feed: un bloque único de foto, nombre e i
 clave que ocupa la pantalla entera y se mueve entero. El Feed avanza de card en card en
 vertical, como quien pasa una baraja, nunca como una lista de varias recetas a la vez. Pasar
 de card no es un veredicto: no hay "sí" ni "no" al deslizar. La foto protagoniza, pero la
-card no es sólo la foto. La información clave es siempre tiempo, raciones y dificultad:
-claves para decidir si abrir la receta, no una descripción de ella; lo descriptivo vive tras
-la Apertura. Toma la mecánica de los reels, pero es una foto, no un vídeo.
+card no es sólo la foto. La información clave es siempre tiempo, raciones, dificultad y el
+Course principal: claves para decidir si abrir la receta, no una descripción de ella; lo
+descriptivo vive tras la Apertura. Como en un naipe, el tiempo es el número y el Course
+principal es el palo. Toma la mecánica de los reels, pero es una foto, no un vídeo.
 _Avoid_: tarjeta, carta, post, reel, celda, fila
 
 **Vista**:
