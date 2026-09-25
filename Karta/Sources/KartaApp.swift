@@ -152,9 +152,11 @@ struct FeedScreen: View {
                 Button("Yes, avoid dairy") {
                     store.send(.onboarding(.answerIntolerances([.dairy])))
                 }
+                .foregroundStyle(paper)
                 Button("No dairy intolerance") {
                     store.send(.onboarding(.answerIntolerances([])))
                 }
+                .foregroundStyle(paper)
             } else {
                 Text("How many in your household?")
                     .font(.system(size: 34, weight: .semibold, design: .serif))
@@ -163,6 +165,7 @@ struct FeedScreen: View {
                     Button("\(size) \(size == 1 ? "person" : "people")") {
                         store.send(.onboarding(.setHouseholdSize(size)))
                     }
+                    .foregroundStyle(paper)
                 }
             }
             Spacer()
