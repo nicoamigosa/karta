@@ -66,6 +66,13 @@ gh issue comment "$N" --body "Asignado a Devin. Base: \`$(git ls-remote origin m
 
 ### 3.3 Lanzar la sesión de Devin
 
+La sesión tiene que ser **cloud con macOS**: en la web o en Devin Desktop, *New Cloud session* →
+repo `nicoamigosa/karta` → *Virtual environment* / platform **macOS**, antes de enviar la tarea
+(en Slack, `!mac`; por API, `platform: "macos"`). **No usar el Devin CLI**: corre en la máquina
+local (WSL), sin Xcode ni simulador, y deja los criterios de iOS sin verificar (le pasó a #1,
+PR #78). La VM trae Xcode y un iPhone simulator; `xcodegen` no viene instalado
+(`brew install xcodegen`, o un Blueprint con `runs-on: macos` que lo instale).
+
 Pegar el prompt de la sección 6 con `<N>` sustituido. En **#1** añadir además:
 
 > Also add the `detect` and `ios` jobs and the extended `gate` from step 6 of
