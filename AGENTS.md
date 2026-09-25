@@ -12,7 +12,7 @@ source of truth for agents; `CLAUDE.md` and `CODEX.md` only point here.
 Never edit it here: fix it upstream, cut a release and run
 `ralph/update.sh <VERSION>` (verifies the tarball against `SHA256SUMS` and
 refuses local edits). Project-specific overrides go in `.ralph/` (see
-"Niveles de configuración" in `ralph/README.md`). The hardening backlog from
+"Configuration levels" in `ralph/README.md`). The hardening backlog from
 the 2026-09 review (`docs/reviews/2026-09-astra-ralph.md`) is fully closed as
 of v1.2.0. The loop requires a ruleset without bypass on the base branch and a
 read-only reviewer token (`RALPH_REVIEWER_GH_TOKEN`). Both exist since
