@@ -57,7 +57,9 @@ _Avoid_: etiqueta de dieta, restricción, preferencia
 Un añadido que la receta admite pero no necesita: sin él la receta sale igual de bien. Por
 eso un opcional nunca decide si la receta es segura: si contiene un alérgeno que la usuaria
 declaró como Intolerancia, la receta se le sigue ofreciendo, pero ese opcional no le aparece
-en ninguna superficie, ni en la lista ni en los pasos. Todo ingrediente se nombra con la
+en ninguna superficie, ni en la lista ni en los pasos. Si el opcional necesita un gesto,
+va en un paso propio marcado como opcional: ningún otro paso lo menciona, y ese paso sólo se
+ve en la Sesión de cocina, nunca en el resumen de pasos del reverso de la Card. Todo ingrediente se nombra con la
 variedad concreta que hay que comprar (`yellow onion`, no `onion`).
 _Avoid_: ingrediente sugerido, extra, "al gusto" como opcional
 
