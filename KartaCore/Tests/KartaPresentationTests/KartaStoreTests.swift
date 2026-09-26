@@ -406,6 +406,20 @@ struct KartaStoreTests {
     }
 
     @MainActor
+    @Test("The store sends an Apertura to view history")
+    func storeSendsOpeningAction() {
+        let openingDate = Date(timeIntervalSince1970: 2_000)
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+
+        store.send(.recordOpen(recipeID: "recipe-1", at: openingDate))
+
+        #expect(store.state.viewHistory.entries.isEmpty)
+        #expect(store.state.viewHistory.openings == [
+            OpenEntry(recipeID: "recipe-1", date: openingDate),
+        ])
+    }
+
+    @MainActor
     @Test("Answering onboarding updates the store safety profile")
     func storeAnswersIntolerances() {
         let store = KartaStore(state: KartaState(
