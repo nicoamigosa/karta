@@ -259,6 +259,61 @@ struct KartaStoreTests {
         #expect(state.cookbook.save("overflow") == .blockedByCap)
     }
 
+    @Test("The reducer records a recipe's first Vista")
+    func reducerRecordsFirstView() {
+        let firstDate = Date(timeIntervalSince1970: 1_000)
+        let laterDate = Date(timeIntervalSince1970: 2_000)
+        var state = KartaState(
+            viewHistory: ViewHistory(entries: [
+                ViewEntry(recipeID: "existing", date: firstDate),
+            ]),
+            safetyProfile: noIntolerances
+        )
+
+        KartaReducer.reduce(
+            &state,
+            action: .recordView(recipeID: "recipe-1", at: firstDate)
+        )
+        KartaReducer.reduce(
+            &state,
+            action: .recordView(recipeID: "recipe-1", at: laterDate)
+        )
+
+        #expect(state.viewHistory.entries == [
+            ViewEntry(recipeID: "existing", date: firstDate),
+            ViewEntry(recipeID: "recipe-1", date: firstDate),
+        ])
+    }
+
+    @Test("An Apertura does not create or renew a Vista")
+    func reducerRecordsOpeningWithoutChangingView() {
+        let firstViewDate = Date(timeIntervalSince1970: 1_000)
+        let openingDate = Date(timeIntervalSince1970: 2_000)
+        var state = KartaState(
+            viewHistory: ViewHistory(entries: [
+                ViewEntry(recipeID: "already-viewed", date: firstViewDate),
+            ]),
+            safetyProfile: noIntolerances
+        )
+
+        KartaReducer.reduce(
+            &state,
+            action: .recordOpen(recipeID: "opened-only", at: openingDate)
+        )
+        KartaReducer.reduce(
+            &state,
+            action: .recordOpen(recipeID: "already-viewed", at: openingDate)
+        )
+
+        #expect(state.viewHistory.entries == [
+            ViewEntry(recipeID: "already-viewed", date: firstViewDate),
+        ])
+        #expect(state.viewHistory.openings == [
+            OpenEntry(recipeID: "opened-only", date: openingDate),
+            OpenEntry(recipeID: "already-viewed", date: openingDate),
+        ])
+    }
+
     @Test("The pure reducer advances a started cooking session")
     func reducerAdvancesCookingSession() {
         let recipe = Recipe(
@@ -309,6 +364,38 @@ struct KartaStoreTests {
         #expect(store.state.onboarding.calibration.likedIDs.count == 20)
         #expect(store.cookbook.savedIDs == ["real-save"])
         #expect(store.cookbook.isAtCap == false)
+    }
+
+    @MainActor
+    @Test("The store feed places recent Vistas below its frontier")
+    func storeFeedUsesItsOwnViewHistory() throws {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(
+                intoleranceAnswer: .answered([]),
+                householdSize: 2
+            ),
+            safetyProfile: noIntolerances
+        ))
+        store.send(.recordView(
+            recipeID: "recent",
+            at: now.addingTimeInterval(-6 * 24 * 60 * 60)
+        ))
+        store.send(.recordView(
+            recipeID: "expired",
+            at: now.addingTimeInterval(-8 * 24 * 60 * 60)
+        ))
+
+        let feed = try #require(store.feed(
+            recipes: [
+                rankingRecipe("recent", popularity: 1),
+                rankingRecipe("expired", popularity: 1),
+            ],
+            clock: StoreTestClock(now: now)
+        ))
+
+        #expect(feed.newRecipes.map(\.id) == ["expired"])
+        #expect(feed.alreadySeenRecipes.map(\.id) == ["recent"])
     }
 
     @MainActor

@@ -2,10 +2,15 @@ import Foundation
 import Observation
 import KartaCore
 
+private enum FeedPolicy {
+    static let recentViewWindow: TimeInterval = 7 * 24 * 60 * 60
+}
+
 /// The value state shared by the presentation store and its pure reducer.
 public struct KartaState: Equatable, Sendable {
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
+    public var viewHistory: ViewHistory
     public var session: CookingSession?
     public var navigation: AppNavigationState
     public var filterState: FilterState
@@ -46,9 +51,20 @@ public struct KartaState: Equatable, Sendable {
         )
     }
 
+    /// Build the feed from this state's view history and presentation policy.
+    public func feed(recipes: [Recipe], clock: any KartaClock) -> Feed? {
+        feed(
+            recipes: recipes,
+            views: viewHistory.entries,
+            recentWindow: FeedPolicy.recentViewWindow,
+            clock: clock
+        )
+    }
+
     public init(
         cookbook: Cookbook = Cookbook(),
         onboarding: OnboardingState = OnboardingState(),
+        viewHistory: ViewHistory = ViewHistory(),
         session: CookingSession? = nil,
         navigation: AppNavigationState = AppNavigationState(),
         safetyProfile: SafetyProfile,
@@ -56,6 +72,7 @@ public struct KartaState: Equatable, Sendable {
     ) {
         self.cookbook = cookbook
         self.onboarding = onboarding
+        self.viewHistory = viewHistory
         self.session = session
         self.navigation = navigation
         self.filterState = FilterState(
@@ -69,6 +86,8 @@ public struct KartaState: Equatable, Sendable {
 public enum KartaAction: Sendable {
     case saveRecipe(String)
     case unsaveRecipe(String)
+    case recordView(recipeID: String, at: Date)
+    case recordOpen(recipeID: String, at: Date)
     case downgradeCookbookToFree
     case onboarding(OnboardingAction)
     case startCooking(Recipe, startedAt: TimeInterval)
@@ -94,6 +113,10 @@ public enum KartaReducer {
             state.cookbook.save(id)
         case let .unsaveRecipe(id):
             state.cookbook.unsave(id)
+        case let .recordView(recipeID, date):
+            state.viewHistory.recordView(recipeID: recipeID, at: date)
+        case let .recordOpen(recipeID, date):
+            state.viewHistory.recordOpen(recipeID: recipeID, at: date)
         case .downgradeCookbookToFree:
             state.cookbook.downgradeToFree()
         case let .onboarding(action):
@@ -179,5 +202,11 @@ public final class KartaStore {
             recentWindow: recentWindow,
             clock: clock
         )
+    }
+
+    /// The shell's feed seam; view history and its recency window are owned by
+    /// the presentation state.
+    public func feed(recipes: [Recipe], clock: any KartaClock) -> Feed? {
+        state.feed(recipes: recipes, clock: clock)
     }
 }
