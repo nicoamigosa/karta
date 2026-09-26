@@ -470,20 +470,25 @@ private struct CookingSessionDTO: Codable {
 
 private struct CookingStepDTO: Codable {
     let text: String
+    let summary: String
     let ingredients: [StepIngredientDTO]
     let timerSeconds: Int?
     let clipID: String?
+    let isOptional: Bool
 
     init(_ step: CookingStep) {
         text = step.text
+        summary = step.summary
         ingredients = step.ingredients.map(StepIngredientDTO.init)
         timerSeconds = step.timerSeconds
         clipID = step.clipID
+        isOptional = step.isOptional
     }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         text = try container.decode(String.self, forKey: .text)
+        summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? text
         if let ingredients = try container.decodeIfPresent(
             [StepIngredientDTO].self,
             forKey: .ingredients
@@ -507,27 +512,33 @@ private struct CookingStepDTO: Codable {
         }
         timerSeconds = try container.decodeIfPresent(Int.self, forKey: .timerSeconds)
         clipID = try container.decodeIfPresent(String.self, forKey: .clipID)
+        isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
     }
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(text, forKey: .text)
+        try container.encode(summary, forKey: .summary)
         try container.encode(ingredients, forKey: .ingredients)
         try container.encodeIfPresent(timerSeconds, forKey: .timerSeconds)
         try container.encodeIfPresent(clipID, forKey: .clipID)
+        try container.encode(isOptional, forKey: .isOptional)
     }
 
     var domainValue: CookingStep {
         CookingStep(
             text: text,
+            summary: summary,
             ingredients: ingredients.map(\.domainValue),
             timerSeconds: timerSeconds,
-            clipID: clipID
+            clipID: clipID,
+            isOptional: isOptional
         )
     }
 
     private enum CodingKeys: String, CodingKey {
-        case text, ingredients, ingredient, timerSeconds, clipID
+        case text, summary, ingredients, ingredient, timerSeconds, clipID
+        case isOptional = "optional"
     }
 }
 

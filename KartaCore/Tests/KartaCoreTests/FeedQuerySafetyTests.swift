@@ -9,7 +9,8 @@ struct FeedQuerySafetyTests {
         _ id: String,
         reviewedAllergens: [Allergen] = [],
         review: AllergenReview = .reviewed([]),
-        diets: Set<Diet> = []
+        diets: Set<Diet> = [],
+        ingredients: [Ingredient] = [Ingredient(name: "x", quantity: "1")]
     ) -> Recipe {
         Recipe(
             id: id,
@@ -20,7 +21,7 @@ struct FeedQuerySafetyTests {
             servings: 4,
             primaryCourse: .dinner,
             diets: diets,
-            ingredients: [Ingredient(name: "x", quantity: "1")],
+            ingredients: ingredients,
             steps: ["paso"],
             allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
         )
@@ -103,6 +104,32 @@ struct FeedQuerySafetyTests {
             filters: FeedFilters()
         )
         #expect(Set(feed.newRecipes.map(\.id)) == ["a", "b"])
+    }
+
+    @Test("Dairy on an optional ingredient does not make the recipe unsafe")
+    func optionalDairyDoesNotExcludeRecipe() {
+        let optionalDairyRecipe = recipe(
+            "optional-dairy",
+            ingredients: [
+                Ingredient(name: "Flour", quantity: "1 cup"),
+                Ingredient(
+                    name: "Butter",
+                    quantity: "1 tbsp",
+                    isOptional: true,
+                    allergens: [.dairy]
+                ),
+            ]
+        )
+
+        let feed = FeedQuery.feed(
+            recipes: [optionalDairyRecipe],
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(intolerances: [.dairy])
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["optional-dairy"])
     }
 
     @Test("A vegan Diet never overrides an active intolerance")

@@ -17,7 +17,10 @@ public struct StepIngredient: Codable, Equatable, Sendable {
 /// back).
 public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLiteral {
     public let text: String
+    /// The editor-written one-line version shown on the Card reverse.
+    public let summary: String
     public let ingredients: [StepIngredient]
+    public let isOptional: Bool
     /// Optional countdown for a timed action ("simmer 10 min" → 600), in seconds.
     public let timerSeconds: Int?
     /// Optional reference to a reusable technique clip, by id. Steps with no
@@ -27,39 +30,48 @@ public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLite
 
     public init(
         text: String,
+        summary: String? = nil,
         ingredients: [StepIngredient] = [],
         timerSeconds: Int? = nil,
-        clipID: String? = nil
+        clipID: String? = nil,
+        isOptional: Bool = false
     ) {
         self.text = text
+        self.summary = summary ?? text
         self.ingredients = ingredients
         self.timerSeconds = timerSeconds
         self.clipID = clipID
+        self.isOptional = isOptional
     }
 
     /// A string literal is a text-only step — keeps call sites and seed data terse.
     public init(stringLiteral value: String) {
-        self.init(text: value)
+        self.init(text: value, summary: value)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case text, ingredients, timerSeconds, clipID
+        case text, summary, ingredients, timerSeconds, clipID
+        case isOptional = "optional"
     }
 
-    /// Decodes either a bare string (text-only step) or a full object, so the
-    /// seed catalog can mix simple and rich steps.
+    /// Catalog steps require an editor-written summary and use an object even
+    /// when they carry no ingredients, timer, or technique clip.
     public init(from decoder: any Decoder) throws {
         if let single = try? decoder.singleValueContainer(),
-           let text = try? single.decode(String.self) {
-            self.init(text: text)
-            return
+           (try? single.decode(String.self)) != nil {
+            throw DecodingError.dataCorruptedError(
+                in: single,
+                debugDescription: "A cooking step requires an editor-written summary"
+            )
         }
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
             text: try c.decode(String.self, forKey: .text),
+            summary: try c.decode(String.self, forKey: .summary),
             ingredients: try c.decodeIfPresent([StepIngredient].self, forKey: .ingredients) ?? [],
             timerSeconds: try c.decodeIfPresent(Int.self, forKey: .timerSeconds),
-            clipID: try c.decodeIfPresent(String.self, forKey: .clipID)
+            clipID: try c.decodeIfPresent(String.self, forKey: .clipID),
+            isOptional: try c.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
         )
     }
 }
@@ -90,10 +102,13 @@ extension Recipe {
     /// Open cooking mode for this recipe: a fresh `CookingSession` over its own
     /// structured steps. This is the seam between the static recipe and the
     /// runtime cooking state machine.
-    public func cookingSession(startedAt: TimeInterval = 0) -> CookingSession {
+    public func cookingSession(
+        startedAt: TimeInterval = 0,
+        intolerances: Set<Allergen> = []
+    ) -> CookingSession {
         CookingSession(
             recipeID: id,
-            steps: steps,
+            steps: visibleSteps(for: intolerances),
             declaredDuration: TimeInterval(totalMinutes) * 60,
             startedAt: startedAt
         )

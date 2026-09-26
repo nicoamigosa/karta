@@ -18,7 +18,7 @@ struct MediaReferenceTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
-            "steps": ["Cook"]
+            "steps": [{"text":"Cook","summary":"Cook"}]
         }]
         """
 
@@ -40,7 +40,7 @@ struct MediaReferenceTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
-            "steps": ["Cook"]
+            "steps": [{"text":"Cook","summary":"Cook"}]
         }]
         """
 
@@ -71,7 +71,7 @@ struct MediaReferenceTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
-            "steps": ["Cook"]
+            "steps": [{"text":"Cook","summary":"Cook"}]
         }]
         """
 
