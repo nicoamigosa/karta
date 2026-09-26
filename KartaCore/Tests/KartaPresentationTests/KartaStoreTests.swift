@@ -285,6 +285,13 @@ struct KartaStoreTests {
         ])
     }
 
+    @Test("A new presentation state starts with an empty view history")
+    func viewHistoryDefaultsToEmpty() {
+        let state = KartaState(safetyProfile: noIntolerances)
+
+        #expect(state.viewHistory == ViewHistory())
+    }
+
     @Test("An Apertura does not create or renew a Vista")
     func reducerRecordsOpeningWithoutChangingView() {
         let firstViewDate = Date(timeIntervalSince1970: 1_000)
