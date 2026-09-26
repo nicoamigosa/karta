@@ -219,7 +219,7 @@ private struct FeedDeck: View {
     }
 
     private var firstTouchGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
+        LongPressGesture(minimumDuration: 0)
             .onChanged { _ in
                 stopEntryNudge()
             }
