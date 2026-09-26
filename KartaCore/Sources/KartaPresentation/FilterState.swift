@@ -17,23 +17,31 @@ public struct FilterDraft: Equatable, Sendable {
     public var maxMinutes: Int?
     /// Hardest difficulty the user is willing to cook. `nil` means no limit.
     public var maxDifficulty: Difficulty?
-    /// When true, only recipes tagged one-pan are shown.
-    public var requireOnePan: Bool
+    /// Course selected for the feed.
+    public var course: Course?
+    /// Diet selected for the feed.
+    public var diet: Diet?
+    /// Practical tags that a recipe must all have.
+    public var practicalTags: Set<PracticalTag>
 
     public init(
         maxMinutes: Int? = nil,
         maxDifficulty: Difficulty? = nil,
-        requireOnePan: Bool = false
+        course: Course? = nil,
+        diet: Diet? = nil,
+        practicalTags: Set<PracticalTag> = []
     ) {
         self.maxMinutes = maxMinutes
         self.maxDifficulty = maxDifficulty
-        self.requireOnePan = requireOnePan
+        self.course = course
+        self.diet = diet
+        self.practicalTags = practicalTags
     }
 }
 
 /// Actions that can change feed filter state.
 public enum FilterAction: Sendable {
-    /// Commit the time, difficulty and one-pan controls from the filter sheet.
+    /// Commit the feed filters from the filter sheet.
     case apply(FilterDraft)
     /// Discard an uncommitted filter-sheet edit. The view owns that edit.
     case cancel
@@ -63,7 +71,9 @@ public struct FilterState: Equatable, Sendable {
             intolerances: safetyProfile.intolerances,
             maxMinutes: filterDraft.maxMinutes,
             maxDifficulty: filterDraft.maxDifficulty,
-            requireOnePan: filterDraft.requireOnePan
+            course: filterDraft.course,
+            diet: filterDraft.diet,
+            practicalTags: filterDraft.practicalTags
         )
     }
 

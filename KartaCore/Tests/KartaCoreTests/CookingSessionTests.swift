@@ -146,7 +146,7 @@ struct CookingSessionCookedEventTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
                 CookingStep(text: "Chop", timerSeconds: 120),
@@ -175,7 +175,7 @@ struct CookingSessionCookedEventTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
                 CookingStep(text: "Chop", timerSeconds: 120),
@@ -200,7 +200,7 @@ struct CookingSessionCookedEventTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [CookingStep(text: "Serve", timerSeconds: 120)],
             allergenReview: .reviewed([])
@@ -221,7 +221,7 @@ struct CookingSessionCookedEventTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
                 CookingStep(text: "Chop"),
@@ -247,7 +247,7 @@ struct CookingSessionCookedEventTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
                 CookingStep(text: "Chop", timerSeconds: 120),

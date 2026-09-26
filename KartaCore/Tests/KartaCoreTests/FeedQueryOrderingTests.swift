@@ -18,7 +18,7 @@ struct FeedQueryOrderingTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: servings,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
             allergenReview: .reviewed([]),

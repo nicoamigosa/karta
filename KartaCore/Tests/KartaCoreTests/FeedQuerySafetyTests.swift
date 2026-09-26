@@ -8,7 +8,8 @@ struct FeedQuerySafetyTests {
     private func recipe(
         _ id: String,
         reviewedAllergens: [Allergen] = [],
-        review: AllergenReview = .reviewed([])
+        review: AllergenReview = .reviewed([]),
+        diets: Set<Diet> = []
     ) -> Recipe {
         Recipe(
             id: id,
@@ -17,7 +18,8 @@ struct FeedQuerySafetyTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 4,
-            tags: [],
+            primaryCourse: .dinner,
+            diets: diets,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
             allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
@@ -101,6 +103,24 @@ struct FeedQuerySafetyTests {
             filters: FeedFilters()
         )
         #expect(Set(feed.newRecipes.map(\.id)) == ["a", "b"])
+    }
+
+    @Test("A vegan Diet never overrides an active intolerance")
+    func dietDoesNotOverrideIntoleranceSafety() {
+        let recipes = [
+            recipe("vegan-but-dairy-reviewed", reviewedAllergens: [.dairy], diets: [.vegan]),
+            recipe("vegetarian-and-safe", diets: [.vegetarian]),
+        ]
+
+        let feed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(intolerances: [.dairy], diet: .vegetarian)
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["vegetarian-and-safe"])
     }
 
     @Test("No compatible recipe is reported separately from an exhausted feed")

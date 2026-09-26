@@ -9,7 +9,10 @@ struct FeedQueryFilterTests {
         _ id: String,
         minutes: Int = 30,
         difficulty: Difficulty = .easy,
-        tags: [RecipeTag] = []
+        primaryCourse: Course = .dinner,
+        additionalCourses: Set<Course> = [],
+        diets: Set<Diet> = [],
+        practicalTags: Set<PracticalTag> = []
     ) -> Recipe {
         Recipe(
             id: id,
@@ -18,7 +21,10 @@ struct FeedQueryFilterTests {
             totalMinutes: minutes,
             difficulty: difficulty,
             servings: 4,
-            tags: tags,
+            primaryCourse: primaryCourse,
+            additionalCourses: additionalCourses,
+            diets: diets,
+            practicalTags: practicalTags,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["paso"],
             allergenReview: .reviewed([])
@@ -64,11 +70,11 @@ struct FeedQueryFilterTests {
         #expect(feed.newRecipes.map(\.id) == ["e", "m"])
     }
 
-    @Test("requireOnePan keeps only recipes tagged one-pan")
+    @Test("A practical-tag filter keeps recipes with that tag")
     func filtersByOnePan() {
         let recipes = [
-            recipe("one-pan-dish", tags: [.onePan, .quick]),
-            recipe("many-pans", tags: [.quick]),
+            recipe("one-pan-dish", practicalTags: [.onePan]),
+            recipe("many-pans", practicalTags: [.oven]),
         ]
 
         let feed = FeedQuery.feed(
@@ -76,19 +82,18 @@ struct FeedQueryFilterTests {
             views: [],
             recentWindow: testRecentWindow,
             clock: testClock,
-            filters: FeedFilters(requireOnePan: true)
+            filters: FeedFilters(practicalTags: [.onePan])
         )
 
         #expect(feed.newRecipes.map(\.id) == ["one-pan-dish"])
     }
 
-    @Test("Filters compose: time, difficulty and one-pan apply together")
-    func filtersCompose() {
+    @Test("A Course filter matches primary and additional Courses")
+    func filtersByPrimaryOrAdditionalCourse() {
         let recipes = [
-            recipe("match", minutes: 20, difficulty: .easy, tags: [.onePan]),
-            recipe("too-slow", minutes: 90, difficulty: .easy, tags: [.onePan]),
-            recipe("too-hard", minutes: 20, difficulty: .hard, tags: [.onePan]),
-            recipe("many-pans", minutes: 20, difficulty: .easy, tags: []),
+            recipe("primary-lunch", primaryCourse: .lunch),
+            recipe("also-lunch", additionalCourses: [.lunch]),
+            recipe("dinner-only"),
         ]
 
         let feed = FeedQuery.feed(
@@ -96,7 +101,50 @@ struct FeedQueryFilterTests {
             views: [],
             recentWindow: testRecentWindow,
             clock: testClock,
-            filters: FeedFilters(maxMinutes: 30, maxDifficulty: .medium, requireOnePan: true)
+            filters: FeedFilters(course: .lunch)
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["primary-lunch", "also-lunch"])
+    }
+
+    @Test("A vegetarian filter also includes vegan recipes")
+    func veganSatisfiesVegetarianFilter() {
+        let recipes = [
+            recipe("vegetarian", diets: [.vegetarian]),
+            recipe("vegan", diets: [.vegan]),
+            recipe("unlabelled"),
+        ]
+
+        let feed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(diet: .vegetarian)
+        )
+
+        #expect(feed.newRecipes.map(\.id) == ["vegetarian", "vegan"])
+    }
+
+    @Test("Filters compose: time, difficulty and one-pan apply together")
+    func filtersCompose() {
+        let recipes = [
+            recipe("match", minutes: 20, difficulty: .easy, practicalTags: [.onePan]),
+            recipe("too-slow", minutes: 90, difficulty: .easy, practicalTags: [.onePan]),
+            recipe("too-hard", minutes: 20, difficulty: .hard, practicalTags: [.onePan]),
+            recipe("many-pans", minutes: 20, difficulty: .easy),
+        ]
+
+        let feed = FeedQuery.feed(
+            recipes: recipes,
+            views: [],
+            recentWindow: testRecentWindow,
+            clock: testClock,
+            filters: FeedFilters(
+                maxMinutes: 30,
+                maxDifficulty: .medium,
+                practicalTags: [.onePan]
+            )
         )
 
         #expect(feed.newRecipes.map(\.id) == ["match"])

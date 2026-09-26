@@ -3,6 +3,14 @@ import Foundation
 import KartaCore
 @testable import KartaPresentation
 
+private struct SeedTaxonomy: Equatable {
+    let id: String
+    let primaryCourse: Course
+    let additionalCourses: Set<Course>
+    let diets: Set<Diet>
+    let practicalTags: Set<PracticalTag>
+}
+
 /// Checks that the bundled seeds load through the resource boundary and agree
 /// with each other.
 @Suite("Seed integration")
@@ -35,6 +43,78 @@ struct SeedIntegrationTests {
             #expect(Bundle.module.url(forResource: resource, withExtension: nil) != nil,
                     "\(resource) is not in the bundle")
         }
+    }
+
+    @Test("The bundled recipes use the editorial Course, Diet and practical-tag assignments")
+    func seedTaxonomyMatchesEditorialProposal() throws {
+        let actual = try SeedResourceAdapter().loadRecipes().map {
+            SeedTaxonomy(
+                id: $0.id,
+                primaryCourse: $0.primaryCourse,
+                additionalCourses: $0.additionalCourses,
+                diets: $0.diets,
+                practicalTags: $0.practicalTags
+            )
+        }
+
+        #expect(actual == [
+            SeedTaxonomy(
+                id: "spanish-tortilla",
+                primaryCourse: .dinner,
+                additionalCourses: [.lunch],
+                diets: [.vegetarian],
+                practicalTags: [.onePan, .shareable]
+            ),
+            SeedTaxonomy(
+                id: "quick-chicken-curry",
+                primaryCourse: .dinner,
+                additionalCourses: [],
+                diets: [],
+                practicalTags: [.onePan, .makeAhead]
+            ),
+            SeedTaxonomy(
+                id: "caesar-salad",
+                primaryCourse: .lunch,
+                additionalCourses: [.dinner],
+                diets: [],
+                practicalTags: [.shareable]
+            ),
+            SeedTaxonomy(
+                id: "pesto-pasta",
+                primaryCourse: .dinner,
+                additionalCourses: [.lunch],
+                diets: [.vegetarian],
+                practicalTags: []
+            ),
+            SeedTaxonomy(
+                id: "lentil-stew",
+                primaryCourse: .dinner,
+                additionalCourses: [.lunch],
+                diets: [],
+                practicalTags: [.onePan, .makeAhead]
+            ),
+            SeedTaxonomy(
+                id: "baked-salmon-with-lemon",
+                primaryCourse: .dinner,
+                additionalCourses: [],
+                diets: [],
+                practicalTags: [.oven]
+            ),
+            SeedTaxonomy(
+                id: "banana-pancakes",
+                primaryCourse: .breakfast,
+                additionalCourses: [],
+                diets: [.vegetarian],
+                practicalTags: []
+            ),
+            SeedTaxonomy(
+                id: "vegetable-noodle-stir-fry",
+                primaryCourse: .dinner,
+                additionalCourses: [.lunch],
+                diets: [.vegetarian],
+                practicalTags: [.onePan]
+            ),
+        ])
     }
 
     @Test("The bundled clip catalog remains loadable")

@@ -17,7 +17,7 @@ struct HistoryQueryTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 4,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
             steps: ["step"],
             allergenReview: .reviewed([])

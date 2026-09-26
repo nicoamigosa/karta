@@ -300,7 +300,7 @@ struct UserSnapshotTests {
             totalMinutes: 10,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [],
             steps: [CookingStep(text: "Cook", timerSeconds: 60)],
             allergenReview: .reviewed([])

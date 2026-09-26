@@ -2,25 +2,33 @@ import Foundation
 
 /// The active feed filters chosen by the user.
 public struct FeedFilters: Equatable, Sendable {
-    /// Allergen tags the user must never be shown. Hard safety constraint.
+    /// Allergens the user must never be shown. Hard safety constraint.
     public var intolerances: Set<Allergen>
     /// Upper bound on total cooking time, in minutes. `nil` means no limit.
     public var maxMinutes: Int?
     /// Hardest difficulty the user is willing to cook. `nil` means no limit.
     public var maxDifficulty: Difficulty?
-    /// When true, only recipes tagged one-pan are shown.
-    public var requireOnePan: Bool
+    /// Course selected for the feed; either a recipe's primary or additional Course qualifies.
+    public var course: Course?
+    /// Diet selected for the feed. Vegan recipes also satisfy vegetarian.
+    public var diet: Diet?
+    /// Every selected practical tag must be present on the recipe.
+    public var practicalTags: Set<PracticalTag>
 
     public init(
         intolerances: Set<Allergen> = [],
         maxMinutes: Int? = nil,
         maxDifficulty: Difficulty? = nil,
-        requireOnePan: Bool = false
+        course: Course? = nil,
+        diet: Diet? = nil,
+        practicalTags: Set<PracticalTag> = []
     ) {
         self.intolerances = intolerances
         self.maxMinutes = maxMinutes
         self.maxDifficulty = maxDifficulty
-        self.requireOnePan = requireOnePan
+        self.course = course
+        self.diet = diet
+        self.practicalTags = practicalTags
     }
 
     /// Whether a reviewed recipe satisfies every hard constraint. The
@@ -33,7 +41,14 @@ public struct FeedFilters: Equatable, Sendable {
         return allergens.isDisjoint(with: intolerances)
             && (maxMinutes.map { recipe.totalMinutes <= $0 } ?? true)
             && (maxDifficulty.map { recipe.difficulty <= $0 } ?? true)
-            && (!requireOnePan || recipe.tags.contains(.onePan))
+            && (course.map {
+                $0 == recipe.primaryCourse || recipe.additionalCourses.contains($0)
+            } ?? true)
+            && (diet.map { requestedDiet in
+                recipe.diets.contains(requestedDiet)
+                    || (requestedDiet == .vegetarian && recipe.diets.contains(.vegan))
+            } ?? true)
+            && recipe.practicalTags.isSuperset(of: practicalTags)
     }
 }
 

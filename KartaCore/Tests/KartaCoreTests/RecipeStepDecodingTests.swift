@@ -46,7 +46,7 @@ struct RecipeStepDecodingTests {
             "id": "dangling-step-ingredient", "name": "Dangling step ingredient",
             "heroPhotoURL": "https://img.karta.app/dangling-step-ingredient.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
                 "text": "Cook",
@@ -75,7 +75,7 @@ struct RecipeStepDecodingTests {
         let json = """
         {
             "id": "r1", "name": "Mix", "heroPhotoURL": "https://img.karta.app/mix.jpg", "totalMinutes": 10,
-            "difficulty": "easy", "servings": 4, "tags": [], "contains": [],
+            "difficulty": "easy", "servings": 4, "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": [
                 "Chop the onion",
@@ -97,7 +97,7 @@ struct RecipeStepDecodingTests {
             "id": "zero-step-duration", "name": "Zero step duration",
             "heroPhotoURL": "https://img.karta.app/zero-step-duration.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": [{ "text": "Wait", "timerSeconds": 0 }]
         }
@@ -125,7 +125,7 @@ struct RecipeStepDecodingTests {
             "id": "missing-step-text", "name": "Missing step text",
             "heroPhotoURL": "https://img.karta.app/missing-step-text.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["   "]
         }
@@ -152,7 +152,7 @@ struct RecipeStepDecodingTests {
             "id": "missing-clip-id", "name": "Missing clip id",
             "heroPhotoURL": "https://img.karta.app/missing-clip-id.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": [{ "text": "Cook", "clipID": " " }]
         }
@@ -179,7 +179,7 @@ struct RecipeStepDecodingTests {
             "id": "empty-step-ingredient-name", "name": "Empty step ingredient name",
             "heroPhotoURL": "https://img.karta.app/empty-step-ingredient-name.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
                 "text": "Cook",
@@ -209,7 +209,7 @@ struct RecipeStepDecodingTests {
             "id": "empty-step-ingredient-quantity", "name": "Empty step ingredient quantity",
             "heroPhotoURL": "https://img.karta.app/empty-step-ingredient-quantity.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
                 "text": "Cook",
@@ -240,7 +240,7 @@ struct RecipeStepDecodingTests {
             "id": "zero-step-ingredient-quantity", "name": "Zero step ingredient quantity",
             "heroPhotoURL": "https://img.karta.app/zero-step-ingredient-quantity.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
-            "tags": [], "contains": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
                 "text": "Cook",
@@ -269,7 +269,7 @@ struct RecipeStepDecodingTests {
     func recipeBuildsCookingSession() throws {
         let recipe = Recipe(
             id: "r1", name: "Mix", heroPhoto: .local("test"), totalMinutes: 10, difficulty: .easy, servings: 4,
-            tags: [], ingredients: [Ingredient(id: "onion", name: "Onion", quantity: "1")],
+            primaryCourse: .dinner, ingredients: [Ingredient(id: "onion", name: "Onion", quantity: "1")],
             steps: [
                 CookingStep(text: "Chop", ingredients: [
                     StepIngredient(ingredientID: "onion", quantity: "1")

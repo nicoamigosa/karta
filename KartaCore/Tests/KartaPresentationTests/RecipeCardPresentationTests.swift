@@ -29,7 +29,7 @@ struct RecipeCardPresentationTests {
             totalMinutes: 61,
             difficulty: .medium,
             servings: 1,
-            tags: [],
+            primaryCourse: .breakfast,
             ingredients: [
                 Ingredient(name: "flour", quantity: "1 1/2 cups"),
                 Ingredient(name: "salt", quantity: "as needed"),
@@ -45,6 +45,7 @@ struct RecipeCardPresentationTests {
         #expect(card.durationLabel == "1 hour 1 minute")
         #expect(card.difficultyLabel == "intermediate")
         #expect(card.servingsLabel == "Serves 1")
+        #expect(card.primaryCourse == .breakfast)
         #expect(card.ingredientQuantities == ["1 1/2 cups", "as needed"])
     }
 
@@ -64,7 +65,7 @@ struct RecipeCardPresentationTests {
                 totalMinutes: 1,
                 difficulty: difficulty,
                 servings: 2,
-                tags: [],
+                primaryCourse: .dinner,
                 ingredients: [Ingredient(name: "x", quantity: "1")],
                 steps: ["Cook"],
                 allergenReview: .reviewed([])
