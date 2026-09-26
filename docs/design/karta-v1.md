@@ -68,7 +68,8 @@ at 100) and **Figtree** (UI). Card roles: `rank` (the minutes), `rankUnit`
   touch. Under the deck a hint ("Swipe up or down") fades out after 3 s. There
   is no tutorial pop-up.
 - **Reduce Motion:** replace the movement with a cross-fade and skip the nudge.
-- **Direction is pending #86** (vertical vs horizontal usability test).
+- **Vertical axis.** Horizontal swipes are reserved for moving between steps in
+  the cooking session. A usability test (#86) may revisit this later.
 - A card counts as a **Vista** only once it has settled in the front slot.
 
 ## The reverse (recipe detail)
