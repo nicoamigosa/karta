@@ -71,6 +71,36 @@ at 100) and **Figtree** (UI). Card roles: `rank` (the minutes), `rankUnit`
 - **Direction is pending #86** (vertical vs horizontal usability test).
 - A card counts as a **Vista** only once it has settled in the front slot.
 
+## The reverse (recipe detail)
+
+Tapping a Card flips it over and grows it into the reverse (the Apertura).
+
+```
+ suit colour (dinner = #C8553D), 30 pt above and below, 10 pt at the sides
+┌───────────────────────────────┐  card face, radius 26, same edge + shadow
+│ (✕)          dinner    [Save] │  3-column grid: the suit label is centred
+│ [photo 76] Spanish Tortilla   │  on the card, whatever the button widths
+│            Serves 4 · Easy    │  time is not repeated here
+│ YOU'LL NEED                   │
+│ Yukon Gold potatoes ···· 4 med│  ingredient bold, quantity regular, dotted
+│ Green bell pepper optional ·· │  optional: muted, italic "optional", dashed
+│ HOW TO                        │  no step count
+│ (1) one-line step summary     │  22 pt number disc centred on the first line
+│ (2) … [12 min]                │  timer / clip labels inline
+│                               │
+│ [      Start cooking  →     ] │  pinned to the bottom
+└───────────────────────────────┘
+```
+
+- **Ingredients** are named with the exact variety to buy (`Yellow onion`).
+- **Steps** show the editor's one-line summary; the full step text lives in
+  the cooking session. **Optional steps are not listed here**; they appear
+  only in the cooking session.
+- For a user with an intolerance, an optional ingredient containing that
+  allergen (and its optional step) is not shown anywhere (`CONTEXT.md` →
+  Ingrediente opcional).
+- **Save** lives only here, never on the front of the Card.
+
 ## Suits (Course icons)
 
 `suits/breakfast.svg` (fried egg), `suits/lunch.svg` (half sandwich),
