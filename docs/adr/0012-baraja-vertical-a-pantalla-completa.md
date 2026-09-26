@@ -23,7 +23,8 @@ de los reels, que la usuaria ya conoce, pero con foto y no con vídeo.
   sin botón de Guardar; guardar ocurre sólo tras la Apertura.
 - Una Vista en el Feed es una Card que llegó a asentarse en pantalla.
 - La Card se manipula, no se reproduce: sigue al dedo, vuelve con un rebote si no se supera
-  el umbral y sale lanzada con la inercia del gesto si se supera. Un solo eje, para que el
-  gesto se aprenda al instante; cuál (vertical u horizontal) lo decide la prueba del #86.
+  el umbral y sale lanzada con la inercia del gesto si se supera. Un solo eje, el vertical, para que
+  el gesto se aprenda al instante. El eje horizontal queda para pasar Pasos en la Sesión de
+  cocina. Una prueba con usuarias (#86) podría revisar el eje del Feed más adelante.
 - Abrir es tocar: la Card se da la vuelta y crece hasta el detalle de la receta. Deslizar a la
   derecha deja de abrir, porque deslizar ya significa pasar de Card.
