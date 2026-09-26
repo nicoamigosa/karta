@@ -38,7 +38,7 @@ struct RecipeCardPresentationTests {
             allergenReview: .reviewed([])
         )
 
-        let card = RecipeCardPresentation(recipe: recipe, householdSize: 2)
+        let card = RecipeCardPresentation(recipe: recipe, householdSize: 2, intolerances: [])
 
         #expect(card.recipeID == "pasta")
         #expect(card.name == "Pasta")
@@ -47,6 +47,38 @@ struct RecipeCardPresentationTests {
         #expect(card.servingsLabel == "Serves 1")
         #expect(card.primaryCourse == .breakfast)
         #expect(card.ingredientQuantities == ["1 1/2 cups", "as needed"])
+    }
+
+    @Test("Card ingredients omit optional ingredients that conflict with the profile")
+    func cardHidesOptionalIngredientsForIntolerance() {
+        let recipe = Recipe(
+            id: "dairy-garnish",
+            name: "Dairy garnish",
+            heroPhoto: .local("dairy-garnish"),
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            primaryCourse: .dinner,
+            ingredients: [
+                Ingredient(name: "Tomato", quantity: "2"),
+                Ingredient(
+                    name: "Greek yogurt",
+                    quantity: "2 tbsp",
+                    isOptional: true,
+                    allergens: [.dairy]
+                ),
+            ],
+            steps: ["Serve"],
+            allergenReview: .reviewed([])
+        )
+
+        let card = RecipeCardPresentation(
+            recipe: recipe,
+            householdSize: 2,
+            intolerances: [.dairy]
+        )
+
+        #expect(card.ingredientQuantities == ["2"])
     }
 
     @Test("Difficulty labels use the card vocabulary")
@@ -70,7 +102,8 @@ struct RecipeCardPresentationTests {
                 steps: ["Cook"],
                 allergenReview: .reviewed([])
             ),
-            householdSize: 1
+            householdSize: 1,
+            intolerances: []
         )
     }
 }

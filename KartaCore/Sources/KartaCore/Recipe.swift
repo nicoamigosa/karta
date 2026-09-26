@@ -21,6 +21,11 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
     case emptyIngredientName(recipeID: String, recipeName: String, ingredientIndex: Int)
     case emptyIngredientID(recipeID: String, recipeName: String, ingredientIndex: Int)
     case duplicateIngredientID(recipeID: String, recipeName: String, ingredientID: String)
+    case requiredIngredientHasAllergens(
+        recipeID: String,
+        recipeName: String,
+        ingredientID: String
+    )
     case emptyIngredientQuantity(
         recipeID: String,
         recipeName: String,
@@ -41,6 +46,12 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
         stepIndex: Int,
         ingredientID: String
     )
+    case optionalIngredientInRequiredStep(
+        recipeID: String,
+        recipeName: String,
+        stepIndex: Int,
+        ingredientID: String
+    )
     case emptyStepIngredientQuantity(
         recipeID: String,
         recipeName: String,
@@ -55,6 +66,8 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
         value: String
     )
     case emptyStepText(recipeID: String, recipeName: String, stepIndex: Int)
+    case emptyStepSummary(recipeID: String, recipeName: String, stepIndex: Int)
+    case multilineStepSummary(recipeID: String, recipeName: String, stepIndex: Int)
     case emptyStepClipID(recipeID: String, recipeName: String, stepIndex: Int)
 
     public var errorDescription: String? {
@@ -99,6 +112,8 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) has an empty id"
         case let .duplicateIngredientID(recipeID, recipeName, ingredientID):
             return "Recipe '\(recipeID)' ('\(recipeName)') has duplicate ingredient id '\(ingredientID)'"
+        case let .requiredIngredientHasAllergens(recipeID, recipeName, ingredientID):
+            return "Recipe '\(recipeID)' ('\(recipeName)') required ingredient '\(ingredientID)' has an ingredient-level allergen set"
         case let .emptyIngredientQuantity(recipeID, recipeName, ingredientIndex, ingredientName):
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) '\(ingredientName)' has an empty quantity"
         case let .nonPositiveIngredientQuantity(recipeID, recipeName, ingredientIndex, ingredientName, value):
@@ -107,12 +122,18 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an ingredient with an empty id"
         case let .unknownStepIngredientID(recipeID, recipeName, stepIndex, ingredientID):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) references unknown ingredient id '\(ingredientID)'"
+        case let .optionalIngredientInRequiredStep(recipeID, recipeName, stepIndex, ingredientID):
+            return "Recipe '\(recipeID)' ('\(recipeName)') required step \(stepIndex) references optional ingredient id '\(ingredientID)'"
         case let .emptyStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientID):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientID)' has an empty quantity"
         case let .nonPositiveStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientID, value):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientID)' has non-positive quantity '\(value)'"
         case let .emptyStepText(recipeID, recipeName, stepIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has empty text"
+        case let .emptyStepSummary(recipeID, recipeName, stepIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an empty summary"
+        case let .multilineStepSummary(recipeID, recipeName, stepIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has a summary that spans multiple lines"
         case let .emptyStepClipID(recipeID, recipeName, stepIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an empty technique clip id"
         }
@@ -296,6 +317,7 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
             throw RecipeDecodingError.emptyIngredients(recipeID: id, recipeName: name)
         }
         var ingredientIDs = Set<String>()
+        var optionalIngredientIDs = Set<String>()
         for (index, ingredient) in ingredients.enumerated() {
             guard !ingredient.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw RecipeDecodingError.emptyIngredientName(
@@ -318,6 +340,16 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                     ingredientID: ingredient.id
                 )
             }
+            guard ingredient.isOptional || ingredient.allergens.isEmpty else {
+                throw RecipeDecodingError.requiredIngredientHasAllergens(
+                    recipeID: id,
+                    recipeName: name,
+                    ingredientID: ingredient.id
+                )
+            }
+            if ingredient.isOptional {
+                optionalIngredientIDs.insert(ingredient.id)
+            }
             try validateRecipeIngredientQuantity(
                 ingredient,
                 recipeID: id,
@@ -332,6 +364,20 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         for (index, step) in steps.enumerated() {
             guard !step.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw RecipeDecodingError.emptyStepText(
+                    recipeID: id,
+                    recipeName: name,
+                    stepIndex: index
+                )
+            }
+            guard !step.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw RecipeDecodingError.emptyStepSummary(
+                    recipeID: id,
+                    recipeName: name,
+                    stepIndex: index
+                )
+            }
+            guard !step.summary.contains(where: { $0.isNewline }) else {
+                throw RecipeDecodingError.multilineStepSummary(
                     recipeID: id,
                     recipeName: name,
                     stepIndex: index
@@ -371,6 +417,14 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                 )
                 guard ingredientIDs.contains(ingredient.ingredientID) else {
                     throw RecipeDecodingError.unknownStepIngredientID(
+                        recipeID: id,
+                        recipeName: name,
+                        stepIndex: index,
+                        ingredientID: ingredient.ingredientID
+                    )
+                }
+                if optionalIngredientIDs.contains(ingredient.ingredientID), !step.isOptional {
+                    throw RecipeDecodingError.optionalIngredientInRequiredStep(
                         recipeID: id,
                         recipeName: name,
                         stepIndex: index,
@@ -430,6 +484,28 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         try c.encode(popularity, forKey: .popularity)
     }
 
+    /// The required ingredients and optional ingredients safe for this
+    /// intolerance profile.
+    public func visibleIngredients(for intolerances: Set<Allergen>) -> [Ingredient] {
+        ingredients.filter { ingredient in
+            !ingredient.isOptional || ingredient.allergens.isDisjoint(with: intolerances)
+        }
+    }
+
+    /// Required steps plus optional steps that do not use a hidden optional
+    /// ingredient. Filtering by ingredient references also protects callers
+    /// from malformed programmatically-created recipes.
+    public func visibleSteps(for intolerances: Set<Allergen>) -> [CookingStep] {
+        let hiddenOptionalIngredientIDs = Set(
+            ingredients
+                .filter { $0.isOptional && !$0.allergens.isDisjoint(with: intolerances) }
+                .map(\.id)
+        )
+        return steps.filter { step in
+            !step.ingredients.contains { hiddenOptionalIngredientIDs.contains($0.ingredientID) }
+        }
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -456,32 +532,94 @@ public struct Ingredient: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let quantity: String
+    public let isOptional: Bool
+    /// Allergen review for an optional ingredient. Recipe-level `contains`
+    /// remains the review of required ingredients only.
+    public let allergens: Set<Allergen>
 
-    public init(id: String, name: String, quantity: String) {
+    public init(
+        id: String,
+        name: String,
+        quantity: String,
+        isOptional: Bool = false,
+        allergens: Set<Allergen> = []
+    ) {
         self.id = id
         self.name = name
         self.quantity = quantity
+        self.isOptional = isOptional
+        self.allergens = allergens
     }
 
     /// Compatibility for programmatic recipes created before ingredient ids
     /// were part of the catalog contract. Catalog data must declare `id`
     /// explicitly.
-    public init(name: String, quantity: String) {
-        self.init(id: Self.derivedID(from: name), name: name, quantity: quantity)
+    public init(
+        name: String,
+        quantity: String,
+        isOptional: Bool = false,
+        allergens: Set<Allergen> = []
+    ) {
+        self.init(
+            id: Self.derivedID(from: name),
+            name: name,
+            quantity: quantity,
+            isOptional: isOptional,
+            allergens: allergens
+        )
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let name = try container.decode(String.self, forKey: .name)
+        let isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
+        let allergens: Set<Allergen>
+        if container.contains(.allergens) {
+            let rawAllergens = try container.decode([String].self, forKey: .allergens)
+            allergens = try Set(rawAllergens.map { rawValue in
+                guard let allergen = Allergen(rawValue: rawValue) else {
+                    throw DecodingError.dataCorruptedError(
+                        forKey: .allergens,
+                        in: container,
+                        debugDescription: "Unknown optional ingredient allergen '\(rawValue)'"
+                    )
+                }
+                return allergen
+            })
+        } else {
+            guard !isOptional else {
+                throw DecodingError.keyNotFound(
+                    CodingKeys.allergens,
+                    DecodingError.Context(
+                        codingPath: decoder.codingPath,
+                        debugDescription: "An optional ingredient requires an allergen review set"
+                    )
+                )
+            }
+            allergens = []
+        }
         self.init(
             id: try container.decode(String.self, forKey: .id),
             name: name,
-            quantity: try container.decode(String.self, forKey: .quantity)
+            quantity: try container.decode(String.self, forKey: .quantity),
+            isOptional: isOptional,
+            allergens: allergens
         )
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(quantity, forKey: .quantity)
+        try container.encode(isOptional, forKey: .isOptional)
+        try container.encode(allergens.map(\.rawValue).sorted(), forKey: .allergens)
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, quantity
+        case isOptional = "optional"
+        case allergens
     }
 
     private static func derivedID(from name: String) -> String {

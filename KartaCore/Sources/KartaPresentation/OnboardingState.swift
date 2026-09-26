@@ -52,8 +52,13 @@ public struct OnboardingState: Equatable, Sendable {
 
     /// A card is renderable only after the required onboarding answers exist.
     public func cardPresentation(for recipe: Recipe) -> RecipeCardPresentation? {
-        guard profile != nil, let householdSize else { return nil }
-        return RecipeCardPresentation(recipe: recipe, householdSize: householdSize)
+        guard let profile, let householdSize,
+              FeedFilters(intolerances: profile.intolerances).allows(recipe) else { return nil }
+        return RecipeCardPresentation(
+            recipe: recipe,
+            householdSize: householdSize,
+            intolerances: profile.intolerances
+        )
     }
 
     public mutating func answerIntolerances(_ intolerances: Set<Allergen>) {

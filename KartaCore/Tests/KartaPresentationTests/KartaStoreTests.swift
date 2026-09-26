@@ -344,6 +344,44 @@ struct KartaStoreTests {
         #expect(state.session?.startedAt == 123)
     }
 
+    @Test("Starting a session applies the active intolerance profile to optional steps")
+    func reducerHidesUnsafeOptionalCookingSteps() {
+        let recipe = Recipe(
+            id: "optional-session",
+            name: "Optional session",
+            heroPhoto: .local("optional-session"),
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            primaryCourse: .dinner,
+            ingredients: [
+                Ingredient(id: "tomato", name: "Tomato", quantity: "2"),
+                Ingredient(
+                    id: "yogurt",
+                    name: "Greek yogurt",
+                    quantity: "1 tbsp",
+                    isOptional: true,
+                    allergens: [.dairy]
+                ),
+            ],
+            steps: [
+                CookingStep(text: "Cook the tomatoes", summary: "Cook the tomatoes"),
+                CookingStep(
+                    text: "Finish with Greek yogurt",
+                    summary: "Add yogurt",
+                    ingredients: [StepIngredient(ingredientID: "yogurt", quantity: "1 tbsp")],
+                    isOptional: true
+                ),
+            ],
+            allergenReview: .reviewed([])
+        )
+        var state = KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy]))
+
+        KartaReducer.reduce(&state, action: .startCooking(recipe, startedAt: 123))
+
+        #expect(state.session?.steps.map(\.text) == ["Cook the tomatoes"])
+    }
+
     @MainActor
     @Test("The store applies an action through its public send entry point")
     func storeSendsSaveAction() {
@@ -353,6 +391,69 @@ struct KartaStoreTests {
 
         #expect(store.cookbook.savedIDs == ["recipe-1"])
         #expect(store.state.cookbook.savedIDs == ["recipe-1"])
+    }
+
+    @MainActor
+    @Test("The store builds card and reverse presentations with its active safety profile")
+    func storeBuildsProfileSafeRecipePresentations() throws {
+        let recipe = Recipe(
+            id: "profile-safe-presentations",
+            name: "Profile safe presentations",
+            heroPhoto: .local("profile-safe-presentations"),
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            primaryCourse: .dinner,
+            ingredients: [
+                Ingredient(id: "tomato", name: "Tomato", quantity: "2"),
+                Ingredient(
+                    id: "yogurt",
+                    name: "Greek yogurt",
+                    quantity: "1 tbsp",
+                    isOptional: true,
+                    allergens: [.dairy]
+                ),
+            ],
+            steps: [
+                CookingStep(text: "Cook the tomatoes", summary: "Cook the tomatoes"),
+                CookingStep(
+                    text: "Finish with Greek yogurt",
+                    summary: "Add yogurt",
+                    ingredients: [StepIngredient(ingredientID: "yogurt", quantity: "1 tbsp")],
+                    isOptional: true
+                ),
+            ],
+            allergenReview: .reviewed([])
+        )
+        let onboarding = OnboardingState(
+            intoleranceAnswer: .answered([.gluten]),
+            householdSize: 2
+        )
+        let store = KartaStore(state: KartaState(onboarding: onboarding, safetyProfile: noIntolerances))
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy]))))
+
+        let card = try #require(store.cardPresentation(for: recipe))
+        let reverse = try #require(store.reversePresentation(for: recipe))
+
+        #expect(card.ingredientQuantities == ["2"])
+        #expect(reverse.ingredients.map(\.id) == ["tomato"])
+        #expect(reverse.steps.map(\.summary) == ["Cook the tomatoes"])
+
+        let unsafeRecipe = Recipe(
+            id: "required-dairy",
+            name: "Required dairy",
+            heroPhoto: .local("required-dairy"),
+            totalMinutes: 10,
+            difficulty: .easy,
+            servings: 2,
+            primaryCourse: .dinner,
+            ingredients: [Ingredient(name: "Milk", quantity: "1 cup")],
+            steps: ["Cook with milk"],
+            allergenReview: .reviewed([.dairy])
+        )
+
+        #expect(store.cardPresentation(for: unsafeRecipe) == nil)
+        #expect(store.reversePresentation(for: unsafeRecipe) == nil)
     }
 
     @MainActor

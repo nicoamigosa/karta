@@ -196,8 +196,13 @@ struct UserSnapshotTests {
     @Test("A half-finished cooking session round-trips its step and timers")
     func roundTripsCookingSession() throws {
         let steps = [
-            CookingStep(text: "Chop", timerSeconds: 30),
-            CookingStep(text: "Simmer", timerSeconds: 90),
+            CookingStep(text: "Chop the onion very finely", summary: "Chop the onion", timerSeconds: 30),
+            CookingStep(
+                text: "Simmer the sauce until thick",
+                summary: "Simmer the sauce",
+                timerSeconds: 90,
+                isOptional: true
+            ),
         ]
         var session = CookingSession(
             recipeID: "recipe-1",

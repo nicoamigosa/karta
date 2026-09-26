@@ -61,6 +61,36 @@ struct RecipeCatalogTests {
         ])
     }
 
+    @Test("Every seed step has an editor-written summary")
+    func seedStepsHaveSummaries() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let steps = recipes.flatMap(\.steps)
+
+        #expect(steps.count == 33)
+        #expect(steps.allSatisfy { !$0.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        #expect(steps.allSatisfy { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+    }
+
+    @Test("The seed specifies ingredient varieties and reviews the optional curry garnish")
+    func seedSpecificIngredientNamesAndOptionalAllergens() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let tortilla = try #require(recipes.first { $0.id == "spanish-tortilla" })
+        let onion = try #require(tortilla.ingredients.first { $0.id == "onion" })
+        let curry = try #require(recipes.first { $0.id == "quick-chicken-curry" })
+        let yogurt = try #require(curry.ingredients.first { $0.id == "greek-yogurt" })
+        let yogurtStep = try #require(curry.steps.first { $0.ingredients.contains {
+            $0.ingredientID == yogurt.id
+        } })
+
+        #expect(onion.name == "Yellow onion")
+        #expect(yogurt.name == "Plain Greek yogurt")
+        #expect(yogurt.isOptional)
+        #expect(yogurt.allergens == [.dairy])
+        #expect(curry.allergenReview == .reviewed([]))
+        #expect(yogurtStep.isOptional)
+        #expect(yogurtStep.summary == "Finish with Greek yogurt")
+    }
+
     @Test("Every seed recipe declares an editorial date")
     func seedRecipesDeclareEditorialDates() throws {
         let recipes = try SeedResourceAdapter().loadRecipes()

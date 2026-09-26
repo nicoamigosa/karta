@@ -61,6 +61,27 @@ public struct KartaState: Equatable, Sendable {
         )
     }
 
+    /// Build the feed Card projection with the active safety profile.
+    public func cardPresentation(for recipe: Recipe) -> RecipeCardPresentation? {
+        guard onboarding.profile != nil,
+              let householdSize = onboarding.householdSize,
+              FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe) else {
+            return nil
+        }
+        return RecipeCardPresentation(
+            recipe: recipe,
+            householdSize: householdSize,
+            intolerances: safetyProfile.intolerances
+        )
+    }
+
+    /// Build the recipe reverse using the same active profile as the feed.
+    public func reversePresentation(for recipe: Recipe) -> RecipeReversePresentation? {
+        guard onboarding.profile != nil,
+              FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe) else { return nil }
+        return RecipeReversePresentation(recipe: recipe, intolerances: safetyProfile.intolerances)
+    }
+
     public init(
         cookbook: Cookbook = Cookbook(),
         onboarding: OnboardingState = OnboardingState(),
@@ -136,7 +157,10 @@ public enum KartaReducer {
                 state.navigation.discardAnchors()
             }
         case let .startCooking(recipe, startedAt):
-            state.session = recipe.cookingSession(startedAt: startedAt)
+            state.session = recipe.cookingSession(
+                startedAt: startedAt,
+                intolerances: state.safetyProfile.intolerances
+            )
         case let .nextStep(now):
             state.session?.next(at: now)
         case .previousStep:
@@ -208,5 +232,15 @@ public final class KartaStore {
     /// the presentation state.
     public func feed(recipes: [Recipe], clock: any KartaClock) -> Feed? {
         state.feed(recipes: recipes, clock: clock)
+    }
+
+    /// The shell-facing projection for a recipe Card, using the store's profile.
+    public func cardPresentation(for recipe: Recipe) -> RecipeCardPresentation? {
+        state.cardPresentation(for: recipe)
+    }
+
+    /// The shell-facing projection for the Card reverse, using the store's profile.
+    public func reversePresentation(for recipe: Recipe) -> RecipeReversePresentation? {
+        state.reversePresentation(for: recipe)
     }
 }

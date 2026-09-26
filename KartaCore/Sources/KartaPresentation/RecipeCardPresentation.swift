@@ -65,7 +65,11 @@ public struct RecipeCardPresentation: Equatable, Sendable {
     public let ingredientQuantities: [String]
     public let householdSize: Int
 
-    public init(recipe: Recipe, householdSize: Int) {
+    public init(
+        recipe: Recipe,
+        householdSize: Int,
+        intolerances: Set<Allergen>
+    ) {
         precondition(householdSize > 0, "householdSize must be positive")
         self.recipeID = recipe.id
         self.name = recipe.name
@@ -77,7 +81,7 @@ public struct RecipeCardPresentation: Equatable, Sendable {
         }
         self.servingsLabel = "Serves \(recipe.servings)"
         self.primaryCourse = recipe.primaryCourse
-        self.ingredientQuantities = recipe.ingredients.map(\.quantity)
+        self.ingredientQuantities = recipe.visibleIngredients(for: intolerances).map(\.quantity)
         self.householdSize = householdSize
     }
 }
