@@ -114,9 +114,11 @@ private struct FeedDeck: View {
                     value: hintVisible
                 )
         }
-        .task {
+        .onAppear {
             recordSettledCard()
-            await runEntryNudge()
+            Task { @MainActor in
+                await runEntryNudge()
+            }
         }
         .task {
             try? await Task.sleep(for: .seconds(KartaDesign.deck.hintFadeDelay))
@@ -248,7 +250,11 @@ private struct FeedDeck: View {
     @MainActor
     private func runEntryNudge() async {
         guard !reduceMotion, !hasInteracted else { return }
-        try? await Task.sleep(for: .seconds(KartaDesign.deck.nudgeDelay))
+        do {
+            try await Task.sleep(for: .seconds(KartaDesign.deck.nudgeDelay))
+        } catch {
+            return
+        }
         guard !hasInteracted else { return }
 
         for _ in 0..<2 {
@@ -256,15 +262,23 @@ private struct FeedDeck: View {
                 entryOffset = -KartaDesign.deck.nudgeDistance
                 entryRotation = KartaDesign.deck.nudgeRotation
             }
-            try? await Task.sleep(for: .seconds(KartaDesign.deck.nudgeLiftDuration))
+            do {
+                try await Task.sleep(for: .seconds(KartaDesign.deck.nudgeLiftDuration))
+            } catch {
+                return
+            }
             guard !hasInteracted else { return }
             withAnimation(.easeOut(duration: KartaDesign.deck.nudgeSettleDuration)) {
                 entryOffset = 0
                 entryRotation = 0
             }
-            try? await Task.sleep(for: .seconds(
-                KartaDesign.deck.nudgeSettleDuration + KartaDesign.deck.nudgeRestDuration
-            ))
+            do {
+                try await Task.sleep(for: .seconds(
+                    KartaDesign.deck.nudgeSettleDuration + KartaDesign.deck.nudgeRestDuration
+                ))
+            } catch {
+                return
+            }
             guard !hasInteracted else { return }
         }
     }
