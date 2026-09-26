@@ -99,6 +99,7 @@ private struct FeedDeck: View {
                 }
                 .contentShape(Rectangle())
                 .gesture(dragGesture)
+                .simultaneousGesture(firstTouchGesture)
                 .onTapGesture(perform: openCurrentCard)
             }
             .padding(.top, KartaDesign.space.headerToDeck)
@@ -185,7 +186,6 @@ private struct FeedDeck: View {
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: KartaDesign.space.cardGap)
             .onChanged { value in
-                stopEntryNudge()
                 let vertical = value.translation.height
                 let horizontal = abs(value.translation.width)
                 guard abs(vertical) > horizontal else { return }
@@ -215,6 +215,13 @@ private struct FeedDeck: View {
                 } completion: {
                     recordSettledCard()
                 }
+            }
+    }
+
+    private var firstTouchGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                stopEntryNudge()
             }
     }
 
@@ -287,10 +294,8 @@ private struct FeedDeck: View {
         guard !hasInteracted else { return }
         hasInteracted = true
         hintVisible = false
-        withAnimation(KartaDesign.deckAnimation) {
-            entryOffset = 0
-            entryRotation = 0
-        }
+        entryOffset = 0
+        entryRotation = 0
     }
 }
 
