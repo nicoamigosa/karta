@@ -114,7 +114,7 @@ _Avoid_: timeline, muro, recomendaciones
 Una receta tal como se presenta en el Feed: un bloque único de foto, nombre e información
 clave que ocupa la pantalla entera y se mueve entero. El Feed avanza de card en card en
 vertical, como quien pasa una baraja, nunca como una lista de varias recetas a la vez. Pasar
-de card no es un veredicto: no hay "sí" ni "no" al deslizar. La foto protagoniza, pero la
+de card no es un veredicto: no hay "sí" ni "no" al deslizar, y deslizar nunca abre. La foto protagoniza, pero la
 card no es sólo la foto. La información clave es siempre tiempo, raciones, dificultad y el
 Course principal: claves para decidir si abrir la receta, no una descripción de ella; lo
 descriptivo vive tras la Apertura. Como en un naipe, el tiempo es el número y el Course
@@ -131,7 +131,8 @@ La fecha se fija la primera vez y no se renueva por volver a verla.
 _Avoid_: impresión, mostrada, servida
 
 **Apertura**:
-La decisión explícita de entrar en una receta desde el feed, con su propia fecha. Se registra
+La decisión explícita de entrar en una receta desde el feed, con su propia fecha. Se abre
+tocando la Card, que se da la vuelta como un naipe; deslizar nunca abre. Se registra
 además de la Vista y no renueva la fecha de esa Vista.
 _Avoid_: toque, click
 

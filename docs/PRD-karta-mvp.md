@@ -119,7 +119,7 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 
 ### Interaction & gesture model
 - **Navigation = gestures; actions = buttons.**
-- Feed: vertical swipe = next/previous card (one full-screen card at a time); tap card or swipe right = open/cook; scroll-past = soft negative signal.
+- Feed: swipe = next/previous card, one full-screen card at a time, on a single axis (vertical by default; pending the usability test #86). The card follows the finger, springs back below the threshold and is thrown with the gesture's momentum above it. **Tap = open**: the card flips over and grows into the recipe detail (ingredients + method), from which cooking mode starts. Swiping never opens. Scroll-past = soft negative signal.
 - Cooking mode: swipe right = next step; swipe left = previous step; swipe down = exit.
 - **Save = visible button** in the recipe detail only (never on the feed card, ADR 0012) with a kitchen/recipe-box icon (explicitly *not* a heart, to avoid like-vs-save confusion) + animation. Optional double-tap shortcut deferred to v2.
 - There is **no separate "like."** Only **Save** (explicit) + implicit behavioral signals (open, cook, scroll-past).
