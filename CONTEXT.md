@@ -53,6 +53,14 @@ vegan implica vegetarian. Es un filtro para decidir, no una garantía: la única
 es la Intolerancia.
 _Avoid_: etiqueta de dieta, restricción, preferencia
 
+**Ingrediente opcional**:
+Un añadido que la receta admite pero no necesita: sin él la receta sale igual de bien. Por
+eso un opcional nunca decide si la receta es segura: si contiene un alérgeno que la usuaria
+declaró como Intolerancia, la receta se le sigue ofreciendo, pero ese opcional no le aparece
+en ninguna superficie, ni en la lista ni en los pasos. Todo ingrediente se nombra con la
+variedad concreta que hay que comprar (`yellow onion`, no `onion`).
+_Avoid_: ingrediente sugerido, extra, "al gusto" como opcional
+
 **Clip de técnica**:
 Un vídeo corto y reutilizable que muestra una técnica concreta (picar cebolla, comprobar
 el punto del pollo). Se comparte entre muchas recetas y sólo aparece en pasos no obvios.
