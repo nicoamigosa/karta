@@ -3,7 +3,12 @@ import Foundation
 public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
     case missingAllergenReview(recipeID: String, recipeName: String)
     case unknownAllergen(recipeID: String, recipeName: String, value: String)
-    case unknownTag(recipeID: String, recipeName: String, value: String)
+    case missingPrimaryCourse(recipeID: String, recipeName: String)
+    case unknownCourse(recipeID: String, recipeName: String, value: String)
+    case repeatedPrimaryCourse(recipeID: String, recipeName: String, value: String)
+    case unknownDiet(recipeID: String, recipeName: String, value: String)
+    case unknownPracticalTag(recipeID: String, recipeName: String, value: String)
+    case legacyTagsField(recipeID: String, recipeName: String)
     case emptyRecipeID(recipeName: String)
     case nonPositiveServings(recipeID: String, recipeName: String, value: Int)
     case nonPositiveTotalMinutes(recipeID: String, recipeName: String, value: Int)
@@ -58,8 +63,18 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') is missing its allergen review state"
         case let .unknownAllergen(recipeID, recipeName, value):
             return "Recipe '\(recipeID)' ('\(recipeName)') has unknown allergen '\(value)'"
-        case let .unknownTag(recipeID, recipeName, value):
-            return "Recipe '\(recipeID)' ('\(recipeName)') has unknown tag '\(value)'"
+        case let .missingPrimaryCourse(recipeID, recipeName):
+            return "Recipe '\(recipeID)' ('\(recipeName)') is missing its primary Course"
+        case let .unknownCourse(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has unknown Course '\(value)'"
+        case let .repeatedPrimaryCourse(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') repeats primary Course '\(value)' among additional Courses"
+        case let .unknownDiet(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has unknown Diet '\(value)'"
+        case let .unknownPracticalTag(recipeID, recipeName, value):
+            return "Recipe '\(recipeID)' ('\(recipeName)') has unknown practical tag '\(value)'"
+        case let .legacyTagsField(recipeID, recipeName):
+            return "Recipe '\(recipeID)' ('\(recipeName)') uses the retired flat tags field"
         case let .emptyRecipeID(recipeName):
             return "Recipe ('\(recipeName)') has an empty recipe id"
         case let .nonPositiveServings(recipeID, recipeName, value):
@@ -121,7 +136,12 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
     public let totalMinutes: Int
     public let difficulty: Difficulty
     public let servings: Int
-    public let tags: [RecipeTag]
+    /// The editor's single primary Course, shown on the Card.
+    public let primaryCourse: Course
+    /// Additional Courses are used only by filters; the primary Course is not repeated.
+    public let additionalCourses: Set<Course>
+    public let diets: Set<Diet>
+    public let practicalTags: Set<PracticalTag>
     public let ingredients: [Ingredient]
     /// Ordered, structured steps. Each step is self-contained and may carry the
     /// exact ingredients it needs, a timer, and a reusable technique clip. Decodes
@@ -141,7 +161,10 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         totalMinutes: Int,
         difficulty: Difficulty,
         servings: Int,
-        tags: [RecipeTag],
+        primaryCourse: Course,
+        additionalCourses: Set<Course> = [],
+        diets: Set<Diet> = [],
+        practicalTags: Set<PracticalTag> = [],
         ingredients: [Ingredient],
         steps: [CookingStep],
         allergenReview: AllergenReview,
@@ -154,7 +177,10 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         self.totalMinutes = totalMinutes
         self.difficulty = difficulty
         self.servings = servings
-        self.tags = tags
+        self.primaryCourse = primaryCourse
+        self.additionalCourses = additionalCourses.subtracting([primaryCourse])
+        self.diets = diets
+        self.practicalTags = practicalTags
         self.ingredients = ingredients
         self.steps = steps
         self.allergenReview = allergenReview
@@ -205,18 +231,66 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                 value: servings
             )
         }
+        guard let rawPrimaryCourse = try c.decodeIfPresent(String.self, forKey: .primaryCourse) else {
+            throw RecipeDecodingError.missingPrimaryCourse(recipeID: id, recipeName: name)
+        }
+        guard let decodedPrimaryCourse = Course(rawValue: rawPrimaryCourse) else {
+            throw RecipeDecodingError.unknownCourse(
+                recipeID: id,
+                recipeName: name,
+                value: rawPrimaryCourse
+            )
+        }
+        primaryCourse = decodedPrimaryCourse
+        guard !c.contains(.legacyTags) else {
+            throw RecipeDecodingError.legacyTagsField(recipeID: id, recipeName: name)
+        }
         let recipeID = id
         let recipeName = name
-        tags = try c.decode([String].self, forKey: .tags).map { rawValue in
-            guard let tag = RecipeTag(rawValue: rawValue) else {
-                throw RecipeDecodingError.unknownTag(
+        let rawAdditionalCourses = try c.decodeIfPresent(
+            [String].self,
+            forKey: .additionalCourses
+        ) ?? []
+        let decodedAdditionalCourses = try rawAdditionalCourses.map { rawValue in
+            guard let course = Course(rawValue: rawValue) else {
+                throw RecipeDecodingError.unknownCourse(
                     recipeID: recipeID,
                     recipeName: recipeName,
                     value: rawValue
                 )
             }
-            return tag
+            return course
         }
+        guard !decodedAdditionalCourses.contains(decodedPrimaryCourse) else {
+            throw RecipeDecodingError.repeatedPrimaryCourse(
+                recipeID: recipeID,
+                recipeName: recipeName,
+                value: decodedPrimaryCourse.rawValue
+            )
+        }
+        additionalCourses = Set(decodedAdditionalCourses)
+        diets = try (c.decodeIfPresent([String].self, forKey: .diets) ?? [])
+            .reduce(into: Set<Diet>()) { result, rawValue in
+                guard let diet = Diet(rawValue: rawValue) else {
+                    throw RecipeDecodingError.unknownDiet(
+                        recipeID: recipeID,
+                        recipeName: recipeName,
+                        value: rawValue
+                    )
+                }
+                result.insert(diet)
+            }
+        practicalTags = try (c.decodeIfPresent([String].self, forKey: .practicalTags) ?? [])
+            .reduce(into: Set<PracticalTag>()) { result, rawValue in
+                guard let tag = PracticalTag(rawValue: rawValue) else {
+                    throw RecipeDecodingError.unknownPracticalTag(
+                        recipeID: recipeID,
+                        recipeName: recipeName,
+                        value: rawValue
+                    )
+                }
+                result.insert(tag)
+            }
         ingredients = try c.decode([Ingredient].self, forKey: .ingredients)
         guard !ingredients.isEmpty else {
             throw RecipeDecodingError.emptyIngredients(recipeID: id, recipeName: name)
@@ -340,7 +414,10 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         try c.encode(totalMinutes, forKey: .totalMinutes)
         try c.encode(difficulty, forKey: .difficulty)
         try c.encode(servings, forKey: .servings)
-        try c.encode(tags, forKey: .tags)
+        try c.encode(primaryCourse, forKey: .primaryCourse)
+        try c.encode(additionalCourses.map(\.rawValue).sorted(), forKey: .additionalCourses)
+        try c.encode(diets.map(\.rawValue).sorted(), forKey: .diets)
+        try c.encode(practicalTags.map(\.rawValue).sorted(), forKey: .practicalTags)
         try c.encode(ingredients, forKey: .ingredients)
         try c.encode(steps, forKey: .steps)
         switch allergenReview {
@@ -360,7 +437,11 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
         case totalMinutes
         case difficulty
         case servings
-        case tags
+        case primaryCourse
+        case additionalCourses
+        case diets
+        case practicalTags
+        case legacyTags = "tags"
         case ingredients
         case steps
         case allergenReview = "contains"

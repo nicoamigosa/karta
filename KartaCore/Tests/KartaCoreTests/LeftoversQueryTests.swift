@@ -13,11 +13,12 @@ struct LeftoversQueryTests {
         review: AllergenReview = .reviewed([]),
         totalMinutes: Int = 10,
         difficulty: Difficulty = .easy,
-        tags: [RecipeTag] = []
+        practicalTags: Set<PracticalTag> = []
     ) -> Recipe {
         Recipe(
             id: id, name: id, heroPhoto: .local("test"), totalMinutes: totalMinutes, difficulty: difficulty, servings: 4,
-            tags: tags, ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
+            primaryCourse: .dinner, practicalTags: practicalTags,
+            ingredients: ingredients.map { Ingredient(name: $0, quantity: "1") },
             steps: ["s"],
             allergenReview: reviewedAllergens.isEmpty ? review : .reviewed(Set(reviewedAllergens))
         )
@@ -137,15 +138,15 @@ struct LeftoversQueryTests {
     @Test("Leftovers applies every active safety and hard filter")
     func appliesFullSafetyProfile() {
         let cooked = recipe("cooked", ingredients: ["onion"])
-        let safe = recipe("safe", ingredients: ["onion"], tags: [.onePan])
-        let tooLong = recipe("too-long", ingredients: ["onion"], totalMinutes: 30, tags: [.onePan])
-        let tooDifficult = recipe("too-difficult", ingredients: ["onion"], difficulty: .medium, tags: [.onePan])
+        let safe = recipe("safe", ingredients: ["onion"], practicalTags: [.onePan])
+        let tooLong = recipe("too-long", ingredients: ["onion"], totalMinutes: 30, practicalTags: [.onePan])
+        let tooDifficult = recipe("too-difficult", ingredients: ["onion"], difficulty: .medium, practicalTags: [.onePan])
         let notOnePan = recipe("not-one-pan", ingredients: ["onion"])
         let unsafe = recipe(
             "unsafe",
             ingredients: ["onion"],
             reviewedAllergens: [.dairy],
-            tags: [.onePan]
+            practicalTags: [.onePan]
         )
 
         let result = LeftoversQuery.suggestions(
@@ -157,7 +158,7 @@ struct LeftoversQueryTests {
                 intolerances: [.dairy],
                 maxMinutes: 10,
                 maxDifficulty: .easy,
-                requireOnePan: true
+                practicalTags: [.onePan]
             )
         )
 

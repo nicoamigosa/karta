@@ -72,7 +72,7 @@ struct OnboardingPresentationTests {
             totalMinutes: 30,
             difficulty: .easy,
             servings: 4,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["Cook"],
             allergenReview: .reviewed([])

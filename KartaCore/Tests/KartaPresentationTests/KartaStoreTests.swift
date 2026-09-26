@@ -123,7 +123,7 @@ struct KartaStoreTests {
             filterDraft: FilterDraft(
                 maxMinutes: 20,
                 maxDifficulty: .medium,
-                requireOnePan: true
+                practicalTags: [.onePan]
             )
         )
 
@@ -155,7 +155,12 @@ struct KartaStoreTests {
     func changingSafetyProfilePreservesFilterDraft() {
         var state = KartaState(
             safetyProfile: SafetyProfile(intolerances: [.dairy]),
-            filterDraft: FilterDraft(maxMinutes: 45, requireOnePan: true)
+            filterDraft: FilterDraft(
+                maxMinutes: 45,
+                course: .lunch,
+                diet: .vegetarian,
+                practicalTags: [.onePan]
+            )
         )
 
         KartaReducer.reduce(
@@ -166,11 +171,18 @@ struct KartaStoreTests {
         )
 
         #expect(state.safetyProfile.intolerances == [.gluten])
-        #expect(state.filterDraft == FilterDraft(maxMinutes: 45, requireOnePan: true))
+        #expect(state.filterDraft == FilterDraft(
+            maxMinutes: 45,
+            course: .lunch,
+            diet: .vegetarian,
+            practicalTags: [.onePan]
+        ))
         #expect(state.effectiveFeedFilters == FeedFilters(
             intolerances: [.gluten],
             maxMinutes: 45,
-            requireOnePan: true
+            course: .lunch,
+            diet: .vegetarian,
+            practicalTags: [.onePan]
         ))
     }
 
@@ -256,7 +268,7 @@ struct KartaStoreTests {
             totalMinutes: 10,
             difficulty: .easy,
             servings: 4,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [],
             steps: ["First step", "Second step"],
             allergenReview: .reviewed([])
@@ -435,7 +447,7 @@ struct KartaStoreTests {
             totalMinutes: 10,
             difficulty: .easy,
             servings: 4,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [],
             steps: ["First step", "Second step"],
             allergenReview: .reviewed([])
@@ -450,7 +462,7 @@ struct KartaStoreTests {
             totalMinutes: 10,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["Cook"],
             allergenReview: .reviewed([]),
@@ -466,7 +478,7 @@ struct KartaStoreTests {
             totalMinutes: 10,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["Cook"],
             allergenReview: .reviewed(allergens)

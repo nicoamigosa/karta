@@ -8,7 +8,8 @@ el seed es el molde con el que la editora producirá cien.
 El catálogo del MVP se redacta directamente en inglés y en unidades americanas. No existe capa
 de conversión de unidades ni preferencias de locale: convertir texto libre como "2 tazas
 cocidas" exigiría cantidades estructuradas y raciones base, y eso es trabajo editorial, no un
-parser. Las etiquetas pasan a ser un vocabulario cerrado en inglés, igual que los alérgenos;
+parser. Course, Dieta y las Etiquetas prácticas usan vocabularios cerrados en inglés, igual que
+los alérgenos (ADR 0013);
 lo que la usuaria lee es presentación, nunca el dato.
 
 _(Sustituido por el ADR 0011: los nombres de los platos también van en inglés.)_ Los nombres propios de platos no se traducen: "Tortilla de papa" se queda. El diferenciador del

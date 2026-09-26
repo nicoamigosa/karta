@@ -61,6 +61,7 @@ public struct RecipeCardPresentation: Equatable, Sendable {
     public let durationLabel: String
     public let difficultyLabel: String
     public let servingsLabel: String
+    public let primaryCourse: Course
     public let ingredientQuantities: [String]
     public let householdSize: Int
 
@@ -75,6 +76,7 @@ public struct RecipeCardPresentation: Equatable, Sendable {
         case .hard: "advanced"
         }
         self.servingsLabel = "Serves \(recipe.servings)"
+        self.primaryCourse = recipe.primaryCourse
         self.ingredientQuantities = recipe.ingredients.map(\.quantity)
         self.householdSize = householdSize
     }

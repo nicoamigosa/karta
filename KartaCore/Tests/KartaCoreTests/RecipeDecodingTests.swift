@@ -15,7 +15,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 4,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["paso"]
         }
@@ -45,7 +45,7 @@ struct RecipeDecodingTests {
                 "totalMinutes": 10,
                 "difficulty": "easy",
                 "servings": 4,
-                "tags": [],
+                "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["s"]
@@ -57,7 +57,7 @@ struct RecipeDecodingTests {
                 "totalMinutes": 10,
                 "difficulty": "easy",
                 "servings": 4,
-                "tags": [],
+                "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": null,
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["s"]
@@ -95,7 +95,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 4,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [" DaIrY "],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["paso"]
@@ -116,7 +116,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 4,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": ["lactose"],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["paso"]
@@ -148,7 +148,7 @@ struct RecipeDecodingTests {
                 "totalMinutes": 10,
                 "difficulty": "easy",
                 "servings": 4,
-                "tags": [],
+                "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["Cook"]
@@ -160,7 +160,7 @@ struct RecipeDecodingTests {
                 "totalMinutes": 10,
                 "difficulty": "easy",
                 "servings": 4,
-                "tags": [],
+                "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
                 "steps": ["Cook"]
@@ -188,7 +188,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [],
             "steps": ["Cook"]
@@ -218,7 +218,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "blank-name", "name": "  ", "quantity": "1 cup" }],
             "steps": ["Cook"]
@@ -249,7 +249,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": []
@@ -279,7 +279,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 4,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
@@ -306,7 +306,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 4,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
@@ -328,7 +328,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 0,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
@@ -359,7 +359,7 @@ struct RecipeDecodingTests {
             "totalMinutes": -1,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
@@ -390,7 +390,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
@@ -417,7 +417,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["Cook"]
@@ -447,7 +447,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "  " }],
             "steps": ["Cook"]
@@ -479,7 +479,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": [],
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "0 cups" }],
             "steps": ["Cook"]
@@ -515,7 +515,10 @@ struct RecipeDecodingTests {
             "totalMinutes": 35,
             "difficulty": "easy",
             "servings": 4,
-            "tags": ["one-pan", "vegetarian"],
+            "primaryCourse": "dinner",
+            "additionalCourses": ["lunch"],
+            "diets": ["vegetarian"],
+            "practicalTags": ["one-pan"],
             "contains": [],
             "ingredients": [
                 { "id": "papa", "name": "Papa", "quantity": "4 unidades" },
@@ -534,7 +537,10 @@ struct RecipeDecodingTests {
         #expect(recipe.name == "Tortilla de papa")
         #expect(recipe.totalMinutes == 35)
         #expect(recipe.difficulty == .easy)
-        #expect(recipe.tags == [.onePan, .vegetarian])
+        #expect(recipe.primaryCourse == .dinner)
+        #expect(recipe.additionalCourses == [.lunch])
+        #expect(recipe.diets == [.vegetarian])
+        #expect(recipe.practicalTags == [.onePan])
         #expect(recipe.ingredients.count == 2)
         let firstIngredient = try #require(recipe.ingredients.first)
         #expect(firstIngredient.name == "Papa")
@@ -552,7 +558,7 @@ struct RecipeDecodingTests {
             totalMinutes: 10,
             difficulty: .easy,
             servings: 2,
-            tags: [],
+            primaryCourse: .dinner,
             ingredients: [Ingredient(name: "x", quantity: "1")],
             steps: ["Cook"],
             allergenReview: .reviewed([]),
@@ -565,8 +571,8 @@ struct RecipeDecodingTests {
         #expect(decoded.editorialDate == date)
     }
 
-    @Test("Recipe decoding names an unknown tag and its recipe")
-    func unknownTagFailsWithContext() {
+    @Test("Recipe decoding names an unknown practical tag and its recipe")
+    func unknownPracticalTagFailsWithContext() {
         let json = """
         {
             "id": "legacy-tags",
@@ -575,7 +581,10 @@ struct RecipeDecodingTests {
             "totalMinutes": 10,
             "difficulty": "easy",
             "servings": 2,
-            "tags": ["one-pan", "vegetariano"],
+            "primaryCourse": "dinner",
+            "additionalCourses": [],
+            "diets": [],
+            "practicalTags": ["one-pan", "quick"],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": ["s"]
@@ -584,21 +593,136 @@ struct RecipeDecodingTests {
 
         do {
             _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
-            Issue.record("Expected decoding to reject the unknown tag")
+            Issue.record("Expected decoding to reject the unknown practical tag")
         } catch let error as RecipeDecodingError {
-            #expect(error == .unknownTag(
+            #expect(error == .unknownPracticalTag(
                 recipeID: "legacy-tags",
                 recipeName: "Legacy tags",
-                value: "vegetariano"
+                value: "quick"
             ))
         } catch {
             Issue.record("Unexpected error: \(error)")
         }
     }
 
-    @Test("Tag decoding is closed and normalizes input")
-    func tagVocabularyNormalizesInput() {
-        #expect(RecipeTag(rawValue: " One-Pan ") == .onePan)
-        #expect(RecipeTag(rawValue: "vegetariano") == nil)
+    @Test("Unknown Course and Diet values fail with recipe context")
+    func unknownCourseAndDietFailWithContext() {
+        let unknownCourse = """
+        {
+            "id": "unknown-course", "name": "Unknown Course",
+            "heroPhotoURL": "https://img.karta.app/unknown-course.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "primaryCourse": "brunch", "additionalCourses": [], "diets": [], "practicalTags": [],
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": ["s"]
+        }
+        """
+        let unknownDiet = """
+        {
+            "id": "unknown-diet", "name": "Unknown Diet",
+            "heroPhotoURL": "https://img.karta.app/unknown-diet.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": ["pescatarian"], "practicalTags": [],
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": ["s"]
+        }
+        """
+
+        #expect(decodingError(in: unknownCourse) == .unknownCourse(
+            recipeID: "unknown-course",
+            recipeName: "Unknown Course",
+            value: "brunch"
+        ))
+        #expect(decodingError(in: unknownDiet) == .unknownDiet(
+            recipeID: "unknown-diet",
+            recipeName: "Unknown Diet",
+            value: "pescatarian"
+        ))
+    }
+
+    @Test("Additional Courses cannot repeat the primary Course")
+    func additionalCoursesCannotRepeatPrimary() {
+        let json = """
+        {
+            "id": "repeated-course", "name": "Repeated Course",
+            "heroPhotoURL": "https://img.karta.app/repeated-course.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "primaryCourse": "dinner", "additionalCourses": ["dinner"], "diets": [], "practicalTags": [],
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": ["s"]
+        }
+        """
+
+        #expect(decodingError(in: json) == .repeatedPrimaryCourse(
+            recipeID: "repeated-course",
+            recipeName: "Repeated Course",
+            value: "dinner"
+        ))
+    }
+
+    @Test("The flat legacy tags field is rejected after taxonomy migration")
+    func legacyTagFieldIsRejected() {
+        let json = """
+        {
+            "id": "legacy-tags", "name": "Legacy Tags",
+            "heroPhotoURL": "https://img.karta.app/legacy-tags.jpg",
+            "totalMinutes": 10, "difficulty": "easy", "servings": 2,
+            "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
+            "tags": ["quick"], "contains": [],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": ["s"]
+        }
+        """
+
+        #expect(decodingError(in: json) == .legacyTagsField(
+            recipeID: "legacy-tags",
+            recipeName: "Legacy Tags"
+        ))
+    }
+
+    @Test("Course, Diet and practical-tag vocabularies are closed and normalize input")
+    func recipeVocabulariesNormalizeInput() {
+        #expect(Course(rawValue: " LUNCH ") == .lunch)
+        #expect(Diet(rawValue: " VEGAN ") == .vegan)
+        #expect(PracticalTag(rawValue: " One-Pan ") == .onePan)
+        #expect(Course(rawValue: "brunch") == nil)
+        #expect(Diet(rawValue: "vegetariano") == nil)
+        #expect(PracticalTag(rawValue: "quick") == nil)
+    }
+
+    @Test("A recipe without its primary Course fails to decode")
+    func missingPrimaryCourseFailsWithContext() {
+        let json = """
+        {
+            "id": "course-less",
+            "name": "Course-less",
+            "heroPhotoURL": "https://img.karta.app/course-less.jpg",
+            "totalMinutes": 10,
+            "difficulty": "easy",
+            "servings": 2,
+            "contains": [],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "steps": ["Cook"]
+        }
+        """
+
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            Issue.record("Expected decoding to reject the missing primary Course")
+        } catch let error as RecipeDecodingError {
+            #expect(error == .missingPrimaryCourse(
+                recipeID: "course-less",
+                recipeName: "Course-less"
+            ))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    private func decodingError(in json: String) -> RecipeDecodingError? {
+        do {
+            _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
+            return nil
+        } catch let error as RecipeDecodingError {
+            return error
+        } catch {
+            return nil
+        }
     }
 }
