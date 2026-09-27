@@ -49,29 +49,52 @@ struct FeedDeckTests {
     func verticalNavigation() {
         #expect(DeckNavigator.destination(
             from: 1,
-            predictedTranslation: -KartaDesign.deck.swipeThreshold,
+            translation: CGSize(width: 0, height: -KartaDesign.deck.swipeThreshold),
+            predictedTranslation: CGSize(
+                width: 0,
+                height: -KartaDesign.deck.swipeThreshold
+            ),
             cardCount: 4
         ) == 2)
         #expect(DeckNavigator.destination(
             from: 1,
-            predictedTranslation: KartaDesign.deck.swipeThreshold,
+            translation: CGSize(width: 0, height: KartaDesign.deck.swipeThreshold),
+            predictedTranslation: CGSize(
+                width: 0,
+                height: KartaDesign.deck.swipeThreshold
+            ),
             cardCount: 4
         ) == 0)
         #expect(DeckNavigator.destination(
             from: 1,
-            predictedTranslation: 39,
+            translation: CGSize(width: 0, height: 39),
+            predictedTranslation: CGSize(width: 0, height: 39),
             cardCount: 4
         ) == 1)
         #expect(DeckNavigator.destination(
             from: 0,
-            predictedTranslation: 200,
+            translation: CGSize(width: 0, height: 200),
+            predictedTranslation: CGSize(width: 0, height: 200),
             cardCount: 4
         ) == 0)
         #expect(DeckNavigator.destination(
             from: 3,
-            predictedTranslation: -200,
+            translation: CGSize(width: 0, height: -200),
+            predictedTranslation: CGSize(width: 0, height: -200),
             cardCount: 4
         ) == 3)
+        #expect(DeckNavigator.destination(
+            from: 1,
+            translation: CGSize(width: 200, height: 20),
+            predictedTranslation: CGSize(width: 300, height: -100),
+            cardCount: 4
+        ) == 1)
+        #expect(DeckNavigator.destination(
+            from: 1,
+            translation: CGSize(width: 40, height: 40),
+            predictedTranslation: CGSize(width: 40, height: -100),
+            cardCount: 4
+        ) == 1)
     }
 
     @MainActor
@@ -113,6 +136,9 @@ struct FeedDeckTests {
                 - KartaDesign.deck.nudgeDuration
             ) < 0.0001
         )
+        #expect(KartaDesign.type.displaySoftAxis == 0x534F4654)
+        #expect(KartaDesign.type.displayWeightAxis == 0x77676874)
+        #expect(KartaDesign.type.displaySoft == 100)
         #expect(KartaDesign.type.wordmarkTracking == -0.8)
         #expect(KartaDesign.type.rankUnitTracking == 1.2)
         #expect(KartaDesign.type.cardTitleTracking == -0.6)

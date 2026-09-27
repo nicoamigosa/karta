@@ -16,14 +16,18 @@ struct FeedDeckCard: Identifiable, Equatable {
 enum DeckNavigator {
     static func destination(
         from index: Int,
-        predictedTranslation: CGFloat,
+        translation: CGSize,
+        predictedTranslation: CGSize,
         cardCount: Int
     ) -> Int {
         guard cardCount > 0 else { return 0 }
-        if predictedTranslation <= -KartaDesign.deck.swipeThreshold {
+        guard abs(translation.height) > abs(translation.width) else {
+            return index
+        }
+        if predictedTranslation.height <= -KartaDesign.deck.swipeThreshold {
             return min(index + 1, cardCount - 1)
         }
-        if predictedTranslation >= KartaDesign.deck.swipeThreshold {
+        if predictedTranslation.height >= KartaDesign.deck.swipeThreshold {
             return max(index - 1, 0)
         }
         return index

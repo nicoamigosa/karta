@@ -192,13 +192,17 @@ private struct FeedDeck: View {
             .onChanged { value in
                 let vertical = value.translation.height
                 let horizontal = abs(value.translation.width)
-                guard abs(vertical) > horizontal else { return }
+                guard abs(vertical) > horizontal else {
+                    dragOffset = 0
+                    return
+                }
                 dragOffset = vertical
             }
             .onEnded { value in
                 let destination = DeckNavigator.destination(
                     from: currentIndex,
-                    predictedTranslation: value.predictedEndTranslation.height,
+                    translation: value.translation,
+                    predictedTranslation: value.predictedEndTranslation,
                     cardCount: cards.count
                 )
                 guard destination != currentIndex else {

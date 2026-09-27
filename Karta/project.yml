@@ -25,6 +25,7 @@ targets:
         UILaunchScreen: {}
         UIAppFonts:
           - Fraunces.ttf
+          - Fraunces-Italic.ttf
           - Figtree.ttf
     settings:
       base:

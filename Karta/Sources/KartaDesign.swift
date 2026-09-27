@@ -1,4 +1,6 @@
+import CoreText
 import SwiftUI
+import UIKit
 import KartaCore
 
 enum KartaDesign {
@@ -38,24 +40,24 @@ enum KartaDesign {
 
     enum FontToken {
         static func wordmark() -> Font {
-            .custom("Fraunces", size: 30, relativeTo: .title)
-                .weight(.black)
+            display(size: 30, relativeTo: .title1, weight: 900)
         }
 
         static func rank() -> Font {
-            .custom("Fraunces", size: 40, relativeTo: .largeTitle)
-                .weight(.black)
+            display(size: 40, relativeTo: .largeTitle, weight: 900)
         }
 
         static func suitLabel() -> Font {
-            .custom("Fraunces", size: 20, relativeTo: .title3)
-                .weight(.semibold)
-                .italic()
+            display(
+                name: "Fraunces-Italic",
+                size: 20,
+                relativeTo: .title3,
+                weight: 600
+            )
         }
 
         static func cardTitle() -> Font {
-            .custom("Fraunces", size: 33, relativeTo: .largeTitle)
-                .weight(.bold)
+            display(size: 33, relativeTo: .largeTitle, weight: 700)
         }
 
         static func rankUnit() -> Font {
@@ -81,6 +83,35 @@ enum KartaDesign {
             .custom("Figtree", size: 13, relativeTo: .caption)
                 .weight(.semibold)
         }
+
+        private static func display(
+            name: String = "Fraunces",
+            size: CGFloat,
+            relativeTo textStyle: UIFont.TextStyle,
+            weight: CGFloat
+        ) -> Font {
+            var descriptor = CTFontDescriptorCreateWithNameAndSize(
+                name as CFString,
+                size
+            )
+            descriptor = CTFontDescriptorCreateCopyWithVariation(
+                descriptor,
+                NSNumber(value: KartaDesign.type.displaySoftAxis),
+                KartaDesign.type.displaySoft
+            )
+            descriptor = CTFontDescriptorCreateCopyWithVariation(
+                descriptor,
+                NSNumber(value: KartaDesign.type.displayWeightAxis),
+                weight
+            )
+            let scaledSize = UIFontMetrics(forTextStyle: textStyle)
+                .scaledValue(for: size)
+            return Font(CTFontCreateWithFontDescriptor(
+                descriptor,
+                scaledSize,
+                nil
+            ))
+        }
     }
 
     enum radius {
@@ -92,6 +123,9 @@ enum KartaDesign {
     }
 
     enum type {
+        static let displaySoftAxis: UInt32 = 0x534F4654
+        static let displayWeightAxis: UInt32 = 0x77676874
+        static let displaySoft: CGFloat = 100
         static let wordmarkTracking: CGFloat = -0.8
         static let rankUnitTracking: CGFloat = 1.2
         static let cardTitleTracking: CGFloat = -0.6
