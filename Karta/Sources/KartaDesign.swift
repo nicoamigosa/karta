@@ -93,6 +93,7 @@ enum KartaDesign {
 
     enum type {
         static let wordmarkTracking: CGFloat = -0.8
+        static let rankUnitTracking: CGFloat = 1.2
         static let cardTitleTracking: CGFloat = -0.6
         static let rankMinimumScale: CGFloat = 0.68
         static let cardTitleMinimumScale: CGFloat = 0.72
@@ -108,6 +109,7 @@ enum KartaDesign {
         static let cardBottom: CGFloat = 18
         static let cardGap: CGFloat = 12
         static let cardTextInset: CGFloat = 8
+        static let rankGap: CGFloat = 4
         static let chipGap: CGFloat = 8
         static let chipY: CGFloat = 7
         static let chipX: CGFloat = 12

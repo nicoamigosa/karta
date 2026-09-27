@@ -74,6 +74,24 @@ struct FeedDeckTests {
         ) == 3)
     }
 
+    @MainActor
+    @Test("Card rank uses presentation-ready minutes and unit")
+    func cardRankPresentation() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let recipe = try #require(recipes.first { $0.name == "Spanish Tortilla" })
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(
+                intoleranceAnswer: .answered([]),
+                householdSize: 4
+            ),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        let presentation = try #require(store.cardPresentation(for: recipe))
+
+        #expect(presentation.rankValue == "35")
+        #expect(presentation.rankUnit == "MIN")
+    }
+
     @Test("Signed-off deck values come from shared style tokens")
     func styleTokens() {
         #expect(KartaDesign.radius.card == 26)
@@ -96,6 +114,7 @@ struct FeedDeckTests {
             ) < 0.0001
         )
         #expect(KartaDesign.type.wordmarkTracking == -0.8)
+        #expect(KartaDesign.type.rankUnitTracking == 1.2)
         #expect(KartaDesign.type.cardTitleTracking == -0.6)
         #expect(KartaDesign.elevation.backFrameLineWidth == 1)
         #expect(KartaDesign.layout.onboardingMaxWidth == 460)

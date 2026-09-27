@@ -433,10 +433,18 @@ private struct RecipeCardView: View {
         CardRelief(edgeColors: KartaDesign.ColorToken.cardEdges) {
             VStack(alignment: .leading, spacing: KartaDesign.space.cardGap) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(presentation.durationLabel)
-                        .font(KartaDesign.FontToken.rank())
-                        .minimumScaleFactor(KartaDesign.type.rankMinimumScale)
-                        .lineLimit(KartaDesign.type.rankLineLimit)
+                    HStack(
+                        alignment: .firstTextBaseline,
+                        spacing: KartaDesign.space.rankGap
+                    ) {
+                        Text(presentation.rankValue)
+                            .font(KartaDesign.FontToken.rank())
+                            .minimumScaleFactor(KartaDesign.type.rankMinimumScale)
+                            .lineLimit(KartaDesign.type.rankLineLimit)
+                        Text(presentation.rankUnit)
+                            .font(KartaDesign.FontToken.rankUnit())
+                            .tracking(KartaDesign.type.rankUnitTracking)
+                    }
                     Spacer(minLength: KartaDesign.space.cardGap)
                     Text(presentation.primaryCourse.rawValue)
                         .font(KartaDesign.FontToken.suitLabel())
