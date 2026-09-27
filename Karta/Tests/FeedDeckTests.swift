@@ -130,16 +130,38 @@ struct FeedDeckTests {
         let feed = try #require(store.feed(recipes: recipes, clock: FixedClock(now: now)))
         let cards = FeedDeckCard.cards(in: feed)
         let card = try #require(cards.first)
+        let tappedIndex = 0
 
-        store.send(.setFeedAnchor(
-            ScrollAnchor(recipeID: card.id, relativeOffset: 0),
-            world: store.state.navigation.world
-        ))
-        store.send(.recordOpen(recipeID: card.id, at: now))
-        store.send(.pushRoute(.recipeDetail(recipeID: card.id)))
+        // A tap on the front Card produces exactly the open intent…
+        let actions = CardOpening.actions(recipeID: cards[tappedIndex].id, at: now)
+        guard actions.count == 2,
+              case let .recordOpen(recordedID, recordedAt) = actions[0],
+              case let .pushRoute(.recipeDetail(pushedID)) = actions[1] else {
+            Issue.record("CardOpening did not produce recordOpen + pushRoute(recipeDetail)")
+            return
+        }
+        #expect(recordedID == card.id)
+        #expect(recordedAt == now)
+        #expect(pushedID == card.id)
+
+        // …and before it is sent, no reverse is presented.
+        #expect(RecipeReverseRoute.recipe(
+            for: store.state.navigation.routes,
+            in: recipes
+        ) == nil)
+
+        for action in actions {
+            store.send(action)
+        }
 
         #expect(store.state.navigation.routes == [.recipeDetail(recipeID: card.id)])
         #expect(store.state.viewHistory.openings.map(\.recipeID).contains(card.id))
+
+        // With the route on top, the overlay resolves that same recipe.
+        #expect(RecipeReverseRoute.recipe(
+            for: store.state.navigation.routes,
+            in: recipes
+        ) == card.recipe)
 
         let reverse = try #require(store.reversePresentation(for: card.recipe))
         #expect(reverse.recipeID == card.id)

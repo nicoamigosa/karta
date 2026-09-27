@@ -44,9 +44,10 @@ struct FeedScreen: View {
             }
         }
         .overlay {
-            if case let .recipeDetail(recipeID) = store.state.navigation.routes.last,
-               let recipe = recipes.first(where: { $0.id == recipeID }),
-               let reverse = store.reversePresentation(for: recipe) {
+            if let recipe = RecipeReverseRoute.recipe(
+                for: store.state.navigation.routes,
+                in: recipes
+            ), let reverse = store.reversePresentation(for: recipe) {
                 RecipeReverseView(
                     recipe: recipe,
                     presentation: reverse,
@@ -295,9 +296,9 @@ private struct FeedDeck: View {
     private func openCurrentCard() {
         stopEntryNudge()
         guard cards.indices.contains(currentIndex) else { return }
-        let recipeID = cards[currentIndex].id
-        store.send(.recordOpen(recipeID: recipeID, at: Date()))
-        store.send(.pushRoute(.recipeDetail(recipeID: recipeID)))
+        for action in CardOpening.actions(recipeID: cards[currentIndex].id, at: Date()) {
+            store.send(action)
+        }
     }
 
     @MainActor
