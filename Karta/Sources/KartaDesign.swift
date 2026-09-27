@@ -147,6 +147,13 @@ enum KartaDesign {
         static let chipGap: CGFloat = 8
         static let chipY: CGFloat = 7
         static let chipX: CGFloat = 12
+        static let reverseCardX: CGFloat = 10
+        static let reverseCardY: CGFloat = 30
+        static let reverseButtonHit: CGFloat = 32
+        static let reversePhotoEdge: CGFloat = 76
+        static let reverseRowGap: CGFloat = 10
+        static let stepDisc: CGFloat = 22
+        static let stepCueY: CGFloat = 3
         static let backFrameInset: CGFloat = 9
         static let onboarding: CGFloat = 28
         static let onboardingGap: CGFloat = 24
@@ -173,6 +180,7 @@ enum KartaDesign {
         static let nudgeDistance: CGFloat = 72
         static let nudgeRotation: Double = -3
         static let leavingTranslationScale: CGFloat = 1.15
+        static let reverseAppearScale: CGFloat = 0.92
         static let leavingRotation: Double = -9
         static let frontBottomInset: CGFloat = 18
         static let back1Left: CGFloat = 4

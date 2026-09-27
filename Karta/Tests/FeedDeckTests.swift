@@ -115,6 +115,84 @@ struct FeedDeckTests {
         #expect(presentation.rankUnit == "MIN")
     }
 
+    @MainActor
+    @Test("Opening a Card pushes its detail route and records the Apertura")
+    func openPushesRoute() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(
+                intoleranceAnswer: .answered([]),
+                householdSize: 4
+            ),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        let feed = try #require(store.feed(recipes: recipes, clock: FixedClock(now: now)))
+        let cards = FeedDeckCard.cards(in: feed)
+        let card = try #require(cards.first)
+
+        store.send(.setFeedAnchor(
+            ScrollAnchor(recipeID: card.id, relativeOffset: 0),
+            world: store.state.navigation.world
+        ))
+        store.send(.recordOpen(recipeID: card.id, at: now))
+        store.send(.pushRoute(.recipeDetail(recipeID: card.id)))
+
+        #expect(store.state.navigation.routes == [.recipeDetail(recipeID: card.id)])
+        #expect(store.state.viewHistory.openings.map(\.recipeID).contains(card.id))
+
+        let reverse = try #require(store.reversePresentation(for: card.recipe))
+        #expect(reverse.recipeID == card.id)
+        #expect(!reverse.ingredients.isEmpty)
+        #expect(reverse.ingredients.allSatisfy { !$0.quantity.isEmpty })
+        #expect(!reverse.steps.isEmpty)
+        #expect(reverse.steps.map(\.number) == Array(1...reverse.steps.count))
+        #expect(reverse.steps.allSatisfy { !$0.summary.isEmpty })
+    }
+
+    @MainActor
+    @Test("Back pops the route and the anchor lands the deck on the same Card")
+    func backRestoresDeckPosition() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(
+                intoleranceAnswer: .answered([]),
+                householdSize: 4
+            ),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        let feed = try #require(store.feed(recipes: recipes, clock: FixedClock(now: now)))
+        let cards = FeedDeckCard.cards(in: feed)
+        let third = try #require(cards.dropFirst(2).first)
+        let expectedIndex = cards.firstIndex(where: { $0.id == third.id })
+
+        store.send(.setFeedAnchor(
+            ScrollAnchor(recipeID: third.id, relativeOffset: 0),
+            world: store.state.navigation.world
+        ))
+        store.send(.pushRoute(.recipeDetail(recipeID: third.id)))
+        store.send(.popRoute)
+
+        #expect(store.state.navigation.routes.isEmpty)
+        #expect(FeedDeckAnchor.initialIndex(
+            cards: cards,
+            navigation: store.state.navigation
+        ) == expectedIndex)
+    }
+
+    @Test("An anchor for a recipe absent from the feed starts the deck at the top")
+    func staleAnchorStartsAtTop() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let cards = recipes.map { FeedDeckCard(recipe: $0, alreadySeen: false) }
+        let navigation = AppNavigationState(
+            world: .forYou,
+            anchors: [.forYou: ScrollAnchor(recipeID: "not-in-the-feed", relativeOffset: 0)]
+        )
+
+        #expect(FeedDeckAnchor.initialIndex(cards: cards, navigation: navigation) == 0)
+    }
+
     @Test("Signed-off deck values come from shared style tokens")
     func styleTokens() {
         #expect(KartaDesign.radius.card == 26)

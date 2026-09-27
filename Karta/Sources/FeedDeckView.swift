@@ -11,6 +11,8 @@ struct FeedScreen: View {
     @State private var isLoaded = false
     @State private var loadError: String?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Group {
             if let loadError {
@@ -41,6 +43,23 @@ struct FeedScreen: View {
                 OnboardingView(store: store)
             }
         }
+        .overlay {
+            if case let .recipeDetail(recipeID) = store.state.navigation.routes.last,
+               let recipe = recipes.first(where: { $0.id == recipeID }),
+               let reverse = store.reversePresentation(for: recipe) {
+                RecipeReverseView(
+                    recipe: recipe,
+                    presentation: reverse,
+                    manifest: manifest,
+                    store: store
+                )
+                .transition(reverseTransition)
+            }
+        }
+        .animation(
+            reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
+            value: store.state.navigation.routes.last
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(KartaDesign.ColorToken.paper)
         .foregroundStyle(KartaDesign.ColorToken.ink)
@@ -55,6 +74,14 @@ struct FeedScreen: View {
                 loadError = error.localizedDescription
             }
         }
+    }
+}
+
+private extension FeedScreen {
+    var reverseTransition: AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .scale(scale: KartaDesign.deck.reverseAppearScale).combined(with: .opacity)
     }
 }
 
@@ -80,6 +107,10 @@ private struct FeedDeck: View {
         self.manifest = manifest
         self.store = store
         _cards = State(initialValue: cards)
+        _currentIndex = State(initialValue: FeedDeckAnchor.initialIndex(
+            cards: cards,
+            navigation: store.state.navigation
+        ))
     }
 
     var body: some View {
@@ -255,6 +286,10 @@ private struct FeedDeck: View {
         guard cards.indices.contains(currentIndex) else { return }
         let card = cards[currentIndex]
         store.send(.recordView(recipeID: card.id, at: Date()))
+        store.send(.setFeedAnchor(
+            ScrollAnchor(recipeID: card.id, relativeOffset: 0),
+            world: store.state.navigation.world
+        ))
     }
 
     private func openCurrentCard() {
@@ -552,7 +587,7 @@ private struct CardBack: View {
     }
 }
 
-private struct CardRelief<Content: View>: View {
+struct CardRelief<Content: View>: View {
     let edgeColors: [Color]
     var back = false
     @ViewBuilder let content: () -> Content
@@ -636,7 +671,7 @@ private struct OnboardingView: View {
     }
 }
 
-private struct TactileButton: View {
+struct TactileButton: View {
     let label: String
     let action: () -> Void
 
@@ -666,7 +701,7 @@ private struct TactileButton: View {
     }
 }
 
-private struct RecipePhoto: View {
+struct RecipePhoto: View {
     let reference: MediaReference
     let manifest: MediaAssetManifest
 
