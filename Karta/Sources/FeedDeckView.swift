@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import KartaCore
 import KartaPresentation
 
@@ -98,8 +99,11 @@ private struct FeedDeck: View {
                     }
                 }
                 .contentShape(Rectangle())
+                .overlay {
+                    FirstTouchCapture(action: stopEntryNudge)
+                        .accessibilityHidden(true)
+                }
                 .gesture(dragGesture)
-                .simultaneousGesture(firstTouchGesture)
                 .onTapGesture(perform: openCurrentCard)
             }
             .padding(.top, KartaDesign.space.headerToDeck)
@@ -218,13 +222,6 @@ private struct FeedDeck: View {
             }
     }
 
-    private var firstTouchGesture: some Gesture {
-        LongPressGesture(minimumDuration: 0)
-            .onChanged { _ in
-                stopEntryNudge()
-            }
-    }
-
     private func cardTransition(height: CGFloat) -> AnyTransition {
         guard !reduceMotion else { return .opacity }
         let flight = AnyTransition.modifier(
@@ -305,6 +302,70 @@ private struct FeedDeck: View {
         hintVisible = false
         entryOffset = 0
         entryRotation = 0
+    }
+}
+
+private struct FirstTouchCapture: UIViewRepresentable {
+    let action: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(action: action)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+
+        let recognizer = TouchDownGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTouch(_:))
+        )
+        recognizer.cancelsTouchesInView = false
+        recognizer.delegate = context.coordinator
+        view.addGestureRecognizer(recognizer)
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {
+        context.coordinator.action = action
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var action: () -> Void
+
+        init(action: @escaping () -> Void) {
+            self.action = action
+        }
+
+        @objc func handleTouch(_ recognizer: UIGestureRecognizer) {
+            guard recognizer.state == .began else { return }
+            action()
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+    }
+}
+
+private final class TouchDownGestureRecognizer: UIGestureRecognizer {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .began
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .changed
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .ended
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .cancelled
     }
 }
 
