@@ -5,7 +5,9 @@ These recordings capture the signed-off vertical Card deck at app commit
 
 - Simulator: iPhone 17, iOS 27.0 (`24A434`)
 - Xcode: 27.0 RC (`27A266a`)
-- `standard-motion.webp`: entry teaching motion, first-touch cancellation,
-  signed next/previous Card transitions, and one-Card navigation
+- `standard-motion.webp`: entry teaching motion, signed next/previous Card
+  transitions, and one-Card navigation
+- `first-touch-cancellation.webp`: stationary touch-down stops the teaching
+  motion without navigating or blocking later gestures
 - `reduce-motion.webp`: no entry nudge and cross-fade navigation with Reduce
   Motion enabled
