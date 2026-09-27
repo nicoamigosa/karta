@@ -49,6 +49,38 @@ struct RecipeCardPresentationTests {
         #expect(card.ingredientQuantities == ["1 1/2 cups", "as needed"])
     }
 
+    @Test("Card rank caps durations over an hour while prose keeps exact time")
+    func cardRankCapsLongDurations() {
+        let card = card(for: .medium, totalMinutes: 61)
+
+        #expect(card.rankValue == "+60")
+        #expect(card.rankUnit == "MIN")
+        #expect(card.durationLabel == "1 hour 1 minute")
+    }
+
+    @Test("Card rank stays capped for durations longer than two hours")
+    func cardRankStaysCappedForLongDurations() {
+        let card = card(for: .medium, totalMinutes: 125)
+
+        #expect(card.rankValue == "+60")
+        #expect(card.rankUnit == "MIN")
+        #expect(card.durationLabel == "2 hours 5 minutes")
+    }
+
+    @Test("Card rank preserves minute values through one hour")
+    func cardRankPreservesMinutesThroughOneHour() {
+        let zeroMinuteCard = card(for: .medium, totalMinutes: 0)
+        let thirtyFiveMinuteCard = card(for: .medium, totalMinutes: 35)
+        let oneHourCard = card(for: .medium, totalMinutes: 60)
+
+        #expect(zeroMinuteCard.rankValue == "0")
+        #expect(zeroMinuteCard.rankUnit == "MIN")
+        #expect(thirtyFiveMinuteCard.rankValue == "35")
+        #expect(thirtyFiveMinuteCard.rankUnit == "MIN")
+        #expect(oneHourCard.rankValue == "60")
+        #expect(oneHourCard.rankUnit == "MIN")
+    }
+
     @Test("Card ingredients omit optional ingredients that conflict with the profile")
     func cardHidesOptionalIngredientsForIntolerance() {
         let recipe = Recipe(
@@ -88,13 +120,13 @@ struct RecipeCardPresentationTests {
         #expect(card(for: .hard).difficultyLabel == "advanced")
     }
 
-    private func card(for difficulty: Difficulty) -> RecipeCardPresentation {
+    private func card(for difficulty: Difficulty, totalMinutes: Int = 1) -> RecipeCardPresentation {
         RecipeCardPresentation(
             recipe: Recipe(
                 id: difficulty.rawValue,
                 name: "Recipe",
                 heroPhoto: .local("recipe.jpg"),
-                totalMinutes: 1,
+                totalMinutes: totalMinutes,
                 difficulty: difficulty,
                 servings: 2,
                 primaryCourse: .dinner,
