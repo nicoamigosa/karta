@@ -59,7 +59,9 @@ public struct RecipeCardPresentation: Equatable, Sendable {
     public let recipeID: String
     public let name: String
     public let durationLabel: String
+    /// Whole minutes through 60, or "+60" for longer recipes.
     public let rankValue: String
+    /// The literal unit shown beside the Card rank.
     public let rankUnit: String
     public let difficultyLabel: String
     public let servingsLabel: String
