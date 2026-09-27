@@ -16,7 +16,24 @@ enum KartaDesign {
             Color(hex: 0xD5C1A2)
         ]
         static let buttonEdge = Color(hex: 0xE0CFB3)
-        static let shadow = Color(red: 80 / 255, green: 50 / 255, blue: 25 / 255, opacity: 0.45)
+        static let frontShadow = Color(
+            red: 80 / 255,
+            green: 50 / 255,
+            blue: 25 / 255,
+            opacity: 0.45
+        )
+        static let backShadow = Color(
+            red: 80 / 255,
+            green: 50 / 255,
+            blue: 25 / 255,
+            opacity: 0.35
+        )
+        static let buttonShadow = Color(
+            red: 80 / 255,
+            green: 50 / 255,
+            blue: 25 / 255,
+            opacity: 0.25
+        )
     }
 
     enum FontToken {
@@ -74,6 +91,15 @@ enum KartaDesign {
         static let pill: CGFloat = 999
     }
 
+    enum type {
+        static let wordmarkTracking: CGFloat = -0.8
+        static let cardTitleTracking: CGFloat = -0.6
+        static let rankMinimumScale: CGFloat = 0.68
+        static let cardTitleMinimumScale: CGFloat = 0.72
+        static let rankLineLimit = 1
+        static let cardTitleLineLimit = 2
+    }
+
     enum space {
         static let screenX: CGFloat = 22
         static let headerToDeck: CGFloat = 22
@@ -91,18 +117,26 @@ enum KartaDesign {
     }
 
     enum deck {
+        static let backCardCount = 2
+        static let visibleCardCount = backCardCount + 1
         static let swipeThreshold: CGFloat = 40
+        static let dragMinimumDistance: CGFloat = 12
         static let motionDuration: TimeInterval = 0.46
         static let faceRevealDuration: TimeInterval = 0.30
         static let faceRevealDelay: TimeInterval = 0.12
         static let hintFadeDelay: TimeInterval = 3
         static let hintFadeDuration: TimeInterval = 0.6
         static let nudgeDelay: TimeInterval = 0.7
-        static let nudgeLiftDuration: TimeInterval = 0.336
-        static let nudgeSettleDuration: TimeInterval = 0.384
-        static let nudgeRestDuration: TimeInterval = 0.48
+        static let nudgeDuration: TimeInterval = 2.4
+        static let nudgePeakFraction = 0.14
+        static let nudgeSettleFraction = 0.3
+        static let nudgeLiftDuration = nudgeDuration * nudgePeakFraction
+        static let nudgeSettleDuration = nudgeDuration * (nudgeSettleFraction - nudgePeakFraction)
+        static let nudgeRestDuration = nudgeDuration * (1 - nudgeSettleFraction)
+        static let nudgeRepeatCount = 2
         static let nudgeDistance: CGFloat = 72
         static let nudgeRotation: Double = -3
+        static let leavingTranslationScale: CGFloat = 1.15
         static let leavingRotation: Double = -9
         static let frontBottomInset: CGFloat = 18
         static let back1Left: CGFloat = 4
@@ -121,12 +155,19 @@ enum KartaDesign {
     }
 
     enum elevation {
+        static let edgeLayerCount = 4
+        static let edgeLayerOffset: CGFloat = 1
+        static let backFrameLineWidth: CGFloat = 1
         static let frontShadowY: CGFloat = 22
         static let frontShadowRadius: CGFloat = 17
         static let backShadowY: CGFloat = 14
         static let backShadowRadius: CGFloat = 11
         static let buttonShadowY: CGFloat = 6
         static let buttonShadowRadius: CGFloat = 6
+    }
+
+    enum layout {
+        static let onboardingMaxWidth: CGFloat = 460
     }
 
     static let deckAnimation = Animation.timingCurve(

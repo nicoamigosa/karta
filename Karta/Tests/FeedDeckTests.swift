@@ -81,5 +81,23 @@ struct FeedDeckTests {
         #expect(KartaDesign.deck.swipeThreshold == 40)
         #expect(KartaDesign.deck.motionDuration == 0.46)
         #expect(KartaDesign.deck.faceRevealDelay == 0.12)
+        #expect(KartaDesign.deck.leavingTranslationScale == 1.15)
+        #expect(KartaDesign.deck.leavingRotation == -9)
+        #expect(KartaDesign.deck.nudgeDuration == 2.4)
+        #expect(abs(KartaDesign.deck.nudgeLiftDuration - 0.336) < 0.0001)
+        #expect(abs(KartaDesign.deck.nudgeSettleDuration - 0.384) < 0.0001)
+        #expect(abs(KartaDesign.deck.nudgeRestDuration - 1.68) < 0.0001)
+        #expect(
+            abs(
+                KartaDesign.deck.nudgeLiftDuration
+                + KartaDesign.deck.nudgeSettleDuration
+                + KartaDesign.deck.nudgeRestDuration
+                - KartaDesign.deck.nudgeDuration
+            ) < 0.0001
+        )
+        #expect(KartaDesign.type.wordmarkTracking == -0.8)
+        #expect(KartaDesign.type.cardTitleTracking == -0.6)
+        #expect(KartaDesign.elevation.backFrameLineWidth == 1)
+        #expect(KartaDesign.layout.onboardingMaxWidth == 460)
     }
 }

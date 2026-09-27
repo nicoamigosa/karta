@@ -85,7 +85,7 @@ private struct FeedDeck: View {
         VStack(spacing: 0) {
             Text("karta")
                 .font(KartaDesign.FontToken.wordmark())
-                .tracking(-0.8)
+                .tracking(KartaDesign.type.wordmarkTracking)
                 .foregroundStyle(KartaDesign.ColorToken.brand)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, KartaDesign.space.screenX)
@@ -129,7 +129,7 @@ private struct FeedDeck: View {
 
     private var visibleCards: [VisibleDeckCard] {
         guard !cards.isEmpty else { return [] }
-        return (0...2).compactMap { relativeIndex in
+        return (0...KartaDesign.deck.backCardCount).compactMap { relativeIndex in
             let index = currentIndex + relativeIndex
             guard cards.indices.contains(index) else { return nil }
             return VisibleDeckCard(card: cards[index], relativeIndex: relativeIndex)
@@ -175,8 +175,8 @@ private struct FeedDeck: View {
             )
         )
         .opacity(frontOpacity(relativeIndex: visible.relativeIndex, height: size.height))
-        .zIndex(Double(3 - visible.relativeIndex))
-        .transition(cardTransition)
+        .zIndex(Double(KartaDesign.deck.visibleCardCount - visible.relativeIndex))
+        .transition(cardTransition(height: size.height))
         .animation(
             reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
             value: currentIndex
@@ -184,7 +184,7 @@ private struct FeedDeck: View {
     }
 
     private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: KartaDesign.space.cardGap)
+        DragGesture(minimumDistance: KartaDesign.deck.dragMinimumDistance)
             .onChanged { value in
                 let vertical = value.translation.height
                 let horizontal = abs(value.translation.width)
@@ -225,13 +225,23 @@ private struct FeedDeck: View {
             }
     }
 
-    private var cardTransition: AnyTransition {
+    private func cardTransition(height: CGFloat) -> AnyTransition {
         guard !reduceMotion else { return .opacity }
-        let y = transitionDirection >= 0 ? -KartaDesign.deck.nudgeDistance : KartaDesign.deck.nudgeDistance
-        return .asymmetric(
-            insertion: .offset(y: -y).combined(with: .opacity),
-            removal: .offset(y: y).combined(with: .opacity)
+        let flight = AnyTransition.modifier(
+            active: DeckFlightModifier(
+                offset: -height * KartaDesign.deck.leavingTranslationScale,
+                rotation: KartaDesign.deck.leavingRotation,
+                opacity: 0
+            ),
+            identity: DeckFlightModifier(
+                offset: 0,
+                rotation: 0,
+                opacity: 1
+            )
         )
+        return transitionDirection >= 0
+            ? .asymmetric(insertion: .identity, removal: flight)
+            : .asymmetric(insertion: flight, removal: .identity)
     }
 
     private func frontOpacity(relativeIndex: Int, height: CGFloat) -> Double {
@@ -243,7 +253,6 @@ private struct FeedDeck: View {
         guard cards.indices.contains(currentIndex) else { return }
         let card = cards[currentIndex]
         store.send(.recordView(recipeID: card.id, at: Date()))
-        cards[currentIndex].alreadySeen = true
     }
 
     private func openCurrentCard() {
@@ -264,7 +273,7 @@ private struct FeedDeck: View {
         }
         guard !hasInteracted else { return }
 
-        for _ in 0..<2 {
+        for _ in 0..<KartaDesign.deck.nudgeRepeatCount {
             withAnimation(.easeOut(duration: KartaDesign.deck.nudgeLiftDuration)) {
                 entryOffset = -KartaDesign.deck.nudgeDistance
                 entryRotation = KartaDesign.deck.nudgeRotation
@@ -304,6 +313,19 @@ private struct VisibleDeckCard: Identifiable {
     let relativeIndex: Int
 
     var id: String { card.id }
+}
+
+private struct DeckFlightModifier: ViewModifier {
+    let offset: CGFloat
+    let rotation: Double
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        content
+            .offset(y: offset)
+            .rotationEffect(.degrees(rotation))
+            .opacity(opacity)
+    }
 }
 
 private struct DeckPosition {
@@ -352,8 +374,8 @@ private struct RecipeCardView: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text(presentation.durationLabel)
                         .font(KartaDesign.FontToken.rank())
-                        .minimumScaleFactor(0.68)
-                        .lineLimit(1)
+                        .minimumScaleFactor(KartaDesign.type.rankMinimumScale)
+                        .lineLimit(KartaDesign.type.rankLineLimit)
                     Spacer(minLength: KartaDesign.space.cardGap)
                     Text(presentation.primaryCourse.rawValue)
                         .font(KartaDesign.FontToken.suitLabel())
@@ -370,9 +392,9 @@ private struct RecipeCardView: View {
                 VStack(alignment: .leading, spacing: KartaDesign.space.cardGap) {
                     Text(presentation.name)
                         .font(KartaDesign.FontToken.cardTitle())
-                        .tracking(-0.6)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.72)
+                        .tracking(KartaDesign.type.cardTitleTracking)
+                        .lineLimit(KartaDesign.type.cardTitleLineLimit)
+                        .minimumScaleFactor(KartaDesign.type.cardTitleMinimumScale)
 
                     HStack(spacing: KartaDesign.space.chipGap) {
                         CardChip(label: presentation.servingsLabel, suit: suit)
@@ -428,7 +450,13 @@ private struct CardBack: View {
     private var suit: SuitTokens { KartaDesign.suit(course) }
 
     var body: some View {
-        CardRelief(edgeColors: Array(repeating: suit.edge, count: 4), back: true) {
+        CardRelief(
+            edgeColors: Array(
+                repeating: suit.edge,
+                count: KartaDesign.elevation.edgeLayerCount
+            ),
+            back: true
+        ) {
             RoundedRectangle(
                 cornerRadius: KartaDesign.radius.card,
                 style: .continuous
@@ -439,7 +467,10 @@ private struct CardBack: View {
                     cornerRadius: KartaDesign.radius.cardBackFrame,
                     style: .continuous
                 )
-                .stroke(KartaDesign.ColorToken.card, lineWidth: 1)
+                .stroke(
+                    KartaDesign.ColorToken.card,
+                    lineWidth: KartaDesign.elevation.backFrameLineWidth
+                )
                 .padding(KartaDesign.space.backFrameInset)
             }
         }
@@ -460,7 +491,9 @@ private struct CardRelief<Content: View>: View {
                     style: .continuous
                 )
                 .fill(layer.element)
-                .offset(y: CGFloat(layer.offset + 1))
+                .offset(
+                    y: CGFloat(layer.offset) + KartaDesign.elevation.edgeLayerOffset
+                )
             }
 
             content()
@@ -477,7 +510,9 @@ private struct CardRelief<Content: View>: View {
                 ))
         }
         .shadow(
-            color: KartaDesign.ColorToken.shadow.opacity(back ? 0.35 / 0.45 : 1),
+            color: back
+                ? KartaDesign.ColorToken.backShadow
+                : KartaDesign.ColorToken.frontShadow,
             radius: back
                 ? KartaDesign.elevation.backShadowRadius
                 : KartaDesign.elevation.frontShadowRadius,
@@ -495,7 +530,7 @@ private struct OnboardingView: View {
         VStack(alignment: .leading, spacing: KartaDesign.space.onboardingGap) {
             Text("karta")
                 .font(KartaDesign.FontToken.wordmark())
-                .tracking(-0.8)
+                .tracking(KartaDesign.type.wordmarkTracking)
                 .foregroundStyle(KartaDesign.ColorToken.brand)
 
             if case .unanswered = store.state.onboarding.intoleranceAnswer {
@@ -522,7 +557,7 @@ private struct OnboardingView: View {
             }
             Spacer()
         }
-        .frame(maxWidth: 460, alignment: .leading)
+        .frame(maxWidth: KartaDesign.layout.onboardingMaxWidth, alignment: .leading)
         .padding(KartaDesign.space.onboarding)
     }
 }
@@ -550,7 +585,7 @@ private struct TactileButton: View {
                 )
             )
             .shadow(
-                color: KartaDesign.ColorToken.shadow.opacity(0.25 / 0.45),
+                color: KartaDesign.ColorToken.buttonShadow,
                 radius: KartaDesign.elevation.buttonShadowRadius,
                 y: KartaDesign.elevation.buttonShadowY
             )
