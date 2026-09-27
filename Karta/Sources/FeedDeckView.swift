@@ -98,6 +98,7 @@ private struct FeedDeck: View {
                         deckLayer(visible, size: geometry.size)
                     }
                 }
+                .frame(width: geometry.size.width, height: geometry.size.height)
                 .contentShape(Rectangle())
                 .overlay {
                     FirstTouchCapture(action: stopEntryNudge)
@@ -677,7 +678,7 @@ private struct RecipePhoto: View {
                     AsyncImage(url: url) { phase in
                         switch phase {
                         case let .success(image):
-                            image.resizable().scaledToFill()
+                            fill { image.resizable().scaledToFill() }
                         case .empty:
                             ProgressView().tint(KartaDesign.ColorToken.brand)
                         case .failure:
@@ -694,7 +695,7 @@ private struct RecipePhoto: View {
                     let bundle = Bundle(url: bundleURL),
                     let url = bundle.url(forResource: resource, withExtension: nil),
                     let image = UIImage(contentsOfFile: url.path) {
-                        Image(uiImage: image).resizable().scaledToFill()
+                        fill { Image(uiImage: image).resizable().scaledToFill() }
                     } else {
                         unavailable
                     }
@@ -705,6 +706,10 @@ private struct RecipePhoto: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
+    }
+
+    private func fill(@ViewBuilder _ content: () -> some View) -> some View {
+        Color.clear.overlay(content()).clipped()
     }
 
     private var unavailable: some View {
