@@ -59,6 +59,8 @@ public struct RecipeCardPresentation: Equatable, Sendable {
     public let recipeID: String
     public let name: String
     public let durationLabel: String
+    public let rankValue: String
+    public let rankUnit: String
     public let difficultyLabel: String
     public let servingsLabel: String
     public let primaryCourse: Course
@@ -74,6 +76,8 @@ public struct RecipeCardPresentation: Equatable, Sendable {
         self.recipeID = recipe.id
         self.name = recipe.name
         self.durationLabel = DurationText.format(minutes: recipe.totalMinutes)
+        self.rankValue = recipe.totalMinutes > 60 ? "+60" : String(recipe.totalMinutes)
+        self.rankUnit = "MIN"
         self.difficultyLabel = switch recipe.difficulty {
         case .easy: "beginner"
         case .medium: "intermediate"
