@@ -3,6 +3,9 @@
 These recordings capture the signed-off vertical Card deck at app commit
 `e052476a73bd05af1675874646cb51a6c4d92d01`.
 
+The rank anatomy screenshot captures the rebased rank contract fix at app commit
+`f6470a19aa108754816a589c4525dc1ed5400620`.
+
 - Simulator: iPhone 17, iOS 27.0 (`24A434`)
 - Xcode: 27.0 RC (`27A266a`)
 - `standard-motion.webp`: entry teaching motion, signed next/previous Card
@@ -11,3 +14,5 @@ These recordings capture the signed-off vertical Card deck at app commit
   motion without navigating or blocking later gestures
 - `reduce-motion.webp`: no entry nudge and cross-fade navigation with Reduce
   Motion enabled
+- `rank-anatomy-f6470a1.png`: the first Card renders the signed-off `35 MIN`
+  rank anatomy from `RecipeCardPresentation.rankValue` and `.rankUnit`
