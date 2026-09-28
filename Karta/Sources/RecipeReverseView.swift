@@ -296,7 +296,7 @@ private struct StepRow: View {
                 if step.timerSeconds != nil || step.clipID != nil {
                     HStack(spacing: KartaDesign.space.rankGap) {
                         if let timerSeconds = step.timerSeconds {
-                            StepCue(label: StepCueText.format(seconds: timerSeconds), suit: suit)
+                            StepCue(label: DurationText.format(seconds: timerSeconds), suit: suit)
                         }
                         if step.clipID != nil {
                             StepCue(label: "clip", systemImage: "play.rectangle", suit: suit)
@@ -362,21 +362,6 @@ private struct FlowLayout: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
-    }
-}
-
-/// The short cue label (`12 min`) for step timers on the reverse, where
-/// `DurationText`'s long form would take over the line.
-private enum StepCueText {
-    static func format(seconds: Int) -> String {
-        let hours = seconds / 3_600
-        let minutes = (seconds % 3_600) / 60
-        let remainder = seconds % 60
-        var parts: [String] = []
-        if hours > 0 { parts.append("\(hours) h") }
-        if minutes > 0 { parts.append("\(minutes) min") }
-        if remainder > 0 { parts.append("\(remainder) s") }
-        return parts.isEmpty ? "0 s" : parts.joined(separator: " ")
     }
 }
 
