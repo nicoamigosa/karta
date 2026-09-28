@@ -18,6 +18,7 @@ enum KartaDesign {
             Color(hex: 0xD5C1A2)
         ]
         static let buttonEdge = Color(hex: 0xE0CFB3)
+        static let brandEdge = Color(hex: 0x7E2F1F)
         static let frontShadow = Color(
             red: 80 / 255,
             green: 50 / 255,
@@ -79,6 +80,30 @@ enum KartaDesign {
             .custom("Figtree", size: 16, relativeTo: .body)
         }
 
+        static func rowName() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.bold)
+        }
+
+        static func rowQuantity() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.medium)
+        }
+
+        static func stepText() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+        }
+
+        static func stepCue() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .caption)
+                .weight(.heavy)
+        }
+
+        static func ctaLabel() -> Font {
+            .custom("Figtree", size: 17, relativeTo: .headline)
+                .weight(.heavy)
+        }
+
         static func hint() -> Font {
             .custom("Figtree", size: 13, relativeTo: .caption)
                 .weight(.semibold)
@@ -119,6 +144,8 @@ enum KartaDesign {
         static let cardBackFrame: CGFloat = 18
         static let photo: CGFloat = 18
         static let chip: CGFloat = 12
+        static let cue: CGFloat = 8
+        static let cta: CGFloat = 18
         static let pill: CGFloat = 999
     }
 
@@ -149,7 +176,18 @@ enum KartaDesign {
         static let chipX: CGFloat = 12
         static let reverseCardX: CGFloat = 10
         static let reverseCardY: CGFloat = 30
-        static let reverseButtonHit: CGFloat = 32
+        static let reverseButtonHit: CGFloat = 40
+        static let reverseButtonEdge: CGFloat = 2
+        static let saveButtonX: CGFloat = 14
+        static let saveIconGap: CGFloat = 6
+        static let leaderMin: CGFloat = 8
+        static let stepLeading: CGFloat = 4
+        static let ctaHeight: CGFloat = 54
+        static let ctaGap: CGFloat = 10
+        static let ctaEdge: CGFloat = 3
+        static let reverseCloseGlyph: CGFloat = 14
+        static let saveGlyph: CGFloat = 16
+        static let ctaGlyph: CGFloat = 18
         static let reversePhotoEdge: CGFloat = 76
         static let reverseRowGap: CGFloat = 10
         static let stepDisc: CGFloat = 22

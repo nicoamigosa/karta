@@ -41,11 +41,42 @@ struct RecipeReverseView: View {
                         .padding(.top, KartaDesign.space.cardGap)
                     }
 
-                    TactileButton("Start cooking  →") {
+                    Button {
                         store.send(.startCooking(
                             recipe,
                             startedAt: Date().timeIntervalSince1970
                         ))
+                    } label: {
+                        HStack(spacing: KartaDesign.space.ctaGap) {
+                            Text("Start cooking")
+                                .font(KartaDesign.FontToken.ctaLabel())
+                            Image(systemName: "arrow.right")
+                                .font(.system(
+                                    size: KartaDesign.space.ctaGlyph,
+                                    weight: .bold
+                                ))
+                        }
+                        .foregroundStyle(KartaDesign.ColorToken.card)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: KartaDesign.space.ctaHeight)
+                        .background {
+                            RoundedRectangle(
+                                cornerRadius: KartaDesign.radius.cta,
+                                style: .continuous
+                            )
+                            .fill(KartaDesign.ColorToken.brandEdge)
+                            .offset(y: KartaDesign.space.ctaEdge)
+                            RoundedRectangle(
+                                cornerRadius: KartaDesign.radius.cta,
+                                style: .continuous
+                            )
+                            .fill(KartaDesign.ColorToken.brand)
+                        }
+                        .shadow(
+                            color: KartaDesign.ColorToken.buttonShadow,
+                            radius: KartaDesign.elevation.buttonShadowRadius,
+                            y: KartaDesign.elevation.buttonShadowY
+                        )
                     }
                     .padding(.top, KartaDesign.space.cardGap)
                 }
@@ -70,27 +101,39 @@ struct RecipeReverseView: View {
                     store.send(.popRoute)
                 } label: {
                     Image(systemName: "xmark")
-                        .font(KartaDesign.FontToken.button())
+                        .font(.system(
+                            size: KartaDesign.space.reverseCloseGlyph,
+                            weight: .bold
+                        ))
                         .foregroundStyle(KartaDesign.ColorToken.ink)
                         .frame(
                             width: KartaDesign.space.reverseButtonHit,
                             height: KartaDesign.space.reverseButtonHit
                         )
-                        .contentShape(Rectangle())
+                        .reverseChrome(circle: true)
                 }
                 .accessibilityLabel("Back to feed")
 
                 Spacer()
 
-                Button(isSaved ? "Saved" : "Save") {
+                Button {
                     store.send(isSaved ? .unsaveRecipe(recipe.id) : .saveRecipe(recipe.id))
+                } label: {
+                    HStack(spacing: KartaDesign.space.saveIconGap) {
+                        Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                            .font(.system(size: KartaDesign.space.saveGlyph))
+                        Text(isSaved ? "Saved" : "Save")
+                            .font(KartaDesign.FontToken.button())
+                    }
+                    .foregroundStyle(
+                        saveBlocked
+                            ? KartaDesign.ColorToken.inkMuted
+                            : KartaDesign.ColorToken.ink
+                    )
+                    .padding(.horizontal, KartaDesign.space.saveButtonX)
+                    .frame(height: KartaDesign.space.reverseButtonHit)
+                    .reverseChrome(circle: false)
                 }
-                .font(KartaDesign.FontToken.button())
-                .foregroundStyle(
-                    saveBlocked
-                        ? KartaDesign.ColorToken.inkMuted
-                        : KartaDesign.ColorToken.ink
-                )
                 .disabled(saveBlocked)
                 .accessibilityHint(
                     saveBlocked ? "Your cookbook is full" : "Saves the recipe to your cookbook"
@@ -169,12 +212,13 @@ private struct IngredientRow: View {
         HStack(alignment: .firstTextBaseline, spacing: KartaDesign.space.rankGap) {
             Text(ingredient.name)
                 .font(ingredient.isOptional
-                    ? KartaDesign.FontToken.body()
-                    : KartaDesign.FontToken.body().weight(.bold))
+                    ? KartaDesign.FontToken.stepText()
+                    : KartaDesign.FontToken.rowName())
                 .foregroundStyle(ingredient.isOptional
                     ? KartaDesign.ColorToken.inkMuted
                     : KartaDesign.ColorToken.ink)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
             LeaderLine(dashed: ingredient.isOptional)
 
@@ -182,11 +226,11 @@ private struct IngredientRow: View {
                 ? "\(ingredient.quantity) · optional"
                 : ingredient.quantity)
                 .font(ingredient.isOptional
-                    ? KartaDesign.FontToken.body().italic()
-                    : KartaDesign.FontToken.body())
-                .foregroundStyle(ingredient.isOptional
-                    ? KartaDesign.ColorToken.inkMuted
-                    : KartaDesign.ColorToken.ink)
+                    ? KartaDesign.FontToken.rowQuantity().italic()
+                    : KartaDesign.FontToken.rowQuantity())
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                .lineLimit(1)
+                .fixedSize()
         }
         .accessibilityElement(children: .combine)
     }
@@ -205,6 +249,7 @@ private struct LeaderLine: View {
                 )
             )
             .frame(height: 1)
+            .frame(minWidth: KartaDesign.space.leaderMin)
             .frame(maxWidth: .infinity)
             .offset(y: -2)
             .accessibilityHidden(true)
@@ -225,7 +270,7 @@ private struct StepRow: View {
     let suit: SuitTokens
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: KartaDesign.space.chipGap) {
+        HStack(alignment: .top, spacing: KartaDesign.space.chipGap) {
             Text("\(step.number)")
                 .font(KartaDesign.FontToken.hint())
                 .foregroundStyle(suit.chipInk)
@@ -238,16 +283,20 @@ private struct StepRow: View {
                     in: Circle()
                 )
 
-            VStack(alignment: .leading, spacing: KartaDesign.space.rankGap) {
-                Text(step.summary)
-                    .font(KartaDesign.FontToken.body())
-                    .foregroundStyle(KartaDesign.ColorToken.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+            FlowLayout(spacing: 0, rowSpacing: KartaDesign.space.stepLeading) {
+                ForEach(Array(step.summary.split(
+                    separator: " ",
+                    omittingEmptySubsequences: true
+                ).enumerated()), id: \.offset) { _, word in
+                    Text(String(word) + " ")
+                        .font(KartaDesign.FontToken.stepText())
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                }
 
                 if step.timerSeconds != nil || step.clipID != nil {
-                    HStack(spacing: KartaDesign.space.chipGap) {
+                    HStack(spacing: KartaDesign.space.rankGap) {
                         if let timerSeconds = step.timerSeconds {
-                            StepCue(label: DurationText.format(seconds: timerSeconds), suit: suit)
+                            StepCue(label: StepCueText.format(seconds: timerSeconds), suit: suit)
                         }
                         if step.clipID != nil {
                             StepCue(label: "clip", systemImage: "play.rectangle", suit: suit)
@@ -257,6 +306,77 @@ private struct StepRow: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A row of word views plus cue chips that wraps like text: the cues follow
+/// the last word on the same line when they fit, or start the next line.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat
+    var rowSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let width = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var maxX: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                x = 0
+                y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            maxX = max(maxX, x - spacing)
+        }
+        return CGSize(width: maxX, height: y + rowHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+            subview.place(
+                at: CGPoint(x: x, y: y + (rowHeight == 0 ? 0 : (rowHeight - size.height) / 2)),
+                proposal: ProposedViewSize(size)
+            )
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
+/// The short cue label (`12 min`) for step timers on the reverse, where
+/// `DurationText`'s long form would take over the line.
+private enum StepCueText {
+    static func format(seconds: Int) -> String {
+        let hours = seconds / 3_600
+        let minutes = (seconds % 3_600) / 60
+        let remainder = seconds % 60
+        var parts: [String] = []
+        if hours > 0 { parts.append("\(hours) h") }
+        if minutes > 0 { parts.append("\(minutes) min") }
+        if remainder > 0 { parts.append("\(remainder) s") }
+        return parts.isEmpty ? "0 s" : parts.joined(separator: " ")
     }
 }
 
@@ -272,16 +392,56 @@ private struct StepCue: View {
             }
             Text(label)
         }
-        .font(KartaDesign.FontToken.hint())
+        .font(KartaDesign.FontToken.stepCue())
         .foregroundStyle(suit.chipInk)
         .padding(.vertical, KartaDesign.space.stepCueY)
-        .padding(.horizontal, KartaDesign.space.chipX)
+        .padding(.horizontal, KartaDesign.space.rankGap * 2)
         .background(
             suit.chip,
             in: RoundedRectangle(
-                cornerRadius: KartaDesign.radius.chip,
+                cornerRadius: KartaDesign.radius.cue,
                 style: .continuous
             )
         )
+    }
+}
+
+/// The tactile pill/circle chrome of the mock's ✕ and Save buttons: card fill,
+/// 1 pt `line` border and a solid 2 pt `buttonEdge` bottom rim.
+private struct ReverseChrome: ViewModifier {
+    let circle: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                Group {
+                    if circle {
+                        Circle()
+                            .fill(KartaDesign.ColorToken.buttonEdge)
+                            .offset(y: KartaDesign.space.reverseButtonEdge)
+                        Circle().fill(KartaDesign.ColorToken.card)
+                        Circle().strokeBorder(
+                            KartaDesign.ColorToken.line,
+                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                        )
+                    } else {
+                        Capsule()
+                            .fill(KartaDesign.ColorToken.buttonEdge)
+                            .offset(y: KartaDesign.space.reverseButtonEdge)
+                        Capsule().fill(KartaDesign.ColorToken.card)
+                        Capsule().strokeBorder(
+                            KartaDesign.ColorToken.line,
+                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                        )
+                    }
+                }
+            }
+            .contentShape(circle ? AnyShape(Circle()) : AnyShape(Capsule()))
+    }
+}
+
+private extension View {
+    func reverseChrome(circle: Bool) -> some View {
+        modifier(ReverseChrome(circle: circle))
     }
 }
