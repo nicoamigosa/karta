@@ -102,6 +102,29 @@ Tapping a Card flips it over and grows it into the reverse (the Apertura).
   Ingrediente opcional).
 - **Save** lives only here, never on the front of the Card.
 
+Layout rules (reference: canvas board *Reverse A centered · course on top*):
+
+- **One ingredient, one line.** Name (Figtree 700, `ink`) · dotted leader ·
+  quantity (Figtree 500, `inkMuted`), all 15 pt and on one baseline; the row
+  never wraps. The quantity keeps its full width, the leader absorbs the slack
+  and, only as a last resort, the name truncates with `…`. Every quantity ends
+  on the same right edge.
+- **Step labels flow inline.** The timer (`12 min`) and `clip` labels follow
+  the last word of the step like another word: on the same line when they
+  fit, otherwise at the start of the next line; never forced onto a line of
+  their own under the text. Chip text 12 pt, weight 800, suit `chip` /
+  `chipInk`, radius 8.
+- Step text is 15 pt on a 22 pt line, left-aligned on a common edge after the
+  number disc.
+- **✕ and Save are tactile buttons**, never bare text or icons: 40 pt high,
+  fill `card`, 1 pt border `line`, 2 pt solid bottom edge `buttonEdge`. ✕ is
+  a circle (14 pt cross, stroke 2); Save is a pill with 14 pt side padding,
+  a 16 pt stroke icon, 6 pt gap and the `button` type. Saved and
+  cap-blocked states keep the same shape.
+- **Start cooking** is the one filled button: `brand` fill, 54 pt high,
+  radius 18, label plus 18 pt arrow (gap 10) in Figtree 800 17 pt `card`,
+  3 pt solid bottom edge `brandEdge` plus a soft drop shadow.
+
 ## Suits (Course icons)
 
 `suits/breakfast.svg` (fried egg), `suits/lunch.svg` (half sandwich),
