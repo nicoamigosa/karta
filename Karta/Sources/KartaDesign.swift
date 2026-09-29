@@ -109,6 +109,27 @@ enum KartaDesign {
                 .weight(.semibold)
         }
 
+        /// The Paso's full instruction, readable from ~half a meter.
+        static func cookStep() -> Font {
+            display(size: 28, relativeTo: .title1, weight: 600)
+        }
+
+        /// The Paso's ingredient names and quantities, enlarged for cooking.
+        static func cookIngredient() -> Font {
+            .custom("Figtree", size: 19, relativeTo: .title3)
+                .weight(.bold)
+        }
+
+        static func cookQuantity() -> Font {
+            .custom("Figtree", size: 19, relativeTo: .title3)
+                .weight(.medium)
+        }
+
+        static func cookOutcome() -> Font {
+            .custom("Figtree", size: 22, relativeTo: .title2)
+                .weight(.heavy)
+        }
+
         private static func display(
             name: String = "Fraunces",
             size: CGFloat,
@@ -234,6 +255,15 @@ enum KartaDesign {
         static let cardEdgeDepth: CGFloat = 4
         static let hintHeight: CGFloat = 24
         static let dragRotationDivisor: CGFloat = 45
+    }
+
+    enum cooking {
+        static let swipeThreshold: CGFloat = 40
+        static let dragMinimumDistance: CGFloat = 12
+        static let outcomeGlyph: CGFloat = 30
+        static let outcomeHit: CGFloat = 64
+        static let outcomeGap: CGFloat = 28
+        static let ingredientGap: CGFloat = 8
     }
 
     enum elevation {
