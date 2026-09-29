@@ -29,6 +29,8 @@ public struct RecipeReverseStepPresentation: Equatable, Sendable {
     public let number: Int
     public let summary: String
     public let timerSeconds: Int?
+    /// The abbreviated timer cue, or `nil` when the step has no timer.
+    public let timerLabel: String?
     public let clipID: String?
 
     public init(
@@ -40,6 +42,7 @@ public struct RecipeReverseStepPresentation: Equatable, Sendable {
         self.number = number
         self.summary = summary
         self.timerSeconds = timerSeconds
+        self.timerLabel = timerSeconds.map { DurationText.shortFormat(seconds: $0) }
         self.clipID = clipID
     }
 }

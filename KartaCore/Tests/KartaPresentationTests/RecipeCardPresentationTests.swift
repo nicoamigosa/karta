@@ -20,6 +20,27 @@ struct RecipeCardPresentationTests {
         #expect(DurationText.format(seconds: 3_661) == "1 hour 1 minute 1 second")
     }
 
+    @Test("Short duration text abbreviates minutes")
+    func shortDurationTextAbbreviatesMinutes() {
+        #expect(DurationText.shortFormat(seconds: 720) == "12 min")
+        #expect(DurationText.shortFormat(seconds: 600) == "10 min")
+        #expect(DurationText.shortFormat(seconds: 60) == "1 min")
+    }
+
+    @Test("Short duration text includes nonzero hour components")
+    func shortDurationTextIncludesHours() {
+        #expect(DurationText.shortFormat(seconds: 3_600) == "1 h")
+        #expect(DurationText.shortFormat(seconds: 5_400) == "1 h 30 min")
+        #expect(DurationText.shortFormat(seconds: 3_661) == "1 h 1 min 1 s")
+    }
+
+    @Test("Short duration text includes nonzero seconds and formats zero")
+    func shortDurationTextIncludesSecondsAndZero() {
+        #expect(DurationText.shortFormat(seconds: 90) == "1 min 30 s")
+        #expect(DurationText.shortFormat(seconds: 45) == "45 s")
+        #expect(DurationText.shortFormat(seconds: 0) == "0 s")
+    }
+
     @Test("A card presents recipe metadata and keeps quantities literal")
     func cardPresentsRecipeText() {
         let recipe = Recipe(
