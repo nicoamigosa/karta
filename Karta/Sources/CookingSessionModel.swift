@@ -79,24 +79,18 @@ enum CookingStepIngredients {
 }
 
 /// The pure decision behind a Paso settling on screen: which store actions the
-/// shell reports. A Paso declaring a timer gets it started (the countdown is
-/// rendered by a later slice); reaching the final Paso asks the session itself
-/// whether the journey already counts as a probable cook — the view adds no
-/// dwell timer or inference of its own (ADR 0008).
+/// shell reports. Reaching the final Paso asks the session itself whether the
+/// journey already counts as a probable cook — the view adds no dwell timer or
+/// inference of its own (ADR 0008). Timers are a separate slice: starting one
+/// requires an explicit action from the cook, never a step arrival.
 enum CookingStepArrival {
     static func actions(
         for step: CookingStep,
         isLastStep: Bool,
         now: TimeInterval
     ) -> [KartaAction] {
-        var actions: [KartaAction] = []
-        if step.timerSeconds != nil {
-            actions.append(.startTimer(now: now))
-        }
-        if isLastStep {
-            actions.append(.inferProbablyCooked(now: now))
-        }
-        return actions
+        guard isLastStep else { return [] }
+        return [.inferProbablyCooked(now: now)]
     }
 }
 

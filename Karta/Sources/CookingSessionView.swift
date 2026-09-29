@@ -225,9 +225,8 @@ struct CookingSessionView: View {
         }
     }
 
-    /// Report the Paso settling on screen: start its declared timer if it has
-    /// one, and let the session itself decide whether the journey already
-    /// counts as a probable cook.
+    /// Report the Paso settling on screen: on the last one, let the session
+    /// itself decide whether the journey already counts as a probable cook.
     private func reportStepArrival() {
         guard let step = session.currentStep else { return }
         for action in CookingStepArrival.actions(

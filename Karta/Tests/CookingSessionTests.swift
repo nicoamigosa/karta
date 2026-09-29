@@ -83,25 +83,43 @@ struct CookingSessionTests {
         let recipes = try SeedResourceAdapter().loadRecipes()
         let intolerances: Set<Allergen> = [.dairy]
 
+        // A seed recipe with an optional dairy ingredient (e.g. the curry's
+        // Greek yogurt), and a hand-built Paso that references it — one that
+        // could never reach the screen through visibleSteps, to prove the row
+        // projection itself applies the filter.
+        var foundDairyOptional = false
         for recipe in recipes {
-            for step in recipe.visibleSteps(for: intolerances) {
-                let rows = CookingStepIngredients.rows(
+            for optional in recipe.ingredients where optional.isOptional
+                && !optional.allergens.isDisjoint(with: intolerances) {
+                foundDairyOptional = true
+                let step = CookingStep(
+                    text: "Finish",
+                    ingredients: [StepIngredient(
+                        ingredientID: optional.id,
+                        quantity: optional.quantity
+                    )]
+                )
+
+                let filtered = CookingStepIngredients.rows(
                     for: step,
                     in: recipe,
                     intolerances: intolerances
                 )
-                for row in rows {
-                    let ingredient = try #require(
-                        recipe.ingredients.first { $0.name == row.name }
-                    )
-                    #expect(ingredient.allergens.isDisjoint(with: intolerances))
-                }
+                #expect(filtered.isEmpty)
+
+                let unfiltered = CookingStepIngredients.rows(
+                    for: step,
+                    in: recipe,
+                    intolerances: []
+                )
+                #expect(unfiltered.map(\.name) == [optional.name])
             }
         }
+        #expect(foundDairyOptional)
     }
 
     @MainActor
-    @Test("Arriving at a Paso reports only timer and inference actions")
+    @Test("Arriving at the last Paso only reports the inference action")
     func stepArrivalActions() {
         let timed = CookingStep(text: "Simmer", timerSeconds: 600)
         let actions = CookingStepArrival.actions(
@@ -110,14 +128,19 @@ struct CookingSessionTests {
             now: 1000
         )
 
-        #expect(actions.count == 2)
-        guard case let .startTimer(startNow) = actions[0],
-              case let .inferProbablyCooked(inferNow) = actions[1] else {
-            Issue.record("Expected .startTimer + .inferProbablyCooked")
+        #expect(actions.count == 1)
+        guard case let .inferProbablyCooked(inferNow) = actions[0] else {
+            Issue.record("Expected only .inferProbablyCooked")
             return
         }
-        #expect(startNow == 1000)
         #expect(inferNow == 1000)
+
+        // A timer declaration never starts the timer on arrival.
+        #expect(CookingStepArrival.actions(
+            for: timed,
+            isLastStep: false,
+            now: 1000
+        ).isEmpty)
 
         #expect(CookingStepArrival.actions(
             for: CookingStep(text: "Stir"),
