@@ -293,10 +293,10 @@ private struct StepRow: View {
                         .foregroundStyle(KartaDesign.ColorToken.ink)
                 }
 
-                if step.timerSeconds != nil || step.clipID != nil {
+                if step.timerLabel != nil || step.clipID != nil {
                     HStack(spacing: KartaDesign.space.rankGap) {
-                        if let timerSeconds = step.timerSeconds {
-                            StepCue(label: DurationText.format(seconds: timerSeconds), suit: suit)
+                        if let timerLabel = step.timerLabel {
+                            StepCue(label: timerLabel, suit: suit)
                         }
                         if step.clipID != nil {
                             StepCue(label: "clip", systemImage: "play.rectangle", suit: suit)
