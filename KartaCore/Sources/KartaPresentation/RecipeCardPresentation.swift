@@ -4,6 +4,26 @@ import KartaCore
 /// units. The catalog's duration is already authored in the chosen unit.
 public enum DurationText {
 
+    /// Formats a non-negative duration with abbreviated units (`h`, `min`, `s`).
+    /// Zero components are omitted, except zero itself is shown as `0 s`.
+    public static func shortFormat(seconds: Int) -> String {
+        precondition(seconds >= 0, "seconds must be non-negative")
+
+        let hours = seconds / 3_600
+        let minutes = (seconds % 3_600) / 60
+        let remainderSeconds = seconds % 60
+
+        return [
+            hours > 0 ? "\(hours) h" : nil,
+            minutes > 0 ? "\(minutes) min" : nil,
+            remainderSeconds > 0 || (hours == 0 && minutes == 0)
+                ? "\(remainderSeconds) s"
+                : nil,
+        ]
+        .compactMap { $0 }
+        .joined(separator: " ")
+    }
+
     public static func format(seconds: Int) -> String {
         precondition(seconds >= 0, "seconds must be non-negative")
 

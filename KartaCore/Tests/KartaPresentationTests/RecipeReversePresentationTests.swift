@@ -5,6 +5,20 @@ import KartaPresentation
 @Suite("Recipe reverse presentation")
 struct RecipeReversePresentationTests {
 
+    @Test("A reverse step exposes its timer as a short label")
+    func reverseStepFormatsTimerLabel() {
+        let step = RecipeReverseStepPresentation(
+            number: 1,
+            summary: "Cook",
+            timerSeconds: 720
+        )
+        let stepWithoutTimer = RecipeReverseStepPresentation(number: 2, summary: "Serve")
+
+        #expect(step.timerLabel == "12 min")
+        #expect(step.timerSeconds == 720)
+        #expect(stepWithoutTimer.timerLabel == nil)
+    }
+
     @Test("The reverse shows ingredient lines and required-step summaries only")
     func reverseUsesSummariesAndOmitsOptionalSteps() {
         let recipe = recipe()
