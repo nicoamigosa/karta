@@ -56,7 +56,21 @@ struct FeedScreen: View {
                 )
                 .transition(reverseTransition)
             }
+
+            if let session = store.session,
+               let recipe = CookingRoute.recipe(for: session, in: recipes) {
+                CookingSessionView(
+                    session: session,
+                    recipe: recipe,
+                    store: store
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .animation(
+            reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
+            value: store.session?.isExited == false
+        )
         .animation(
             reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
             value: store.state.navigation.routes.last
