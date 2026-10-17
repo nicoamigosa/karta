@@ -121,6 +121,13 @@ expectations.
   approve, never close issues themselves.
 - Issues whose content needs the editor's sign-off (e.g. #32, seed and allergen
   tagging) carry `ralph-needs-human`: the loop must not merge them on its own.
+- **Design gate for UI issues.** A `ralph-host:macos` issue that adds or
+  changes a screen is `ready-for-agent` only when every screen and state it
+  shows has a board signed off in the design canvas (linked from #15), a
+  section in `docs/design/karta-v1.md`, and a PNG of each signed-off board in
+  `docs/design/screens/`. Until then it carries **`needs-design`** instead of
+  `ready-for-agent`. Devin builds what the spec and the PNGs show; a state that
+  is not drawn is asked about under "Open decisions", never invented.
 
 ### Running ralph in Karta
 

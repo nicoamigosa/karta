@@ -50,6 +50,9 @@ gh issue list -l devin-working          # lo que ya está en curso
 
 Antes de lanzarlo, comprobar:
 
+- [ ] Que tiene `ready-for-agent` y no `needs-design`: sus pantallas tienen tablero firmado,
+      sección en `docs/design/karta-v1.md` y PNG en `docs/design/screens/` (`AGENTS.md` →
+      *Design gate*).
 - [ ] Que no tiene ya `devin-working`.
 - [ ] Que `gate` está en verde en `main`: `gh run list --branch main --limit 1`.
 - [ ] Que ningún PR abierto de ralph cambia lo que el issue consume. Mirar los PR abiertos
@@ -96,6 +99,7 @@ Comprobar antes de revisar:
 - [ ] Dice `Closes #<N>` sólo si cumple todos los criterios; si no, `Part of #<N>`.
 - [ ] Sólo cambia `Karta/` (y el workflow en #1): `gh pr diff <PR> --name-only`.
 - [ ] Trae capturas o una grabación del simulador para cada criterio visual, con el SHA probado.
+- [ ] Las capturas coinciden con los PNG de `docs/design/screens/` de esas pantallas.
 - [ ] `gate` en verde en el último commit: `gh pr checks <PR>`.
 
 Si falla algo de esta lista, se le devuelve a Devin sin gastar una revisión.
@@ -204,6 +208,9 @@ Rules:
 - The PR body has: What changed, Seams under test, How I verified, Open
   decisions, Acceptance criteria (one line per criterion with its evidence).
 - Use "Closes #<N>" only if every criterion is verified; otherwise "Part of #<N>".
+- Build every screen to docs/design/karta-v1.md and the PNGs in
+  docs/design/screens/. If a state you need is not drawn there, do not invent
+  it: describe it under "Open decisions".
 - Attach simulator screenshots or a recording for every visual criterion, and
   state the simulator, Xcode version and the tested commit SHA.
 - The PR needs the CI check "gate" green. Do not merge, approve or close anything.
