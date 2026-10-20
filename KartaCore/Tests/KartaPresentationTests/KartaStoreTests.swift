@@ -365,9 +365,9 @@ struct KartaStoreTests {
                 ),
             ],
             steps: [
-                CookingStep(text: "Cook the tomatoes", summary: "Cook the tomatoes"),
+                CookingStep(detail: "Cook the tomatoes", summary: "Cook the tomatoes"),
                 CookingStep(
-                    text: "Finish with Greek yogurt",
+                    detail: "Finish with Greek yogurt",
                     summary: "Add yogurt",
                     ingredients: [StepIngredient(ingredientID: "yogurt", quantity: "1 tbsp")],
                     isOptional: true
@@ -379,7 +379,7 @@ struct KartaStoreTests {
 
         KartaReducer.reduce(&state, action: .startCooking(recipe, startedAt: 123))
 
-        #expect(state.session?.steps.map(\.text) == ["Cook the tomatoes"])
+        #expect(state.session?.steps.map(\.detail) == ["Cook the tomatoes"])
     }
 
     @MainActor
@@ -415,9 +415,9 @@ struct KartaStoreTests {
                 ),
             ],
             steps: [
-                CookingStep(text: "Cook the tomatoes", summary: "Cook the tomatoes"),
+                CookingStep(detail: "Cook the tomatoes", summary: "Cook the tomatoes"),
                 CookingStep(
-                    text: "Finish with Greek yogurt",
+                    detail: "Finish with Greek yogurt",
                     summary: "Add yogurt",
                     ingredients: [StepIngredient(ingredientID: "yogurt", quantity: "1 tbsp")],
                     isOptional: true

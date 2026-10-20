@@ -30,7 +30,7 @@ struct RecipeReversePresentationTests {
             + Array(repeating: true, count: Allergen.allCases.count + 1))
         #expect(reverse.steps.map(\.number) == [1])
         #expect(reverse.steps.map(\.summary) == ["Cook the sauce"])
-        #expect(recipe.cookingSession().steps.map(\.text)
+        #expect(recipe.cookingSession().steps.map(\.detail)
             == ["Cook the sauce slowly until glossy", "Finish with basil"]
                 + Allergen.allCases.map { "Add optional \($0.rawValue)" })
     }
@@ -59,7 +59,7 @@ struct RecipeReversePresentationTests {
 
             #expect(reverse.ingredients.map(\.id) == expectedIngredientIDs)
             #expect(reverse.steps.map(\.summary) == ["Cook the sauce"])
-            #expect(session.steps.map(\.text) == expectedSessionSteps)
+            #expect(session.steps.map(\.detail) == expectedSessionSteps)
         }
     }
 
@@ -75,7 +75,7 @@ struct RecipeReversePresentationTests {
         }
         let optionalSteps = Allergen.allCases.map { allergen in
             CookingStep(
-                text: "Add optional \(allergen.rawValue)",
+                detail: "Add optional \(allergen.rawValue)",
                 summary: "Add \(allergen.rawValue)",
                 ingredients: [
                     StepIngredient(
@@ -108,12 +108,12 @@ struct RecipeReversePresentationTests {
             ] + Array(optionalIngredients.dropFirst()),
             steps: [
                 CookingStep(
-                    text: "Cook the sauce slowly until glossy",
+                    detail: "Cook the sauce slowly until glossy",
                     summary: "Cook the sauce",
                     ingredients: [StepIngredient(ingredientID: "sauce", quantity: "2 cups")]
                 ),
                 CookingStep(
-                    text: "Finish with basil",
+                    detail: "Finish with basil",
                     summary: "Finish with basil",
                     ingredients: [
                         StepIngredient(ingredientID: "optional-garnish", quantity: "2 leaves"),

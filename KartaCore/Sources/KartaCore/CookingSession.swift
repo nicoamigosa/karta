@@ -12,45 +12,49 @@ public struct StepIngredient: Codable, Equatable, Sendable {
     }
 }
 
-/// A single self-contained cooking step: instruction plus, optionally, the
-/// exact ingredients + quantities that step needs (so the cook never scrolls
-/// back).
+/// A self-contained Paso with its Resumen, Detalle and ingredient quantities.
 public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLiteral {
-    public let text: String
-    /// The editor-written one-line version shown on the Card reverse.
+    /// Foto del paso; optional until the catalog's step photos are available.
+    public let photo: MediaReference?
+    /// The editor-written Detalle, shown only in the cooking session.
+    public let detail: String
+    /// The editor-written Resumen; catalog validation limits it to 36 characters.
     public let summary: String
     public let ingredients: [StepIngredient]
     public let isOptional: Bool
     /// Optional countdown for a timed action ("simmer 10 min" → 600), in seconds.
     public let timerSeconds: Int?
     /// Optional reference to a reusable technique clip, by id. Steps with no
-    /// useful clip stay text-only. The clip itself lives in a shared library so
+    /// useful clip have no video. The clip itself lives in a shared library so
     /// many recipes reference the same clip without duplicating it.
     public let clipID: String?
 
     public init(
-        text: String,
+        detail: String,
         summary: String? = nil,
         ingredients: [StepIngredient] = [],
         timerSeconds: Int? = nil,
         clipID: String? = nil,
-        isOptional: Bool = false
+        isOptional: Bool = false,
+        photo: MediaReference? = nil
     ) {
-        self.text = text
-        self.summary = summary ?? text
+        self.photo = photo
+        self.detail = detail
+        self.summary = summary ?? detail
         self.ingredients = ingredients
         self.timerSeconds = timerSeconds
         self.clipID = clipID
         self.isOptional = isOptional
     }
 
-    /// A string literal is a text-only step — keeps call sites and seed data terse.
+    /// Convenience for programmatic sessions. Catalogs require distinct Resumen
+    /// and Detalle, validated when decoding a recipe.
     public init(stringLiteral value: String) {
-        self.init(text: value, summary: value)
+        self.init(detail: value, summary: value)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case text, summary, ingredients, timerSeconds, clipID
+        case detail, summary, ingredients, timerSeconds, clipID, photo
         case isOptional = "optional"
     }
 
@@ -66,12 +70,13 @@ public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLite
         }
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
-            text: try c.decode(String.self, forKey: .text),
+            detail: try c.decode(String.self, forKey: .detail),
             summary: try c.decode(String.self, forKey: .summary),
             ingredients: try c.decodeIfPresent([StepIngredient].self, forKey: .ingredients) ?? [],
             timerSeconds: try c.decodeIfPresent(Int.self, forKey: .timerSeconds),
             clipID: try c.decodeIfPresent(String.self, forKey: .clipID),
-            isOptional: try c.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
+            isOptional: try c.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false,
+            photo: try c.decodeIfPresent(MediaReference.self, forKey: .photo)
         )
     }
 }

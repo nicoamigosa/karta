@@ -120,7 +120,7 @@ struct SeedIntegrationTests {
     @Test("The bundled clip catalog remains loadable")
     func clipsRemainLoadable() throws {
         let library = try SeedResourceAdapter().loadTechniqueClips()
-        let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
+        let clip = try #require(library.clip(for: CookingStep(detail: "", clipID: "cuajar-tortilla")))
         #expect(clip.id == "cuajar-tortilla")
     }
 
@@ -129,7 +129,7 @@ struct SeedIntegrationTests {
         let adapter = SeedResourceAdapter()
         let library = try adapter.loadTechniqueClips()
         let manifest = try adapter.loadMediaManifest()
-        let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
+        let clip = try #require(library.clip(for: CookingStep(detail: "", clipID: "cuajar-tortilla")))
 
         let resolved = try MediaResolver(manifest: manifest, baseURL: nil).resolve(clip.source)
 

@@ -2,13 +2,13 @@ import Testing
 @testable import KartaCore
 
 private let sampleSteps = [
-    CookingStep(text: "Chop the onion", ingredients: [
+    CookingStep(detail: "Chop the onion", ingredients: [
         StepIngredient(ingredientID: "onion", quantity: "1")
     ]),
-    CookingStep(text: "Fry it", ingredients: [
+    CookingStep(detail: "Fry it", ingredients: [
         StepIngredient(ingredientID: "oil", quantity: "1 tbsp")
     ]),
-    CookingStep(text: "Serve"),
+    CookingStep(detail: "Serve"),
 ]
 
 /// Cooking-mode state machine, exercised independently of any UI.
@@ -149,9 +149,9 @@ struct CookingSessionCookedEventTests {
             primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
-                CookingStep(text: "Chop", timerSeconds: 120),
-                CookingStep(text: "Cook"),
-                CookingStep(text: "Serve"),
+                CookingStep(detail: "Chop", timerSeconds: 120),
+                CookingStep(detail: "Cook"),
+                CookingStep(detail: "Serve"),
             ],
             allergenReview: .reviewed([])
         )
@@ -178,9 +178,9 @@ struct CookingSessionCookedEventTests {
             primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
-                CookingStep(text: "Chop", timerSeconds: 120),
-                CookingStep(text: "Cook"),
-                CookingStep(text: "Serve"),
+                CookingStep(detail: "Chop", timerSeconds: 120),
+                CookingStep(detail: "Cook"),
+                CookingStep(detail: "Serve"),
             ],
             allergenReview: .reviewed([])
         )
@@ -202,7 +202,7 @@ struct CookingSessionCookedEventTests {
             servings: 2,
             primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
-            steps: [CookingStep(text: "Serve", timerSeconds: 120)],
+            steps: [CookingStep(detail: "Serve", timerSeconds: 120)],
             allergenReview: .reviewed([])
         )
         var session = recipe.cookingSession(startedAt: 0)
@@ -224,9 +224,9 @@ struct CookingSessionCookedEventTests {
             primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
-                CookingStep(text: "Chop"),
-                CookingStep(text: "Cook"),
-                CookingStep(text: "Serve"),
+                CookingStep(detail: "Chop"),
+                CookingStep(detail: "Cook"),
+                CookingStep(detail: "Serve"),
             ],
             allergenReview: .reviewed([])
         )
@@ -250,9 +250,9 @@ struct CookingSessionCookedEventTests {
             primaryCourse: .dinner,
             ingredients: [Ingredient(name: "Onion", quantity: "1")],
             steps: [
-                CookingStep(text: "Chop", timerSeconds: 120),
-                CookingStep(text: "Cook"),
-                CookingStep(text: "Serve"),
+                CookingStep(detail: "Chop", timerSeconds: 120),
+                CookingStep(detail: "Cook"),
+                CookingStep(detail: "Serve"),
             ],
             allergenReview: .reviewed([])
         )

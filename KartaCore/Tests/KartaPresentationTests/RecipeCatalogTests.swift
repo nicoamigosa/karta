@@ -68,7 +68,7 @@ struct RecipeCatalogTests {
 
         #expect(steps.count == 33)
         #expect(steps.allSatisfy { !$0.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
-        #expect(steps.allSatisfy { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        #expect(steps.allSatisfy { !$0.detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
     }
 
     @Test("The seed specifies ingredient varieties and reviews the optional curry garnish")
@@ -116,7 +116,7 @@ struct RecipeCatalogTests {
     func seedStepsUseStableIngredientReferences() throws {
         let recipes = try SeedResourceAdapter().loadRecipes()
         let curry = try #require(recipes.first { $0.id == "quick-chicken-curry" })
-        let addSpices = try #require(curry.steps.first { $0.text.hasPrefix("Add the onion") })
+        let addSpices = try #require(curry.steps.first { $0.detail.hasPrefix("Add the onion") })
 
         #expect(addSpices.ingredients == [
             StepIngredient(ingredientID: "onion", quantity: "1 medium"),
@@ -125,7 +125,7 @@ struct RecipeCatalogTests {
 
         let salmon = try #require(recipes.first { $0.id == "baked-salmon-with-lemon" })
         let seasonSalmon = try #require(salmon.steps.first {
-            $0.text.hasPrefix("Place the salmon")
+            $0.detail.hasPrefix("Place the salmon")
         })
 
         #expect(seasonSalmon.ingredients == [
@@ -137,7 +137,7 @@ struct RecipeCatalogTests {
 
         let pesto = try #require(recipes.first { $0.id == "pesto-pasta" })
         let boilPasta = try #require(pesto.steps.first {
-            $0.text.hasPrefix("Boil the pasta")
+            $0.detail.hasPrefix("Boil the pasta")
         })
 
         #expect(boilPasta.ingredients == [

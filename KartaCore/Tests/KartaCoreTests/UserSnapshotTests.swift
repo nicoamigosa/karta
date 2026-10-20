@@ -155,8 +155,8 @@ struct UserSnapshotTests {
     @Test("A restored session keeps the journey evidence that cook inference needs")
     func restoredSessionStillInfersCook() throws {
         let steps = [
-            CookingStep(text: "Chop"),
-            CookingStep(text: "Simmer"),
+            CookingStep(detail: "Chop"),
+            CookingStep(detail: "Simmer"),
         ]
         var session = CookingSession(
             recipeID: "recipe-1",
@@ -196,12 +196,13 @@ struct UserSnapshotTests {
     @Test("A half-finished cooking session round-trips its step and timers")
     func roundTripsCookingSession() throws {
         let steps = [
-            CookingStep(text: "Chop the onion very finely", summary: "Chop the onion", timerSeconds: 30),
+            CookingStep(detail: "Chop the onion very finely", summary: "Chop the onion", timerSeconds: 30),
             CookingStep(
-                text: "Simmer the sauce until thick",
+                detail: "Simmer the sauce until thick",
                 summary: "Simmer the sauce",
                 timerSeconds: 90,
-                isOptional: true
+                isOptional: true,
+                photo: .relative("steps/sauce.jpg")
             ),
         ]
         var session = CookingSession(
@@ -307,7 +308,7 @@ struct UserSnapshotTests {
             servings: 2,
             primaryCourse: .dinner,
             ingredients: [],
-            steps: [CookingStep(text: "Cook", timerSeconds: 60)],
+            steps: [CookingStep(detail: "Cook", timerSeconds: 60)],
             allergenReview: .reviewed([])
         )
     }

@@ -44,7 +44,7 @@ struct RecipeDecodingTests {
             "ingredients": [{
                 "id": "milk", "name": "Milk", "quantity": "1 cup", "allergens": ["dairy"]
             }],
-            "steps": [{ "text": "Cook with milk", "summary": "Cook with milk" }]
+            "steps": [{ "detail": "Cook with milk", "summary": "Cook with milk." }]
         }
         """
 
@@ -67,7 +67,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"paso","summary":"paso"}]
+            "steps": [{"detail":"paso","summary":"paso."}]
         }
         """
 
@@ -98,7 +98,7 @@ struct RecipeDecodingTests {
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-                "steps": [{"text":"s","summary":"s"}]
+                "steps": [{"detail":"s","summary":"s."}]
             },
             {
                 "id": "still-draft",
@@ -110,7 +110,7 @@ struct RecipeDecodingTests {
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": null,
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-                "steps": [{"text":"s","summary":"s"}]
+                "steps": [{"detail":"s","summary":"s."}]
             }
         ]
         """
@@ -148,7 +148,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [" DaIrY "],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"paso","summary":"paso"}]
+            "steps": [{"detail":"paso","summary":"paso."}]
         }
         """
 
@@ -169,7 +169,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": ["lactose"],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"paso","summary":"paso"}]
+            "steps": [{"detail":"paso","summary":"paso."}]
         }
         """
 
@@ -201,7 +201,7 @@ struct RecipeDecodingTests {
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-                "steps": [{"text":"Cook","summary":"Cook"}]
+                "steps": [{"detail":"Cook","summary":"Cook."}]
             },
             {
                 "id": "repeat",
@@ -213,7 +213,7 @@ struct RecipeDecodingTests {
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
                 "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-                "steps": [{"text":"Cook","summary":"Cook"}]
+                "steps": [{"detail":"Cook","summary":"Cook."}]
             }
         ]
         """
@@ -241,7 +241,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -271,7 +271,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "blank-name", "name": "  ", "quantity": "1 cup" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -332,7 +332,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -359,7 +359,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -381,7 +381,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -412,7 +412,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -443,7 +443,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -470,7 +470,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -500,7 +500,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "  " }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -532,7 +532,7 @@ struct RecipeDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "0 cups" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 
@@ -574,7 +574,7 @@ struct RecipeDecodingTests {
                 { "id": "papa", "name": "Papa", "quantity": "4 unidades" },
                 { "id": "huevo", "name": "Huevo", "quantity": "5 unidades" }
             ],
-            "steps": [{"text":"Pelar y cortar las papas en rodajas finas.","summary":"Pelar y cortar las papas en rodajas finas."},{"text":"Freír a fuego medio hasta que estén tiernas.","summary":"Freír a fuego medio hasta que estén tiernas."}]
+            "steps": [{"detail":"Pelar y cortar las papas en rodajas finas.","summary":"Prepare"},{"detail":"Freír a fuego medio hasta que estén tiernas.","summary":"Prepare"}]
         }
         """
 
@@ -607,7 +607,7 @@ struct RecipeDecodingTests {
             servings: 2,
             primaryCourse: .dinner,
             ingredients: [Ingredient(name: "x", quantity: "1")],
-            steps: ["Cook"],
+            steps: [CookingStep(detail: "Use medium heat.", summary: "Cook")],
             allergenReview: .reviewed([]),
             editorialDate: date
         )
@@ -634,7 +634,7 @@ struct RecipeDecodingTests {
             "practicalTags": ["one-pan", "quick"],
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"s","summary":"s"}]
+            "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -660,7 +660,7 @@ struct RecipeDecodingTests {
             "heroPhotoURL": "https://img.karta.app/unknown-course.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "brunch", "additionalCourses": [], "diets": [], "practicalTags": [],
-            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"text":"s","summary":"s"}]
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
         let unknownDiet = """
@@ -669,7 +669,7 @@ struct RecipeDecodingTests {
             "heroPhotoURL": "https://img.karta.app/unknown-diet.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": ["pescatarian"], "practicalTags": [],
-            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"text":"s","summary":"s"}]
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -693,7 +693,7 @@ struct RecipeDecodingTests {
             "heroPhotoURL": "https://img.karta.app/repeated-course.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": ["dinner"], "diets": [], "practicalTags": [],
-            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"text":"s","summary":"s"}]
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -713,7 +713,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "tags": ["quick"], "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"text":"s","summary":"s"}]
+            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -745,7 +745,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{"text":"Cook","summary":"Cook"}]
+            "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
 

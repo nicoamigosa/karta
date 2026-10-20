@@ -12,7 +12,7 @@ struct SeedResourceAdapterTests {
 
         let clips = try adapter.loadTechniqueClips()
 
-        let clip = try #require(clips.clip(for: CookingStep(text: "", clipID: "cuajar-tortilla")))
+        let clip = try #require(clips.clip(for: CookingStep(detail: "", clipID: "cuajar-tortilla")))
         #expect(clip.id == "cuajar-tortilla")
     }
 
