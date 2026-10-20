@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import KartaCore
 
-/// Catalog steps carry editor-written summaries plus their full cooking text.
+/// Catalog steps carry editor-written summaries plus their Detalle.
 /// This is the seam that lets the reverse and cooking mode share one step model.
 @Suite("Recipe step decoding")
 struct RecipeStepDecodingTests {
@@ -20,8 +20,8 @@ struct RecipeStepDecodingTests {
     func structuredStep() throws {
         let json = """
         {
-            "text": "Simmer the sauce",
-            "summary": "Simmer the sauce",
+            "detail": "Simmer the sauce",
+            "summary": "Simmer the sauce.",
             "ingredients": [
                 { "ingredientID": "tomato", "quantity": "400 g" },
                 { "ingredientID": "salt", "quantity": "1/2 tsp" }
@@ -32,7 +32,7 @@ struct RecipeStepDecodingTests {
         """
         let step = try JSONDecoder().decode(CookingStep.self, from: Data(json.utf8))
 
-        #expect(step.text == "Simmer the sauce")
+        #expect(step.detail == "Simmer the sauce")
         #expect(step.ingredients == [
             StepIngredient(ingredientID: "tomato", quantity: "400 g"),
             StepIngredient(ingredientID: "salt", quantity: "1/2 tsp"),
@@ -43,7 +43,7 @@ struct RecipeStepDecodingTests {
 
     @Test("A step decodes its editor summary and optional marker")
     func summaryAndOptionalMarkerDecode() throws {
-        let json = #"{"text":"Fold in the butter","summary":"Fold in butter","optional":true}"#
+        let json = #"{"detail":"Fold in the butter","summary":"Fold in butter","optional":true}"#
         let step = try JSONDecoder().decode(CookingStep.self, from: Data(json.utf8))
 
         #expect(step.summary == "Fold in butter")
@@ -52,7 +52,7 @@ struct RecipeStepDecodingTests {
 
     @Test("A step without its required summary does not decode")
     func missingSummaryFails() {
-        let json = #"{"text":"Stir well"}"#
+        let json = #"{"detail":"Stir well"}"#
 
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(CookingStep.self, from: Data(json.utf8))
@@ -68,7 +68,7 @@ struct RecipeStepDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "tomato", "name": "Tomato", "quantity": "2" }],
-            "steps": [{ "text": "Cook the tomato", "summary": "Cook the tomato\\nuntil soft" }]
+            "steps": [{ "detail": "Cook the tomato", "summary": "Cook the tomato\\nuntil soft" }]
         }
         """
 
@@ -87,7 +87,7 @@ struct RecipeStepDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
-                "text": "Cook", "summary": "Cook",
+                "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "sugar", "quantity": "1 tbsp" }]
             }]
         }
@@ -116,15 +116,15 @@ struct RecipeStepDecodingTests {
             "difficulty": "easy", "servings": 4, "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
             "steps": [
-                { "text": "Chop the onion", "summary": "Chop the onion" },
-                { "text": "Fry it", "summary": "Fry the onion", "timerSeconds": 120 }
+                { "detail": "Chop the onion", "summary": "Chop the onion." },
+                { "detail": "Fry it", "summary": "Fry the onion", "timerSeconds": 120 }
             ]
         }
         """
         let recipe = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
 
         #expect(recipe.steps.count == 2)
-        #expect(recipe.steps[0] == CookingStep(text: "Chop the onion"))
+        #expect(recipe.steps[0] == CookingStep(detail: "Chop the onion", summary: "Chop the onion."))
         #expect(recipe.steps[1].timerSeconds == 120)
     }
 
@@ -141,7 +141,7 @@ struct RecipeStepDecodingTests {
                 { "id": "butter", "name": "Butter", "quantity": "1 tbsp", "optional": true, "allergens": ["dairy"] }
             ],
             "steps": [{
-                "text": "Mix in the butter", "summary": "Mix the batter",
+                "detail": "Mix in the butter", "summary": "Mix the batter",
                 "ingredients": [{ "ingredientID": "butter", "quantity": "1 tbsp" }]
             }]
         }
@@ -161,7 +161,7 @@ struct RecipeStepDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{ "text": "Wait", "summary": "Wait", "timerSeconds": 0 }]
+            "steps": [{ "detail": "Wait", "summary": "Wait.", "timerSeconds": 0 }]
         }
         """
 
@@ -180,26 +180,26 @@ struct RecipeStepDecodingTests {
         }
     }
 
-    @Test("Recipe decoding rejects empty step text with recipe context")
-    func emptyStepTextFailsWithContext() throws {
+    @Test("Recipe decoding rejects empty step detail with recipe context")
+    func emptyStepDetailFailsWithContext() throws {
         let json = """
         {
-            "id": "missing-step-text", "name": "Missing step text",
-            "heroPhotoURL": "https://img.karta.app/missing-step-text.jpg",
+            "id": "missing-step-detail", "name": "Missing step detail",
+            "heroPhotoURL": "https://img.karta.app/missing-step-detail.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{ "text": "   ", "summary": "Stir" }]
+            "steps": [{ "detail": "   ", "summary": "Stir" }]
         }
         """
 
         do {
             _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
-            Issue.record("Expected empty step text to be rejected")
+            Issue.record("Expected empty step detail to be rejected")
         } catch let error as RecipeDecodingError {
-            #expect(error == .emptyStepText(
-                recipeID: "missing-step-text",
-                recipeName: "Missing step text",
+            #expect(error == .emptyStepDetail(
+                recipeID: "missing-step-detail",
+                recipeName: "Missing step detail",
                 stepIndex: 0
             ))
         } catch {
@@ -216,7 +216,7 @@ struct RecipeStepDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
-            "steps": [{ "text": "Cook", "summary": "Cook", "clipID": " " }]
+            "steps": [{ "detail": "Cook", "summary": "Cook.", "clipID": " " }]
         }
         """
 
@@ -244,7 +244,7 @@ struct RecipeStepDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
-                "text": "Cook", "summary": "Cook",
+                "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "  ", "quantity": "1 cup" }]
             }]
         }
@@ -274,7 +274,7 @@ struct RecipeStepDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
-                "text": "Cook", "summary": "Cook",
+                "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "flour", "quantity": "  " }]
             }]
         }
@@ -305,7 +305,7 @@ struct RecipeStepDecodingTests {
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
             "steps": [{
-                "text": "Cook", "summary": "Cook",
+                "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "flour", "quantity": "0 cups" }]
             }]
         }
@@ -333,7 +333,7 @@ struct RecipeStepDecodingTests {
             id: "r1", name: "Mix", heroPhoto: .local("test"), totalMinutes: 10, difficulty: .easy, servings: 4,
             primaryCourse: .dinner, ingredients: [Ingredient(id: "onion", name: "Onion", quantity: "1")],
             steps: [
-                CookingStep(text: "Chop", ingredients: [
+                CookingStep(detail: "Chop", ingredients: [
                     StepIngredient(ingredientID: "onion", quantity: "1")
                 ]),
                 "Serve",

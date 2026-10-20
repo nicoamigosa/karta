@@ -116,7 +116,7 @@ struct CookingSessionView: View {
                 )
             }
 
-            Text(step.text)
+            Text(step.detail)
                 .font(KartaDesign.FontToken.cookStep())
                 .foregroundStyle(KartaDesign.ColorToken.ink)
                 .fixedSize(horizontal: false, vertical: true)

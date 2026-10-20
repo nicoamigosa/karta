@@ -32,7 +32,7 @@
       {
         "id": "eggs",
         "name": "Large eggs",
-        "quantity": "5 large",
+        "quantity": "5",
         "optional": false
       },
       {
@@ -56,7 +56,7 @@
     ],
     "steps": [
       {
-        "text": "Peel the potatoes and slice them thin. Slice the onion into thin strips.",
+        "detail": "Peel the potatoes and slice them thin. Slice the onion into thin strips.",
         "ingredients": [
           {
             "ingredientID": "potatoes",
@@ -71,7 +71,7 @@
         "optional": false
       },
       {
-        "text": "Fry the potatoes and onion over medium heat until tender but not browned.",
+        "detail": "Fry the potatoes and onion over medium heat until tender but not browned.",
         "ingredients": [
           {
             "ingredientID": "potatoes",
@@ -91,11 +91,11 @@
         "optional": false
       },
       {
-        "text": "Beat the eggs with a pinch of salt and fold in the drained potatoes and onion.",
+        "detail": "Beat the eggs with a pinch of salt and fold in the drained potatoes and onion.",
         "ingredients": [
           {
             "ingredientID": "eggs",
-            "quantity": "5 large"
+            "quantity": "5"
           },
           {
             "ingredientID": "salt",
@@ -114,7 +114,7 @@
         "optional": false
       },
       {
-        "text": "Set the mixture in the skillet, flip it onto a plate, and slide it back in to brown the other side.",
+        "detail": "Set the mixture in the skillet, flip it onto a plate, and slide it back in to brown the other side.",
         "ingredients": [
           {
             "ingredientID": "potatoes",
@@ -122,7 +122,7 @@
           },
           {
             "ingredientID": "eggs",
-            "quantity": "5 large"
+            "quantity": "5"
           },
           {
             "ingredientID": "onion",
@@ -199,7 +199,7 @@
     ],
     "steps": [
       {
-        "text": "Cut the chicken into cubes and slice the onion.",
+        "detail": "Cut the chicken into cubes and slice the onion.",
         "ingredients": [
           {
             "ingredientID": "chicken-breast",
@@ -214,7 +214,7 @@
         "optional": false
       },
       {
-        "text": "Sear the chicken in a hot skillet until golden.",
+        "detail": "Sear the chicken in a hot skillet until golden.",
         "ingredients": [
           {
             "ingredientID": "chicken-breast",
@@ -226,7 +226,7 @@
         "optional": false
       },
       {
-        "text": "Add the onion and curry powder and cook for one minute.",
+        "detail": "Add the onion and curry powder and cook for one minute.",
         "ingredients": [
           {
             "ingredientID": "onion",
@@ -241,7 +241,7 @@
         "optional": false
       },
       {
-        "text": "Stir in the coconut cream and simmer until thickened. Serve over rice.",
+        "detail": "Stir in the coconut cream and simmer until thickened. Serve over rice.",
         "ingredients": [
           {
             "ingredientID": "coconut-cream",
@@ -257,7 +257,7 @@
         "optional": false
       },
       {
-        "text": "Finish each serving with a spoonful of Greek yogurt.",
+        "detail": "Finish each serving with a spoonful of Greek yogurt.",
         "summary": "Finish with Greek yogurt",
         "ingredients": [
           {
@@ -320,7 +320,7 @@
     ],
     "steps": [
       {
-        "text": "Cut the bread into cubes and toast until golden to make croutons.",
+        "detail": "Cut the bread into cubes and toast until golden to make croutons.",
         "ingredients": [
           {
             "ingredientID": "bread",
@@ -331,7 +331,7 @@
         "optional": false
       },
       {
-        "text": "Wash the lettuce and tear it into large pieces.",
+        "detail": "Wash the lettuce and tear it into large pieces.",
         "ingredients": [
           {
             "ingredientID": "romaine-lettuce",
@@ -342,7 +342,7 @@
         "optional": false
       },
       {
-        "text": "Toss the lettuce with the dressing and the croutons.",
+        "detail": "Toss the lettuce with the dressing and the croutons.",
         "ingredients": [
           {
             "ingredientID": "romaine-lettuce",
@@ -357,11 +357,11 @@
             "quantity": "2 slices"
           }
         ],
-        "summary": "Toss the lettuce, dressing and croutons",
+        "summary": "Toss lettuce, dressing, croutons",
         "optional": false
       },
       {
-        "text": "Finish with shaved Parmesan.",
+        "detail": "Finish with shaved Parmesan.",
         "ingredients": [
           {
             "ingredientID": "parmesan-cheese",
@@ -435,7 +435,7 @@
     ],
     "steps": [
       {
-        "text": "Boil the pasta in salted water according to the package.",
+        "detail": "Boil the pasta in salted water according to the package.",
         "ingredients": [
           {
             "ingredientID": "pasta",
@@ -451,7 +451,7 @@
         "optional": false
       },
       {
-        "text": "Blend the basil, walnuts, Parmesan and olive oil into a pesto.",
+        "detail": "Blend the basil, walnuts, Parmesan and olive oil into a pesto.",
         "ingredients": [
           {
             "ingredientID": "fresh-basil",
@@ -474,18 +474,18 @@
         "optional": false
       },
       {
-        "text": "Drain the pasta, saving a little of the cooking water.",
+        "detail": "Drain the pasta, saving a little of the cooking water.",
         "ingredients": [
           {
             "ingredientID": "pasta",
             "quantity": "12 oz"
           }
         ],
-        "summary": "Drain the pasta and reserve the water",
+        "summary": "Drain the pasta, keep some water",
         "optional": false
       },
       {
-        "text": "Toss the pasta with the pesto and loosen it with the saved water.",
+        "detail": "Toss the pasta with the pesto and loosen it with the saved water.",
         "ingredients": [
           {
             "ingredientID": "pasta",
@@ -556,7 +556,7 @@
     ],
     "steps": [
       {
-        "text": "Sauté the onion, carrots and chorizo in a pot.",
+        "detail": "Sauté the onion, carrots and chorizo in a pot.",
         "ingredients": [
           {
             "ingredientID": "onion",
@@ -575,7 +575,7 @@
         "optional": false
       },
       {
-        "text": "Add the paprika and the cubed potatoes.",
+        "detail": "Add the paprika and the cubed potatoes.",
         "ingredients": [
           {
             "ingredientID": "sweet-paprika",
@@ -590,7 +590,7 @@
         "optional": false
       },
       {
-        "text": "Add the lentils and cover with water or broth.",
+        "detail": "Add the lentils and cover with water or broth.",
         "ingredients": [
           {
             "ingredientID": "dried-lentils",
@@ -601,7 +601,7 @@
         "optional": false
       },
       {
-        "text": "Simmer over low heat until the lentils are tender.",
+        "detail": "Simmer over low heat until the lentils are tender.",
         "ingredients": [
           {
             "ingredientID": "dried-lentils",
@@ -666,12 +666,12 @@
     ],
     "steps": [
       {
-        "text": "Preheat the oven to 400 °F.",
+        "detail": "Preheat the oven to 400 °F.",
         "summary": "Preheat the oven",
         "optional": false
       },
       {
-        "text": "Place the salmon in a baking dish with the olive oil, salt and lemon slices.",
+        "detail": "Place the salmon in a baking dish with the olive oil, salt and lemon slices.",
         "ingredients": [
           {
             "ingredientID": "salmon-fillets",
@@ -690,11 +690,11 @@
             "quantity": "1"
           }
         ],
-        "summary": "Place the salmon with oil, salt and lemon",
+        "summary": "Season the salmon and add lemon",
         "optional": false
       },
       {
-        "text": "Scatter the dill on top.",
+        "detail": "Scatter the dill on top.",
         "ingredients": [
           {
             "ingredientID": "fresh-dill",
@@ -705,7 +705,7 @@
         "optional": false
       },
       {
-        "text": "Bake until the salmon flakes easily.",
+        "detail": "Bake until the salmon flakes easily.",
         "ingredients": [
           {
             "ingredientID": "salmon-fillets",
@@ -749,7 +749,7 @@
       {
         "id": "eggs",
         "name": "Large eggs",
-        "quantity": "2 large",
+        "quantity": "2",
         "optional": false
       },
       {
@@ -773,7 +773,7 @@
     ],
     "steps": [
       {
-        "text": "Mash the bananas and whisk them with the eggs and milk.",
+        "detail": "Mash the bananas and whisk them with the eggs and milk.",
         "ingredients": [
           {
             "ingredientID": "ripe-bananas",
@@ -781,7 +781,7 @@
           },
           {
             "ingredientID": "eggs",
-            "quantity": "2 large"
+            "quantity": "2"
           },
           {
             "ingredientID": "milk",
@@ -792,7 +792,7 @@
         "optional": false
       },
       {
-        "text": "Stir in the flour and baking powder until just combined.",
+        "detail": "Stir in the flour and baking powder until just combined.",
         "ingredients": [
           {
             "ingredientID": "all-purpose-flour",
@@ -807,7 +807,7 @@
         "optional": false
       },
       {
-        "text": "Cook small rounds in a hot, lightly oiled skillet.",
+        "detail": "Cook small rounds in a hot, lightly oiled skillet.",
         "ingredients": [
           {
             "ingredientID": "ripe-bananas",
@@ -815,7 +815,7 @@
           },
           {
             "ingredientID": "eggs",
-            "quantity": "2 large"
+            "quantity": "2"
           },
           {
             "ingredientID": "all-purpose-flour",
@@ -834,7 +834,7 @@
         "optional": false
       },
       {
-        "text": "Flip when bubbles appear and brown the other side.",
+        "detail": "Flip when bubbles appear and brown the other side.",
         "ingredients": [
           {
             "ingredientID": "ripe-bananas",
@@ -842,7 +842,7 @@
           },
           {
             "ingredientID": "eggs",
-            "quantity": "2 large"
+            "quantity": "2"
           },
           {
             "ingredientID": "all-purpose-flour",
@@ -900,7 +900,7 @@
       {
         "id": "carrot",
         "name": "Medium carrot",
-        "quantity": "1 medium",
+        "quantity": "1",
         "optional": false
       },
       {
@@ -918,7 +918,7 @@
     ],
     "steps": [
       {
-        "text": "Soak the rice noodles according to the package.",
+        "detail": "Soak the rice noodles according to the package.",
         "ingredients": [
           {
             "ingredientID": "rice-noodles",
@@ -929,11 +929,11 @@
         "optional": false
       },
       {
-        "text": "Stir-fry the carrot, broccoli and bell pepper strips over high heat.",
+        "detail": "Stir-fry the carrot, broccoli and bell pepper strips over high heat.",
         "ingredients": [
           {
             "ingredientID": "carrot",
-            "quantity": "1 medium"
+            "quantity": "1"
           },
           {
             "ingredientID": "broccoli",
@@ -948,7 +948,7 @@
         "optional": false
       },
       {
-        "text": "Add the drained noodles to the wok.",
+        "detail": "Add the drained noodles to the wok.",
         "ingredients": [
           {
             "ingredientID": "rice-noodles",
@@ -959,7 +959,7 @@
         "optional": false
       },
       {
-        "text": "Add the soy sauce and stir-fry for a couple more minutes.",
+        "detail": "Add the soy sauce and stir-fry for a couple more minutes.",
         "ingredients": [
           {
             "ingredientID": "soy-sauce",

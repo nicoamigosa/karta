@@ -39,6 +39,7 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
         ingredientName: String,
         value: String
     )
+    case repeatedIngredientQuantityWord(recipeID: String, recipeName: String, ingredientID: String, stepIndex: Int?)
     case emptyStepIngredientID(recipeID: String, recipeName: String, stepIndex: Int)
     case unknownStepIngredientID(
         recipeID: String,
@@ -65,8 +66,10 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
         ingredientID: String,
         value: String
     )
-    case emptyStepText(recipeID: String, recipeName: String, stepIndex: Int)
+    case emptyStepDetail(recipeID: String, recipeName: String, stepIndex: Int)
+    case repeatedStepDetail(recipeID: String, recipeName: String, stepIndex: Int)
     case emptyStepSummary(recipeID: String, recipeName: String, stepIndex: Int)
+    case overlongStepSummary(recipeID: String, recipeName: String, stepIndex: Int)
     case multilineStepSummary(recipeID: String, recipeName: String, stepIndex: Int)
     case emptyStepClipID(recipeID: String, recipeName: String, stepIndex: Int)
 
@@ -118,6 +121,9 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) '\(ingredientName)' has an empty quantity"
         case let .nonPositiveIngredientQuantity(recipeID, recipeName, ingredientIndex, ingredientName, value):
             return "Recipe '\(recipeID)' ('\(recipeName)') ingredient \(ingredientIndex) '\(ingredientName)' has non-positive quantity '\(value)'"
+        case let .repeatedIngredientQuantityWord(recipeID, recipeName, ingredientID, stepIndex):
+            let location = stepIndex.map { " step \($0)" } ?? ""
+            return "Recipe '\(recipeID)' ('\(recipeName)')\(location) ingredient '\(ingredientID)' repeats a name word in its quantity"
         case let .emptyStepIngredientID(recipeID, recipeName, stepIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an ingredient with an empty id"
         case let .unknownStepIngredientID(recipeID, recipeName, stepIndex, ingredientID):
@@ -128,10 +134,14 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientID)' has an empty quantity"
         case let .nonPositiveStepIngredientQuantity(recipeID, recipeName, stepIndex, ingredientID, value):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) ingredient '\(ingredientID)' has non-positive quantity '\(value)'"
-        case let .emptyStepText(recipeID, recipeName, stepIndex):
-            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has empty text"
+        case let .emptyStepDetail(recipeID, recipeName, stepIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has empty detail"
+        case let .repeatedStepDetail(recipeID, recipeName, stepIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) repeats its summary in its detail"
         case let .emptyStepSummary(recipeID, recipeName, stepIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has an empty summary"
+        case let .overlongStepSummary(recipeID, recipeName, stepIndex):
+            return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has a summary longer than 36 characters"
         case let .multilineStepSummary(recipeID, recipeName, stepIndex):
             return "Recipe '\(recipeID)' ('\(recipeName)') step \(stepIndex) has a summary that spans multiple lines"
         case let .emptyStepClipID(recipeID, recipeName, stepIndex):
@@ -347,6 +357,11 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                     ingredientID: ingredient.id
                 )
             }
+            if quantityRepeatsName(ingredient.quantity, name: ingredient.name) {
+                throw RecipeDecodingError.repeatedIngredientQuantityWord(
+                    recipeID: id, recipeName: name, ingredientID: ingredient.id, stepIndex: nil
+                )
+            }
             if ingredient.isOptional {
                 optionalIngredientIDs.insert(ingredient.id)
             }
@@ -362,8 +377,8 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
             throw RecipeDecodingError.emptySteps(recipeID: id, recipeName: name)
         }
         for (index, step) in steps.enumerated() {
-            guard !step.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw RecipeDecodingError.emptyStepText(
+            guard !step.detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw RecipeDecodingError.emptyStepDetail(
                     recipeID: id,
                     recipeName: name,
                     stepIndex: index
@@ -383,6 +398,9 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                     stepIndex: index
                 )
             }
+            guard step.summary.count <= 36 else {
+                throw RecipeDecodingError.overlongStepSummary(recipeID: id, recipeName: name, stepIndex: index)
+            }
             if step.clipID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
                 throw RecipeDecodingError.emptyStepClipID(
                     recipeID: id,
@@ -397,6 +415,9 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                     stepIndex: index,
                     value: timerSeconds
                 )
+            }
+            guard step.detail != step.summary else {
+                throw RecipeDecodingError.repeatedStepDetail(recipeID: id, recipeName: name, stepIndex: index)
             }
             for ingredient in step.ingredients {
                 let ingredientID = ingredient.ingredientID.trimmingCharacters(
@@ -421,6 +442,12 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
                         recipeName: name,
                         stepIndex: index,
                         ingredientID: ingredient.ingredientID
+                    )
+                }
+                if let recipeIngredient = ingredients.first(where: { $0.id == ingredient.ingredientID }),
+                   quantityRepeatsName(ingredient.quantity, name: recipeIngredient.name) {
+                    throw RecipeDecodingError.repeatedIngredientQuantityWord(
+                        recipeID: id, recipeName: name, ingredientID: ingredient.ingredientID, stepIndex: index
                     )
                 }
                 if optionalIngredientIDs.contains(ingredient.ingredientID), !step.isOptional {
@@ -702,4 +729,12 @@ public enum Difficulty: String, Codable, Equatable, Sendable, Comparable, CaseIt
     public static func < (lhs: Difficulty, rhs: Difficulty) -> Bool {
         lhs.rank < rhs.rank
     }
+}
+
+/// Words are letter/number sequences; punctuation and hyphens separate words.
+private func quantityRepeatsName(_ quantity: String, name: String) -> Bool {
+    func words(_ value: String) -> Set<String> {
+        Set(value.split { !$0.isLetter && !$0.isNumber }.map { $0.lowercased() })
+    }
+    return !words(quantity).isDisjoint(with: words(name))
 }

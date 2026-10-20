@@ -10,8 +10,8 @@ struct OptionalRecipeContentTests {
         let recipe = recipe()
 
         #expect(recipe.visibleIngredients(for: [.dairy]).map(\.id) == ["flour"])
-        #expect(recipe.visibleSteps(for: [.dairy]).map(\.text) == ["Bake the cake"])
-        #expect(recipe.cookingSession(intolerances: [.dairy]).steps.map(\.text) == [
+        #expect(recipe.visibleSteps(for: [.dairy]).map(\.detail) == ["Bake the cake"])
+        #expect(recipe.cookingSession(intolerances: [.dairy]).steps.map(\.detail) == [
             "Bake the cake",
         ])
     }
@@ -37,12 +37,12 @@ struct OptionalRecipeContentTests {
             ],
             steps: [
                 CookingStep(
-                    text: "Bake the cake",
+                    detail: "Bake the cake",
                     summary: "Bake the cake",
                     ingredients: [StepIngredient(ingredientID: "flour", quantity: "2 cups")]
                 ),
                 CookingStep(
-                    text: "Top with the butter",
+                    detail: "Top with the butter",
                     summary: "Top with butter",
                     ingredients: [StepIngredient(ingredientID: "butter", quantity: "1 tbsp")],
                     isOptional: true

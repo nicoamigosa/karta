@@ -93,7 +93,7 @@ struct CookingSessionTests {
                 && !optional.allergens.isDisjoint(with: intolerances) {
                 foundDairyOptional = true
                 let step = CookingStep(
-                    text: "Finish",
+                    detail: "Finish",
                     ingredients: [StepIngredient(
                         ingredientID: optional.id,
                         quantity: optional.quantity
@@ -121,7 +121,7 @@ struct CookingSessionTests {
     @MainActor
     @Test("Arriving at the last Paso only reports the inference action")
     func stepArrivalActions() {
-        let timed = CookingStep(text: "Simmer", timerSeconds: 600)
+        let timed = CookingStep(detail: "Simmer", timerSeconds: 600)
         let actions = CookingStepArrival.actions(
             for: timed,
             isLastStep: true,
@@ -143,7 +143,7 @@ struct CookingSessionTests {
         ).isEmpty)
 
         #expect(CookingStepArrival.actions(
-            for: CookingStep(text: "Stir"),
+            for: CookingStep(detail: "Stir"),
             isLastStep: false,
             now: 0
         ).isEmpty)
@@ -232,7 +232,7 @@ struct CookingSessionTests {
 
         var other = CookingSession(
             recipeID: "not-in-the-catalog",
-            steps: [CookingStep(text: "Step")]
+            steps: [CookingStep(detail: "Step")]
         )
         #expect(CookingRoute.recipe(for: other, in: recipes) == nil)
         other.exit()

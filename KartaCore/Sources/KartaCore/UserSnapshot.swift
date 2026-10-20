@@ -469,6 +469,7 @@ private struct CookingSessionDTO: Codable {
 }
 
 private struct CookingStepDTO: Codable {
+    let photo: MediaReference?
     let text: String
     let summary: String
     let ingredients: [StepIngredientDTO]
@@ -477,7 +478,8 @@ private struct CookingStepDTO: Codable {
     let isOptional: Bool
 
     init(_ step: CookingStep) {
-        text = step.text
+        photo = step.photo
+        text = step.detail
         summary = step.summary
         ingredients = step.ingredients.map(StepIngredientDTO.init)
         timerSeconds = step.timerSeconds
@@ -487,6 +489,7 @@ private struct CookingStepDTO: Codable {
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        photo = try container.decodeIfPresent(MediaReference.self, forKey: .photo)
         text = try container.decode(String.self, forKey: .text)
         summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? text
         if let ingredients = try container.decodeIfPresent(
@@ -517,6 +520,7 @@ private struct CookingStepDTO: Codable {
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(photo, forKey: .photo)
         try container.encode(text, forKey: .text)
         try container.encode(summary, forKey: .summary)
         try container.encode(ingredients, forKey: .ingredients)
@@ -527,17 +531,18 @@ private struct CookingStepDTO: Codable {
 
     var domainValue: CookingStep {
         CookingStep(
-            text: text,
+            detail: text,
             summary: summary,
             ingredients: ingredients.map(\.domainValue),
             timerSeconds: timerSeconds,
             clipID: clipID,
-            isOptional: isOptional
+            isOptional: isOptional,
+            photo: photo
         )
     }
 
     private enum CodingKeys: String, CodingKey {
-        case text, summary, ingredients, ingredient, timerSeconds, clipID
+        case text, summary, ingredients, ingredient, timerSeconds, clipID, photo
         case isOptional = "optional"
     }
 }

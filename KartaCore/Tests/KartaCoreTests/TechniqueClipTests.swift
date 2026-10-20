@@ -26,8 +26,8 @@ struct TechniqueClipTests {
     @Test("A step referencing a clip resolves it; a plain step stays text-only")
     func resolvesClipOrTextOnly() throws {
         let library = try makeLibrary()
-        let withClip = CookingStep(text: "Dice the onion", clipID: "dice-onion")
-        let textOnly = CookingStep(text: "Stir")
+        let withClip = CookingStep(detail: "Dice the onion", clipID: "dice-onion")
+        let textOnly = CookingStep(detail: "Stir")
 
         let clip = try #require(library.clip(for: withClip))
         #expect(clip.title == "How to dice an onion")
@@ -46,7 +46,7 @@ struct TechniqueClipTests {
         """
 
         let library = try TechniqueClipLibrary.decode(from: Data(json.utf8))
-        let clip = try #require(library.clip(for: CookingStep(text: "", clipID: "dice-onion")))
+        let clip = try #require(library.clip(for: CookingStep(detail: "", clipID: "dice-onion")))
 
         #expect(clip.source == .remote(URL(string: "https://video.karta.app/dice-onion.mp4")!))
     }
@@ -95,8 +95,8 @@ struct TechniqueClipTests {
     @Test("The same clip is shared across recipes by id, never duplicated")
     func sameClipSharedAcrossRecipes() throws {
         let library = try makeLibrary()
-        let stepInRecipeA = CookingStep(text: "Dice onion for the soup", clipID: "dice-onion")
-        let stepInRecipeB = CookingStep(text: "Dice onion for the curry", clipID: "dice-onion")
+        let stepInRecipeA = CookingStep(detail: "Dice onion for the soup", clipID: "dice-onion")
+        let stepInRecipeB = CookingStep(detail: "Dice onion for the curry", clipID: "dice-onion")
 
         let clipA = try #require(library.clip(for: stepInRecipeA))
         let clipB = try #require(library.clip(for: stepInRecipeB))
@@ -106,8 +106,8 @@ struct TechniqueClipTests {
     @Test("An unknown clip id resolves to nothing rather than crashing")
     func unknownClipID() throws {
         let library = try makeLibrary()
-        let step = CookingStep(text: "Mystery move", clipID: "does-not-exist")
-        #expect(step.text == "Mystery move")
+        let step = CookingStep(detail: "Mystery move", clipID: "does-not-exist")
+        #expect(step.detail == "Mystery move")
         #expect(library.clip(for: step) == nil)
     }
 
