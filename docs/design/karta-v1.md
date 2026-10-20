@@ -125,6 +125,92 @@ Layout rules (reference: canvas board *Reverse A centered · course on top*):
   radius 18, label plus 18 pt arrow (gap 10) in Figtree 800 17 pt `card`,
   3 pt solid bottom edge `brandEdge` plus a soft drop shadow.
 
+## The cooking session
+
+Signed off on 2026-10-19 by the founder. Reference: canvas page *Cooking · round 3* (four
+boards *Chosen · step 1–4*, the board *Chosen · step 3 while the step 2 timer runs*, and a
+prototype to swipe), PNGs in `docs/design/screens/cooking-*.png`. Product terms:
+`CONTEXT.md` → **Paso**, **Resumen**, **Detalle**, **Foto del paso**, **Cantidad**,
+**Temporizador**; ADR 0014.
+
+Each Paso is a card the same size as the reverse, on the same suit-coloured frame. The cook
+passes them sideways like a deck.
+
+```
+ suit colour, 30 pt above and below, 10 pt at the sides
+┌───────────────────────────────┐  card face, radius 26, same edge + shadow
+│ (✕)        ▬ ▬ ▭ ▭            │  ✕ + progress bar, nothing else
+│ Fry until tender              │  Resumen, ≤ 36 characters, ≤ 2 lines
+│ Medium heat. They should      │  Detalle
+│ soften, not brown.            │
+│ ┌───────────────────────────┐ │
+│ │       Foto del paso       │ │  220 pt high, inset 12, radius 18
+│ │[When it looks like this…] │ │  label chip (or the clip's name)
+│ └───────────────────────────┘ │
+│ FOR THIS STEP                 │
+│ 4 medium Yukon Gold potatoes  │  Cantidad first, then the name
+│ 1 medium Yellow onion         │
+│                               │  ≥ 20 pt, grows with free space
+│ [ 12:00 TIMER            (▶) ]│  only on a Paso with a Temporizador
+│───────────────────────────────│
+│ [img] UP NEXT                 │  next Paso: Foto del paso + Resumen
+│       Fold the potatoes in… ← │
+└───────────────────────────────┘
+```
+
+Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
+
+- **Header** (16 pt from the top): the ✕ tactile button (as on the reverse) on the left and
+  the **progress bar** centred: one 22 × 6 pt segment per Paso, radius 3, suit `back` for done
+  and current, suit `chip` for the rest. No Course label, no "Step 2 of 4" text.
+- **Resumen**: Fraunces 700, 34 / 39 pt, tracking −0.4, `ink`, 16 pt below the header. At most
+  36 characters, so never more than two lines.
+- **Detalle**: Figtree 500, 17 / 24 pt, `ink`, 6 pt below.
+- **Media window**: 16 pt below, inset 12 pt from the card edges, 220 pt high, radius 18.
+  It always shows the Foto del paso (`object-fit: cover`). A chip at the bottom-left (10 pt
+  in; `card` fill, Figtree 800 12 pt, suit `chipInk`, radius 8) reads *When it looks like
+  this, move on*. If the Paso has a technique clip, the chip shows the clip's name and length
+  instead, and a 60 pt `card` circle with a play glyph sits in the centre: tapping it plays the
+  clip **in the same window**; when it ends, the photo returns.
+- **FOR THIS STEP**: 16 pt below; eyebrow as *YOU'LL NEED* on the reverse. One row per
+  ingredient, 5 pt apart: the Cantidad in Figtree 800 17 / 23, then the name in Figtree 500.
+  No boxes, no leaders, no wrapping tricks: a long row simply wraps.
+- **Free space**: at least 20 pt, and it absorbs whatever is left, so the bottom zone is
+  always pinned to the bottom of the card.
+- **Bottom zone**, pinned:
+  - **Temporizador** (only on a Paso that declares one): 14 pt above the line; suit `chip`
+    fill, radius 18; the time in Fraunces 900 36 pt, suit `chipInk`, tabular figures, plus
+    *TIMER* (Figtree 800 12, tracking 1.2); a 52 pt `brand` circle with a play glyph on the
+    right. Running: the remaining time, a pause button and a thin progress line. Done:
+    `brand` fill, *Time's up* and a *Stop* pill (canvas page *Cooking · round 2*, board D2).
+  - **Up next** (every Paso but the last): 1 pt `line` on top, 14 / 20 / 20 pt padding; a
+    64 pt thumbnail (the next Foto del paso, radius 12), the eyebrow *UP NEXT* (on the first
+    Paso, *UP NEXT · SWIPE LEFT*) and the next Resumen in Fraunces 700 18 / 22; a left arrow
+    on the right edge, `inkMuted`.
+  - **Last Paso**: *How did it turn out?* (Fraunces 700 22, centred) and three 68 pt tactile
+    buttons with an icon and a label: *Good*, *Not great*, *Add photo*. No emoji. After an
+    answer: a check disc, *Cooked. Enjoy it!* and **Finish** (the primary button, 56 pt),
+    which ends the session without asking.
+
+Behaviour:
+
+- **Moving between Pasos**: swipe left for the next Paso, right for the previous one; the
+  card leaves like a card of the deck. The next one or two Pasos peek behind the front card
+  (translated 4 / 8 pt, rotated 1.8° / 3.5°, `paper` and `cardEdge[0]`); the last Paso has
+  nothing behind it. Tapping the right half of the card also advances and the left half goes
+  back; buttons (play, timer, outcome, ✕) never move between Pasos. There is no vertical
+  gesture in the session.
+- **Leaving**: only the ✕, and it always asks first: a sheet *Leave cooking? You're on step
+  3 of 4.* with *Keep cooking* and *Leave*. Leaving ends the session for good (#34).
+- **A running Temporizador seen from another Paso**: its Paso's segment in the progress bar
+  becomes an outlined pill, 26 pt high, radius 13, 1.5 pt suit `chipInk` border, `card` fill,
+  Figtree 800 13 pt suit `chipInk`, tabular: *11:42*. At zero it fills with `brand` and reads
+  *Time's up* in `card`, with haptics and sound. Tapping it goes to that Paso. Several
+  running timers each take their own segment. Outside the app, AlarmKit shows the countdown
+  on the Lock Screen and Dynamic Island and rings even in silent mode (ADR 0014).
+- The screen stays awake for the whole session. Colours come from the suit of the recipe's
+  primary Course even though the Course is not named.
+
 ## Suits (Course icons)
 
 `suits/breakfast.svg` (fried egg), `suits/lunch.svg` (half sandwich),

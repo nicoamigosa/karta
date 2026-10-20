@@ -10,15 +10,39 @@ Este glosario fija el vocabulario del dominio; no contiene decisiones de impleme
 
 **Receta**:
 Una preparación curada y verificada por la editora, completa: foto, tiempo, dificultad,
-ingredientes con cantidades y pasos ordenados.
+ingredientes con cantidades y pasos ordenados, cada uno con su Foto del paso.
 _Avoid_: plato, contenido, post
 
 **Paso**:
 Una unidad autosuficiente de la preparación: lleva consigo el ingrediente y la cantidad
-que necesita, un resumen editorial de una línea para el reverso y el texto completo de la
-Sesión de cocina; puede llevar además un temporizador y un clip de técnica. Un Paso opcional
-sólo aparece en la Sesión de cocina.
+que necesita, un resumen, un detalle y su Foto del paso; puede llevar además un temporizador
+y un clip de técnica. Un Paso opcional sólo aparece en la Sesión de cocina.
 _Avoid_: instrucción, paso de la receta
+
+**Resumen**:
+La acción de un Paso, escrita por la editora en 36 caracteres como máximo (*Fry until
+tender*). Titula el Paso en el reverso y en la Sesión de cocina; un resumen más largo invalida
+la receta.
+_Avoid_: título, texto corto
+
+**Detalle**:
+Lo que el resumen no dice y hace falta para hacerlo bien, en una o dos frases cortas
+(*Medium heat. They should soften, not brown.*). Añade, nunca repite el resumen. Sólo se ve en
+la Sesión de cocina.
+_Avoid_: texto completo, instrucción, descripción
+
+**Foto del paso**:
+La imagen de cómo tiene que quedar un Paso al terminarlo, para que la usuaria sepa cuándo
+pasar al siguiente. Es obligatoria: sin la Foto del paso de todos sus pasos, la receta no
+está completa. Como la Foto, sólo se publica si la editora la aprueba. Pertenece a un Paso
+concreto: no se reutiliza entre recetas, a diferencia del clip.
+_Avoid_: foto de proceso, imagen del paso, Foto (que es sólo la de la receta)
+
+**Cantidad**:
+Cuánto de un ingrediente pide la receta o un Paso. Se lee delante del nombre, así que nunca
+repite una palabra de él: `5` *Large eggs*, no `5 large` *Large eggs*. Una cantidad que repite el
+nombre invalida la receta.
+_Avoid_: medida, porción
 
 **Foto**:
 La imagen principal de una receta. Puede ser real o generada, pero siempre la aprueba la
@@ -181,6 +205,12 @@ _Avoid_: like, favorito
 **Sesión de cocina**:
 El recorrido paso a paso de una receta concreta, desde que se entra hasta que se sale.
 _Avoid_: modo cocina, ejecución
+
+**Temporizador**:
+La cuenta atrás que declara un Paso y que la usuaria arranca a propósito. Sigue corriendo
+aunque cambie de Paso, salga de la app o bloquee el móvil, y avisa al terminar aunque el móvil
+esté en silencio. Arrancarlo es una de las señales de que se está cocinando de verdad.
+_Avoid_: alarma, cronómetro, timer
 
 **Cocinado**:
 El evento que registra que una receta se preparó de verdad. Es **explícito** cuando nace de
