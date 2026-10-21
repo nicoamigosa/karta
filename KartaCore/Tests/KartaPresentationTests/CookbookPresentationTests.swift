@@ -5,6 +5,34 @@ import KartaPresentation
 
 @Suite("Cookbook presentation")
 struct CookbookPresentationTests {
+    @Test("Saved recipe tags name only declared intolerances in a stable order", arguments: [
+        (Set<Allergen>(), nil),
+        ([.dairy], "Dairy"),
+        ([.nuts, .dairy], "Dairy +1"),
+        ([.nuts], "Nuts"),
+    ] as [(Set<Allergen>, String?)])
+    @MainActor
+    func intoleranceTags(intolerances: Set<Allergen>, tag: String?) {
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: ["saved", "cooked", "missing", "unreviewed"]),
+            cookHistory: [CookEntry(recipeID: "cooked", date: Date(timeIntervalSince1970: 1))],
+            safetyProfile: SafetyProfile(intolerances: intolerances),
+            filterDraft: FilterDraft(maxMinutes: 5)
+        ))
+        let catalog = [
+            recipe("saved", review: .reviewed([.dairy, .nuts])),
+            recipe("cooked", review: .reviewed([.dairy, .nuts])),
+            recipe("unreviewed", review: .unreviewed),
+        ]
+
+        let presentation = store.cookbookPresentation(recipes: catalog)
+
+        #expect(presentation.wantToTry.map(\.recipeID) == ["saved"])
+        #expect(presentation.repertoire.map(\.recipeID) == ["cooked"])
+        #expect(presentation.wantToTry.first?.intoleranceTag == tag)
+        #expect(presentation.repertoire.first?.intoleranceTag == tag)
+    }
+
     @Test("The store projects both halves and their counts in saved order")
     @MainActor
     func rowsAndCountsFollowSavedOrder() {

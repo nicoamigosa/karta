@@ -107,7 +107,7 @@ extension KartaState {
     ) -> CookingStepPresentation? {
         guard let session, !session.isExited, session.recipeID == recipe.id,
               let step = session.currentStep,
-              FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe) else { return nil }
+              canOpenRecipe(recipe) else { return nil }
         return CookingStepPresentation(
             step: step, session: session, recipe: recipe, clips: clips,
             intolerances: safetyProfile.intolerances, now: now

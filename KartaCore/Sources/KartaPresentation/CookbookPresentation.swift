@@ -14,8 +14,11 @@ public struct CookbookPresentation: Equatable, Sendable {
         public let name: String
         public let photo: MediaReference
         public let timeLabel: String
+        public let intoleranceTag: String?
 
-        fileprivate init(recipe: Recipe) {
+        fileprivate init(entry: Cookbook.Entry) {
+            let recipe = entry.recipe
+            intoleranceTag = IntoleranceWarning.tag(for: entry.containedIntolerances)
             recipeID = recipe.id
             name = recipe.name
             photo = recipe.heroPhoto
@@ -23,7 +26,7 @@ public struct CookbookPresentation: Equatable, Sendable {
         }
     }
 
-    fileprivate init(cookbook: Cookbook, cookHistory: [CookEntry], recipes: [Recipe]) {
+    fileprivate init(cookbook: Cookbook, cookHistory: [CookEntry], recipes: [Recipe], intolerances: Set<Allergen>) {
         if let ceiling = cookbook.saveCap, ceiling - cookbook.savedIDs.count <= 2 {
             cupoCountLine = "\(cookbook.savedIDs.count) of \(ceiling) saved on the free plan"
         } else {
@@ -33,7 +36,7 @@ public struct CookbookPresentation: Equatable, Sendable {
         let wantToTryIDs = Set(cookbook.wantToTryIDs(cookHistory: cookHistory))
         // The Cookbook retains deliberate saves independently of feed filters.
         // Default resolution still excludes missing and unreviewed recipes.
-        let savedRecipes = cookbook.recipes(from: recipes)
+        let savedRecipes = cookbook.recipes(from: recipes, filters: FeedFilters(intolerances: intolerances))
         repertoire = savedRecipes.filter { repertoireIDs.contains($0.id) }.map(Row.init)
         wantToTry = savedRecipes.filter { wantToTryIDs.contains($0.id) }.map(Row.init)
     }
@@ -41,7 +44,10 @@ public struct CookbookPresentation: Equatable, Sendable {
 
 extension KartaState {
     public func cookbookPresentation(recipes: [Recipe]) -> CookbookPresentation {
-        CookbookPresentation(cookbook: cookbook, cookHistory: cookHistory, recipes: recipes)
+        CookbookPresentation(
+            cookbook: cookbook, cookHistory: cookHistory, recipes: recipes,
+            intolerances: safetyProfile.intolerances
+        )
     }
 }
 

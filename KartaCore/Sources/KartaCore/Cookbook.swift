@@ -48,14 +48,23 @@ public struct Cookbook: Equatable, Sendable {
         return savedIDs.filter { !cookedIDs.contains($0) }
     }
 
+    /// A reviewed saved recipe and the declared intolerances in its required ingredients.
+    public struct Entry: Equatable, Identifiable, Sendable {
+        public let recipe: Recipe
+        public let containedIntolerances: Set<Allergen>
+        public var id: String { recipe.id }
+    }
+
     /// Resolve persisted recipe IDs against the current catalog in saved order.
-    /// Missing or unsafe recipes are omitted so restored Cookbook entries
-    /// cannot bypass the catalog's safety boundary. Filtering never mutates
-    /// the saved IDs.
+    /// Missing and unreviewed recipes are omitted. Declared intolerances flag
+    /// deliberate saves instead of hiding them. Other filters still apply;
+    /// resolution never changes the saved IDs or their cupo slots.
     public func recipes(
         from catalog: [Recipe],
         filters: FeedFilters = FeedFilters()
-    ) -> [Recipe] {
+    ) -> [Entry] {
+        var nonSafetyFilters = filters
+        nonSafetyFilters.intolerances = []
         let recipesByID = Dictionary(
             catalog.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
@@ -63,8 +72,9 @@ public struct Cookbook: Equatable, Sendable {
 
         return savedIDs.compactMap { id in
             guard let recipe = recipesByID[id] else { return nil }
-            guard filters.allows(recipe) else { return nil }
-            return recipe
+            guard nonSafetyFilters.allows(recipe),
+                  case let .reviewed(allergens) = recipe.allergenReview else { return nil }
+            return Entry(recipe: recipe, containedIntolerances: allergens.intersection(filters.intolerances))
         }
     }
 
