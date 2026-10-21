@@ -211,6 +211,110 @@ Behaviour:
 - The screen stays awake for the whole session. Colours come from the suit of the recipe's
   primary Course even though the Course is not named.
 
+## Save and the cookbook
+
+Signed off on 2026-10-20 by the founder (#7). Reference: canvas page *Signed
+off*, rows *Save + cookbook (#7)*; the rounds behind each choice are on the
+pages *Cookbook · round 1*, *Save · round 1*, *Intolerance tag · round 1* and
+*Cookbook door · round 1*. PNGs: `screens/feed-cookbook-door.png`,
+`screens/cookbook-*.png` and `screens/reverse-{saved,cookbook-full,unsaved-undo,unsaved-undo-ceiling,intolerance}.png`.
+Product context: `CONTEXT.md` → **Cookbook**, **Repertorio**, **Por
+probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
+
+- **Shape:** paper background, 58 pt top and 22 pt side padding, 18 pt
+  between blocks. Under the header, a switch shows one half at a time:
+  **Your repertoire · N** (saved recipes cooked at least once, explicit or
+  inferred) and **Want to try · N** (saved, not cooked yet). The switch is a
+  `line`-tinted track (`#EADDC7`, radius 14, 4 pt inset) holding two equal
+  segments; the active one is a tactile `card` segment (radius 11, 1 pt
+  `line` border, 2 pt `buttonEdge`), Figtree 800 14 pt `ink`; the other is
+  Figtree 700 14 pt `inkMuted` with no fill.
+- **Grid:** two columns, 12 pt gap. Each card: `card` face, radius 18, 8 pt
+  padding (12 pt at the bottom), the soft card shadow; photo 118 pt high,
+  radius 12; then the title (Fraunces 700, 17/20 pt) and the time
+  (`35 MIN`, Figtree 800 12 pt, tracking 1). No suit colour, no servings, no
+  difficulty. Tapping a card flips it into its reverse, as in the Feed.
+- **The door** (canvas page *Cookbook door · round 1*, board *P1*): the
+  cookbook is not a Mundo. On For You, a 40 pt tactile circle with the same
+  box icon as Save (18 pt) sits right of the **For You** pill, 10 pt gap.
+- **Header inside the cookbook** (board *H3*): the wordmark stays on the
+  left and the door button stays on the right, pressed: `ink` fill and
+  border, a darker 2 pt edge, the box icon in `card`. Tapping it again goes
+  back to For You. There is no title and no ✕; the switch sits right under
+  the header.
+- **Empty states** (boards *Cookbook · nothing saved yet*, *nothing cooked
+  yet*, *everything saved is cooked*): centred in the free space, the box
+  icon at 64 pt in a thin `#C9B79C` stroke, a Fraunces 700 22 pt line and a
+  Figtree 600 15/22 pt `inkMuted` line; no button.
+  - Nothing saved: no switch. **Nothing saved yet** / "Tap Save on a recipe
+    you like and it lands here."
+  - Your repertoire empty: **Nothing cooked yet** / "Cook a recipe from Want
+    to try and it moves here."
+  - Want to try empty: **You've cooked them all** / "Save something new from
+    For You to try next."
+- **Toast** (used by Undo): 22 pt from the sides, `ink` fill, radius 18,
+  12 pt padding (16 pt left), a two-line text block (Figtree 800 15 pt
+  `card`, then Figtree 600 13 pt `#EADDC7`) and a 40 pt **Undo** pill
+  (`card` fill, Figtree 800 14 pt `ink`, 2 pt `#C9B79C` edge). It sits 40 pt
+  above the bottom in the cookbook and just above **Start cooking** on a
+  reverse. It stays about 5 seconds.
+- **Which half opens:** the one the user left last time. The first time it
+  is **Want to try**, because nothing has been cooked yet. This is a shell
+  preference, not part of the user snapshot (ADR 0010).
+- **Save pill, saved state** (canvas page *Save · round 1*, board *S2*):
+  same shape as the default pill; fill and border take the suit's `chip`,
+  label and icon its `chipInk`, and the 2 pt edge the suit's new `chipEdge`. The
+  label reads **Saved** and the box icon shows a check instead of the slot.
+- **Save animation** (board *M1 · into the box*), about 800 ms: the box
+  icon's lid opens, a small card in the suit's `back` colour drops into the
+  box, the lid closes, the pill tints to the saved state with a 1.07 bump
+  and the check draws in. A success haptic when the card lands. Unsaving is
+  instant, with no animation. **Reduce Motion:** the pill cross-fades to the
+  saved state; no lid, no drop.
+- **Save with the cookbook full** (board *K3*): the pill keeps its default
+  look; tapping it saves nothing and opens a bottom sheet over a scrim: a fan
+  of seven card backs in their suit colours, **Your cookbook is full**, the
+  count (`7 OF 7 SAVED`), one line ("Free cookbooks hold 7 recipes. Go
+  unlimited to keep every recipe you like."), the filled **Unlock unlimited
+  cookbook** button (opens the paywall, #14) and a tactile **Not now**. This
+  is the upgrade invitation of PRD story 22, not the paywall itself.
+- **Cupo count** (canvas page *Cookbook · round 1*, board *N2*): one centred
+  line under the switch, 13 pt Figtree 700 `inkMuted`: "5 of 7 saved on the
+  free plan". It shows only when 2 or fewer slots are left: from 5 of 7 on
+  the free plan, and always after a downgrade (ADR 0007), when the user sits
+  at the ceiling ("23 of 23 saved on the free plan"). Never on premium.
+- **Unsaving**, two ways: tap **Saved** on the reverse (the pill goes back to
+  **Save** at once, no animation), or long-press a card in the cookbook grid
+  for the native iOS context menu with one destructive item, **Remove from
+  cookbook**. Unsaving never deletes the recipe's cooked history: saving it
+  again puts it straight back in Your repertoire.
+- **Undo, never a confirmation** (canvas page *Save · round 1*, boards
+  *U1–U3*): every unsave shows a toast near the bottom for a few seconds,
+  `ink` fill, **Removed from cookbook** over the recipe's name, and a cream
+  **Undo** pill. After a downgrade the second line states the new ceiling
+  ("Your cookbook now holds 22 recipes"). Undo puts everything back,
+  ceiling included.
+  - From a reverse opened **in the cookbook**: the reverse closes (the card
+    flips back into its slot), the card leaves the grid, then the toast
+    appears. **Undo** returns the card to its slot and opens the reverse
+    again; that reopening is not an Apertura.
+  - From a reverse opened **in the Feed**: the user stays on the reverse;
+    the pill goes back to **Save** and the toast appears there.
+- **A saved recipe with a new Intolerancia** (canvas page *Intolerance tag ·
+  round 1*, boards *T1 · crimson fill, no icon* and *R2 · crimson fill, no
+  icon*): it stays in the cookbook, openable and cookable (`CONTEXT.md` →
+  Intolerancia). New tokens: `alert` `#B3122E` (fill) and `alertInk`
+  `#FFFAF0` (text). Crimson is colder and darker than the dinner suit and
+  no suit uses it. **No warning icon**: red plus a triangle reads as a
+  danger to life, and Karta cannot tell a mild intolerance from an allergy.
+  - **Grid card:** a chip right after the time, on the same line and never
+    wrapping: the allergen's short name (**Dairy**), 12 pt Figtree 800,
+    radius 8, 2 × 7 pt padding. With two or more: **Dairy +1**.
+  - **Reverse:** a one-line note under the title block, radius 14, 10 × 12 pt
+    padding, 14 pt Figtree 800: **Contains dairy, one of your
+    intolerances**. Nothing else on the reverse or in the cooking session
+    changes; allergens are tagged per recipe, so no ingredient is marked.
+
 ## Suits (Course icons)
 
 `suits/breakfast.svg` (fried egg), `suits/lunch.svg` (half sandwich),
