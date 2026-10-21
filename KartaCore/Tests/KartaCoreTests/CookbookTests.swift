@@ -1,9 +1,24 @@
+import Foundation
 import Testing
 @testable import KartaCore
 
 /// The personal cookbook and the free-tier save cap, independent of UI.
 @Suite("Cookbook — saving")
 struct CookbookSavingTests {
+
+    @Test("Explicit and inferred Cocinados put only saved recipes in Repertorio")
+    func halvesUseAllCookingHistoryInSavedOrder() {
+        let cookbook = Cookbook(savedIDs: ["try-b", "inferred", "explicit", "try-a"])
+        let history = [
+            CookEntry(recipeID: "explicit", date: Date(timeIntervalSince1970: 10)),
+            CookEntry(recipeID: "unsaved", date: Date(timeIntervalSince1970: 20)),
+            CookEntry(recipeID: "inferred", date: Date(timeIntervalSince1970: 30), wasInferred: true),
+            CookEntry(recipeID: "explicit", date: Date(timeIntervalSince1970: 40)),
+        ]
+
+        #expect(cookbook.repertoireIDs(cookHistory: history) == ["inferred", "explicit"])
+        #expect(cookbook.wantToTryIDs(cookHistory: history) == ["try-b", "try-a"])
+    }
 
     private func recipe(_ id: String, review: AllergenReview) -> Recipe {
         Recipe(

@@ -11,6 +11,8 @@ public struct KartaState: Equatable, Sendable {
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
     public var viewHistory: ViewHistory
+    /// All Cocinados, independent of whether their recipes are currently saved.
+    public var cookHistory: [CookEntry]
     public var session: CookingSession?
     public var navigation: AppNavigationState
     public var filterState: FilterState
@@ -86,6 +88,7 @@ public struct KartaState: Equatable, Sendable {
         cookbook: Cookbook = Cookbook(),
         onboarding: OnboardingState = OnboardingState(),
         viewHistory: ViewHistory = ViewHistory(),
+        cookHistory: [CookEntry] = [],
         session: CookingSession? = nil,
         navigation: AppNavigationState = AppNavigationState(),
         safetyProfile: SafetyProfile,
@@ -94,6 +97,7 @@ public struct KartaState: Equatable, Sendable {
         self.cookbook = cookbook
         self.onboarding = onboarding
         self.viewHistory = viewHistory
+        self.cookHistory = cookHistory
         self.session = session
         self.navigation = navigation
         self.filterState = FilterState(
@@ -109,6 +113,8 @@ public enum KartaAction: Sendable {
     case unsaveRecipe(String)
     case recordView(recipeID: String, at: Date)
     case recordOpen(recipeID: String, at: Date)
+    /// Record an emitted Cocinado with its date supplied by the shell.
+    case recordCook(CookEntry)
     case downgradeCookbookToFree
     case onboarding(OnboardingAction)
     case startCooking(Recipe, startedAt: TimeInterval)
@@ -138,6 +144,8 @@ public enum KartaReducer {
             state.viewHistory.recordView(recipeID: recipeID, at: date)
         case let .recordOpen(recipeID, date):
             state.viewHistory.recordOpen(recipeID: recipeID, at: date)
+        case let .recordCook(entry):
+            state.cookHistory.append(entry)
         case .downgradeCookbookToFree:
             state.cookbook.downgradeToFree()
         case let .onboarding(action):

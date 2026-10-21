@@ -35,6 +35,19 @@ public struct Cookbook: Equatable, Sendable {
         savedIDs.contains(id)
     }
 
+    /// Saved recipes with any Cocinado, explicit or inferred, in saved order.
+    /// History never expires for Repertorio membership.
+    public func repertoireIDs(cookHistory: [CookEntry]) -> [String] {
+        let cookedIDs = Set(cookHistory.map(\.recipeID))
+        return savedIDs.filter { cookedIDs.contains($0) }
+    }
+
+    /// Saved recipes with no Cocinado, in saved order.
+    public func wantToTryIDs(cookHistory: [CookEntry]) -> [String] {
+        let cookedIDs = Set(cookHistory.map(\.recipeID))
+        return savedIDs.filter { !cookedIDs.contains($0) }
+    }
+
     /// Resolve persisted recipe IDs against the current catalog in saved order.
     /// Missing or unsafe recipes are omitted so restored Cookbook entries
     /// cannot bypass the catalog's safety boundary. Filtering never mutates
