@@ -81,10 +81,17 @@ public struct KartaState: Equatable, Sendable {
         )
     }
 
-    /// Build the recipe reverse using the same active profile as the feed.
+    /// Reviewed deliberate saves remain openable after a new intolerance.
+    /// Feed Cards retain their stricter safety boundary.
+    func canOpenRecipe(_ recipe: Recipe) -> Bool {
+        guard case .reviewed = recipe.allergenReview else { return false }
+        return cookbook.isSaved(recipe.id)
+            || FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe)
+    }
+
+    /// Build the reverse, including warnings for saved recipes.
     public func reversePresentation(for recipe: Recipe) -> RecipeReversePresentation? {
-        guard onboarding.profile != nil,
-              FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe) else { return nil }
+        guard onboarding.profile != nil, canOpenRecipe(recipe) else { return nil }
         return RecipeReversePresentation(recipe: recipe, intolerances: safetyProfile.intolerances)
     }
 

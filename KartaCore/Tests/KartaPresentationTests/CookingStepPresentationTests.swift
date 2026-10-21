@@ -4,7 +4,7 @@ import KartaPresentation
 
 @Suite("Cooking step presentation")
 struct CookingStepPresentationTests {
-    private func recipe() -> Recipe {
+    private func recipe(review: AllergenReview = .reviewed([])) -> Recipe {
         Recipe(
             id: "sauce", name: "Tomato sauce", heroPhoto: .local("sauce"),
             totalMinutes: 15, difficulty: .easy, servings: 2, primaryCourse: .dinner,
@@ -23,7 +23,7 @@ struct CookingStepPresentationTests {
                     StepIngredient(ingredientID: "butter", quantity: "1 tbsp"),
                 ], timerSeconds: 60, isOptional: true, photo: .relative("steps/butter.jpg")),
                 CookingStep(detail: "Divide between bowls.", summary: "Serve"),
-            ], allergenReview: .reviewed([])
+            ], allergenReview: review
         )
     }
 
@@ -31,6 +31,28 @@ struct CookingStepPresentationTests {
         try TechniqueClipLibrary(clips: [
             TechniqueClip(id: "simmer", title: "A gentle simmer", seconds: 6, source: .local("simmer-clip")),
         ])
+    }
+
+    @Test("A saved recipe remains cookable after declaring an intolerance")
+    @MainActor
+    func savedRecipeRemainsCookable() throws {
+        let recipe = recipe(review: .reviewed([.dairy]))
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        store.send(.saveRecipe(recipe.id))
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy]))))
+        store.send(.startCooking(recipe, startedAt: 100))
+
+        let step = try #require(store.cookingStepPresentation(for: recipe, clips: clips(), now: 100))
+        #expect(step.summary == "Simmer the sauce")
+        #expect(step.upNext?.summary == "Serve")
+        #expect(store.session?.steps.map(\.summary) == ["Simmer the sauce", "Serve"])
+
+        store.send(.unsaveRecipe(recipe.id))
+        #expect(try store.cookingStepPresentation(for: recipe, clips: clips(), now: 100) == nil)
+        store.send(.saveRecipe(recipe.id))
+        #expect(try store.cookingStepPresentation(
+            for: self.recipe(review: .unreviewed), clips: clips(), now: 100
+        ) == nil)
     }
 
     @Test("The store projects the current Paso's content and quantities in step order")

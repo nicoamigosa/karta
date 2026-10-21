@@ -104,9 +104,9 @@ struct CookbookSavingTests {
         #expect(cookbook == afterSave)
     }
 
-    @Test("Restoring a cookbook omits unreviewed recipes")
+    @Test("Restoring a cookbook omits missing and unreviewed recipes")
     func restoringOmitsUnreviewedRecipes() {
-        let cookbook = Cookbook(savedIDs: ["reviewed", "unreviewed"])
+        let cookbook = Cookbook(savedIDs: ["reviewed", "missing", "unreviewed"])
         let catalog = [
             recipe("reviewed", review: .reviewed([])),
             recipe("unreviewed", review: .unreviewed),
@@ -117,9 +117,9 @@ struct CookbookSavingTests {
         #expect(restored.map(\.id) == ["reviewed"])
     }
 
-    @Test("A profile safety change hides an unsafe save without deleting it")
-    func safetyChangeHidesButDoesNotDelete() {
-        var cookbook = Cookbook()
+    @Test("A new intolerance flags a saved recipe without freeing its slot")
+    func safetyChangeFlagsButDoesNotDelete() {
+        var cookbook = Cookbook(saveCap: 2)
         cookbook.save("safe")
         cookbook.save("dairy")
         let catalog = [
@@ -132,9 +132,26 @@ struct CookbookSavingTests {
             filters: FeedFilters(intolerances: [.dairy])
         )
 
-        #expect(visible.map(\.id) == ["safe"])
+        #expect(visible.map(\.id) == ["safe", "dairy"])
+        #expect(visible.map(\.containedIntolerances) == [[], [.dairy]])
+        #expect(visible.last?.recipe == catalog.last)
+        #expect(cookbook.save("overflow") == .blockedByCap(saved: 2, ceiling: 2))
         #expect(cookbook.savedIDs == ["safe", "dairy"])
         #expect(cookbook.isSaved("dairy"))
+
+        let filters = FeedFilters(intolerances: [.dairy])
+        let feed = FeedQuery.feed(
+            recipes: catalog, views: [], recentWindow: testRecentWindow,
+            clock: testClock, filters: filters
+        )
+        #expect(feed.newRecipes.map(\.id) == ["safe"])
+        #expect(feed.alreadySeenRecipes.isEmpty)
+        let leftovers = LeftoversQuery.suggestions(
+            recipes: catalog, cooks: [CookEntry(recipeID: "safe", date: testClock.now)],
+            recentWindow: testRecentWindow, clock: testClock, filters: filters
+        )
+        #expect(leftovers.isEmpty)
+
     }
 }
 

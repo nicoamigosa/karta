@@ -4,11 +4,13 @@ import KartaCore
 /// Full cooking instructions remain available only in the cooking session.
 public struct RecipeReversePresentation: Equatable, Sendable {
     public let recipeID: String
+    public let intoleranceNote: String?
     public let ingredients: [Ingredient]
     public let steps: [RecipeReverseStepPresentation]
 
     public init(recipe: Recipe, intolerances: Set<Allergen> = []) {
         recipeID = recipe.id
+        intoleranceNote = IntoleranceWarning.note(recipe: recipe, intolerances: intolerances)
         ingredients = recipe.visibleIngredients(for: intolerances)
         steps = recipe.visibleSteps(for: intolerances)
             .filter { !$0.isOptional }

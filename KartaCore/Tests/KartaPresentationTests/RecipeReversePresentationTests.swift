@@ -5,6 +5,33 @@ import KartaPresentation
 @Suite("Recipe reverse presentation")
 struct RecipeReversePresentationTests {
 
+    @Test("A saved recipe opens with a warning after a new intolerance", arguments: [
+        (Set<Allergen>(), nil),
+        ([.dairy], "Contains dairy, one of your intolerances"),
+        ([.dairy, .nuts], "Contains dairy, nuts, among your intolerances"),
+    ] as [(Set<Allergen>, String?)])
+    @MainActor
+    func savedRecipeWarning(intolerances: Set<Allergen>, note: String?) throws {
+        let recipe = recipe(review: .reviewed([.dairy, .nuts]))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        store.send(.saveRecipe(recipe.id))
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: intolerances))))
+
+        let reverse = try #require(store.reversePresentation(for: recipe))
+        #expect(reverse.intoleranceNote == note)
+        #expect(reverse.ingredients.contains { $0.id == "optional-dairy" } == !intolerances.contains(.dairy))
+        #expect(store.cardPresentation(for: recipe) == nil || intolerances.isEmpty)
+
+        store.send(.unsaveRecipe(recipe.id))
+        if !intolerances.isEmpty {
+            #expect(store.reversePresentation(for: recipe) == nil)
+        }
+        #expect(store.reversePresentation(for: self.recipe(review: .unreviewed)) == nil)
+    }
+
     @Test("A reverse step exposes its timer as a short label")
     func reverseStepFormatsTimerLabel() {
         let step = RecipeReverseStepPresentation(
@@ -63,7 +90,7 @@ struct RecipeReversePresentationTests {
         }
     }
 
-    private func recipe() -> Recipe {
+    private func recipe(review: AllergenReview = .reviewed([])) -> Recipe {
         let optionalIngredients = Allergen.allCases.map { allergen in
             Ingredient(
                 id: "optional-\(allergen.rawValue)",
@@ -121,7 +148,7 @@ struct RecipeReversePresentationTests {
                     isOptional: true
                 ),
             ] + optionalSteps,
-            allergenReview: .reviewed([])
+            allergenReview: review
         )
     }
 }
