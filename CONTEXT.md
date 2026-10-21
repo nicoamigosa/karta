@@ -124,8 +124,11 @@ lactosa. Es el término del MVP.
 _Avoid_: lactose, milk, lácteo
 
 **Intolerancia**:
-Un alérgeno que la usuaria declaró y que, por tanto, nunca puede aparecer en ninguna
-superficie de recetas. Es una garantía dura, nunca de pago y nunca relajable por un filtro.
+Un alérgeno que la usuaria declaró y que, por tanto, Karta nunca le ofrece: ninguna receta
+que lo contenga aparece en el Feed, en Leftovers ni en ninguna otra superficie donde la app
+propone. Es una garantía dura, nunca de pago y nunca relajable por un filtro. La única
+excepción es lo que ella guardó antes de declararla: esas recetas siguen en su Cookbook, con
+un aviso de que contienen la Intolerancia, porque las eligió ella y puede cocinarlas para otros.
 _Avoid_: preferencia, restricción blanda
 
 **Revisión de alérgenos / Receta sin revisar**:
@@ -180,20 +183,33 @@ apareciendo recetas, etiquetadas como ya vistas, para que nunca se quede sin nad
 _Avoid_: fin del feed, corte, paginación
 
 **Mundo**:
-Cada una de las tres vistas que se eligen desde el desplegable superior: For You, Saved
-y Leftovers.
+Cada una de las vistas de recetas que se eligen desde el desplegable superior: For You y
+Leftovers. El Cookbook no es un Mundo: tiene otra forma y su propia puerta.
 _Avoid_: pestaña, sección, tab
 
 **Cookbook**:
-El repertorio personal de recetas guardadas. Guardar es un acto explícito y deliberado,
+Las recetas guardadas de la usuaria. Guardar es un acto explícito y deliberado,
 distinto de que algo simplemente guste, y sólo ocurre tras la Apertura: nunca desde la Card.
+Se reparte en dos mitades que nunca se solapan: Repertorio y Por probar.
+Se entra por su propia puerta, no desde el desplegable de Mundos.
 _Avoid_: favoritos, likes, guardados
+
+**Repertorio**:
+Las recetas del Cookbook que se han cocinado al menos una vez: la lista de confianza a la
+que volver. Cuenta cualquier Cocinado, explícito o inferido (ADR 0008). Una receta cocinada
+que no está guardada no es Repertorio, y quitarla del Cookbook la saca también de aquí.
+_Avoid_: favoritas, cocinadas, historial
+
+**Por probar**:
+Las recetas del Cookbook que todavía no se han cocinado: lo que se guardó con intención.
+Una receta pasa sola al Repertorio con su primer Cocinado; nunca vuelve.
+_Avoid_: pendientes, wishlist, para luego
 
 **Cupo**:
 El techo de recetas distintas que caben en el Cookbook. Vale siete en el nivel gratuito, no
 existe en premium, y al degradar queda fijado en lo que hubiera acumulado. Nunca sube al
-borrar.
-_Avoid_: límite, paywall del cookbook
+borrar. Deshacer un borrado en el momento no cuenta como borrar: devuelve la receta y el
+techo tal como estaban._Avoid_: límite, paywall del cookbook
 
 **Calibración de gustos**:
 El mini-flujo de onboarding donde la usuaria toca las recetas que le atraen. Es un canal
