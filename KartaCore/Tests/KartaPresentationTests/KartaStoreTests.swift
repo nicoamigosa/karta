@@ -256,7 +256,7 @@ struct KartaStoreTests {
 
         #expect(state.cookbook.savedIDs.count == 9)
         #expect(state.cookbook.saveCap == 9)
-        #expect(state.cookbook.save("overflow") == .blockedByCap)
+        #expect(state.cookbook.save("overflow") == .blockedByCap(saved: 9, ceiling: 9))
     }
 
     @Test("The reducer records a recipe's first Vista")

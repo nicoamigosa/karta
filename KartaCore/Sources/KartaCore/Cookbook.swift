@@ -5,7 +5,7 @@ public enum SaveResult: Equatable, Sendable {
     case saved
     case alreadySaved
     /// The free-tier cap was reached: the moment to surface the upgrade invitation.
-    case blockedByCap
+    case blockedByCap(saved: Int, ceiling: Int)
 }
 
 /// The user's personal cookbook of saved recipes, with the free-tier save cap.
@@ -77,7 +77,9 @@ public struct Cookbook: Equatable, Sendable {
     @discardableResult
     public mutating func save(_ id: String) -> SaveResult {
         if isSaved(id) { return .alreadySaved }
-        if isAtCap { return .blockedByCap }
+        if let saveCap, isAtCap {
+            return .blockedByCap(saved: savedIDs.count, ceiling: saveCap)
+        }
         savedIDs.append(id)
         return .saved
     }
@@ -92,11 +94,31 @@ public struct Cookbook: Equatable, Sendable {
 
     /// Remove a recipe. A finite ceiling follows the saved count down to the
     /// normal free cap, so this does not free a slot above that floor.
-    public mutating func unsave(_ id: String) {
-        guard isSaved(id) else { return }
+    @discardableResult
+    public mutating func unsave(_ id: String) -> UnsaveUndo? {
+        guard isSaved(id) else { return nil }
+        let before = self
         savedIDs.removeAll { $0 == id }
         if let saveCap {
             self.saveCap = max(Self.freeSaveCap, min(saveCap, savedIDs.count))
         }
+        return UnsaveUndo(recipeID: id, before: before, after: self)
+    }
+
+    /// Undo only the immediate removal; never overwrite subsequent Cookbook edits.
+    @discardableResult
+    public mutating func undoUnsave(_ removal: UnsaveUndo) -> Bool {
+        guard self == removal.after else { return false }
+        self = removal.before
+        return true
+    }
+
+    /// Opaque, in-memory receipt for a removal. Not part of the persisted snapshot.
+    public struct UnsaveUndo: Equatable, Sendable {
+        public let recipeID: String
+        public var previousCeiling: Int? { before.saveCap }
+        public var newCeiling: Int? { after.saveCap }
+        fileprivate let before: Cookbook
+        fileprivate let after: Cookbook
     }
 }

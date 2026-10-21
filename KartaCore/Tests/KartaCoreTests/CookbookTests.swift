@@ -78,6 +78,32 @@ struct CookbookSavingTests {
         #expect(cookbook.savedIDs.isEmpty)
     }
 
+    @Test("Immediate Undo restores the saved order and ceiling", arguments: [7, 23, nil] as [Int?])
+    func undoRestoresCookbook(ceiling: Int?) throws {
+        let original = Cookbook(savedIDs: ["first", "middle", "last"], saveCap: ceiling)
+        var cookbook = original
+
+        let result = cookbook.unsave("middle")
+        let removal = try #require(result)
+        #expect(cookbook.savedIDs == ["first", "last"])
+        #expect(cookbook.undoUnsave(removal) == true)
+        #expect(cookbook == original)
+        #expect(cookbook.undoUnsave(removal) == false)
+    }
+
+    @Test("A stale Undo never overwrites later Cookbook edits")
+    func staleUndoPreservesLaterEdits() throws {
+        var cookbook = Cookbook(savedIDs: ["first", "second"])
+        #expect(cookbook.unsave("missing") == nil)
+        let result = cookbook.unsave("first")
+        let removal = try #require(result)
+        cookbook.save("new")
+        let afterSave = cookbook
+
+        #expect(cookbook.undoUnsave(removal) == false)
+        #expect(cookbook == afterSave)
+    }
+
     @Test("Restoring a cookbook omits unreviewed recipes")
     func restoringOmitsUnreviewedRecipes() {
         let cookbook = Cookbook(savedIDs: ["reviewed", "unreviewed"])
@@ -135,7 +161,7 @@ struct CookbookCapTests {
         #expect(cookbook.savedIDs.count == 7)
         #expect(cookbook.isAtCap)
 
-        #expect(cookbook.save("overflow") == .blockedByCap)
+        #expect(cookbook.save("overflow") == .blockedByCap(saved: 7, ceiling: 7))
         #expect(cookbook.isSaved("overflow") == false)
         #expect(cookbook.savedIDs.count == 7)
     }
@@ -166,7 +192,7 @@ struct CookbookCapTests {
 
         #expect(cookbook.savedIDs.count == 23)
         #expect(cookbook.saveCap == 23)
-        #expect(cookbook.save("overflow") == .blockedByCap)
+        #expect(cookbook.save("overflow") == .blockedByCap(saved: 23, ceiling: 23))
     }
 
     @Test("A downgraded cookbook keeps its existing recipes openable")
@@ -195,11 +221,11 @@ struct CookbookCapTests {
 
         cookbook.unsave("r0")
         #expect(cookbook.saveCap == 8)
-        #expect(cookbook.save("r9") == .blockedByCap)
+        #expect(cookbook.save("r9") == .blockedByCap(saved: 8, ceiling: 8))
 
         cookbook.unsave("r1")
         #expect(cookbook.saveCap == Cookbook.freeSaveCap)
-        #expect(cookbook.save("r9") == .blockedByCap)
+        #expect(cookbook.save("r9") == .blockedByCap(saved: 7, ceiling: 7))
 
         cookbook.unsave("r2")
         #expect(cookbook.saveCap == Cookbook.freeSaveCap)

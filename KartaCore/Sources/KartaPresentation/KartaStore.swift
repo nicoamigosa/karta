@@ -8,6 +8,10 @@ private enum FeedPolicy {
 
 /// The value state shared by the presentation store and its pure reducer.
 public struct KartaState: Equatable, Sendable {
+    /// Outcome of the latest save attempt, including counts when blocked.
+    public fileprivate(set) var lastSaveResult: SaveResult?
+    /// Transient Undo receipt; the shell dismisses it when its toast expires.
+    public fileprivate(set) var pendingUnsave: Cookbook.UnsaveUndo?
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
     public var viewHistory: ViewHistory
@@ -111,6 +115,8 @@ public struct KartaState: Equatable, Sendable {
 public enum KartaAction: Sendable {
     case saveRecipe(String)
     case unsaveRecipe(String)
+    case undoUnsave
+    case dismissUnsaveToast
     case recordView(recipeID: String, at: Date)
     case recordOpen(recipeID: String, at: Date)
     /// Record an emitted Cocinado with its date supplied by the shell.
@@ -137,9 +143,19 @@ public enum KartaReducer {
     public static func reduce(_ state: inout KartaState, action: KartaAction) {
         switch action {
         case let .saveRecipe(id):
-            state.cookbook.save(id)
+            state.pendingUnsave = nil
+            state.lastSaveResult = state.cookbook.save(id)
         case let .unsaveRecipe(id):
-            state.cookbook.unsave(id)
+            state.lastSaveResult = nil
+            state.pendingUnsave = state.cookbook.unsave(id)
+        case .undoUnsave:
+            state.lastSaveResult = nil
+            if let removal = state.pendingUnsave {
+                state.cookbook.undoUnsave(removal)
+            }
+            state.pendingUnsave = nil
+        case .dismissUnsaveToast:
+            state.pendingUnsave = nil
         case let .recordView(recipeID, date):
             state.viewHistory.recordView(recipeID: recipeID, at: date)
         case let .recordOpen(recipeID, date):
@@ -147,6 +163,8 @@ public enum KartaReducer {
         case let .recordCook(entry):
             state.cookHistory.append(entry)
         case .downgradeCookbookToFree:
+            state.lastSaveResult = nil
+            state.pendingUnsave = nil
             state.cookbook.downgradeToFree()
         case let .onboarding(action):
             let previousFilters = state.effectiveFeedFilters

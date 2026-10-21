@@ -78,6 +78,98 @@ struct CookbookPresentationTests {
         #expect(allCooked.wantToTryCount == 0)
     }
 
+    @Test("Cupo count appears only within two slots of a finite ceiling", arguments: [
+        (4, 7, nil),
+        (5, 7, "5 of 7 saved on the free plan"),
+        (6, 7, "6 of 7 saved on the free plan"),
+        (7, 7, "7 of 7 saved on the free plan"),
+        (23, 23, "23 of 23 saved on the free plan"),
+        (5, nil, nil), (7, nil, nil), (23, nil, nil),
+    ] as [(Int, Int?, String?)])
+    func cupoCount(count: Int, ceiling: Int?, expected: String?) {
+        let state = KartaState(
+            cookbook: Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling),
+            safetyProfile: SafetyProfile(intolerances: [])
+        )
+
+        #expect(state.cookbookPresentation(recipes: []).cupoCountLine == expected)
+    }
+
+    @Test("Unsave toast and Undo preserve the Cookbook and cooking history", arguments: [
+        (7, Optional(7), "Recipe r3"),
+        (8, Optional(8), "Your cookbook now holds 7 recipes"),
+        (23, Optional(23), "Your cookbook now holds 22 recipes"),
+        (23, nil, "Recipe r3"),
+    ] as [(Int, Int?, String)])
+    @MainActor
+    func unsaveToastAndUndo(count: Int, ceiling: Int?, secondLine: String) throws {
+        let original = Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling)
+        let history = [CookEntry(recipeID: "r3", date: Date(timeIntervalSince1970: 1))]
+        let store = KartaStore(state: KartaState(
+            cookbook: original, cookHistory: history, safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        #expect(store.unsaveToast(recipes: [recipe("r3")]) == nil)
+
+        store.send(.unsaveRecipe("r3"))
+        let toast = try #require(store.unsaveToast(recipes: [recipe("r3")]))
+        #expect(toast.title == "Removed from cookbook")
+        #expect(toast.secondLine == secondLine)
+        #expect(toast.recipeID == "r3")
+        #expect(!store.cookbook.isSaved("r3"))
+
+        store.send(.undoUnsave)
+        #expect(store.cookbook == original)
+        #expect(store.state.cookHistory == history)
+        #expect(store.unsaveToast(recipes: [recipe("r3")]) == nil)
+        store.send(.undoUnsave)
+        #expect(store.cookbook == original)
+    }
+
+    @Test("A cap-blocked save exposes the full sheet count", arguments: [
+        (7, "7 OF 7 SAVED"), (23, "23 OF 23 SAVED"),
+    ])
+    @MainActor
+    func blockedSaveCount(count: Int, label: String) throws {
+        var cookbook = Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: nil)
+        cookbook.downgradeToFree()
+        let store = KartaStore(state: KartaState(
+            cookbook: cookbook, safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        #expect(store.blockedByCap == nil)
+
+        store.send(.saveRecipe("overflow"))
+        let full = try #require(store.blockedByCap)
+        #expect(full.savedCount == count)
+        #expect(full.ceiling == count)
+        #expect(full.countLabel == label)
+        #expect(store.cookbook == cookbook)
+        #expect(store.state.lastSaveResult == .blockedByCap(saved: count, ceiling: count))
+
+        store.send(.saveRecipe("r0"))
+        #expect(store.state.lastSaveResult == .alreadySaved)
+        #expect(store.blockedByCap == nil)
+    }
+
+    @Test("Undo cannot resurrect a removal after dismissal or a later save", arguments: [
+        KartaAction.dismissUnsaveToast, .saveRecipe("new"),
+    ])
+    @MainActor
+    func expiredUndoDoesNotRestore(action: KartaAction) {
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: ["r1", "r2"]),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        store.send(.unsaveRecipe("r1"))
+        store.send(action)
+        let after = store.cookbook
+
+        store.send(.undoUnsave)
+
+        #expect(store.cookbook == after)
+        #expect(!store.cookbook.isSaved("r1"))
+        #expect(store.unsaveToast(recipes: [recipe("r1")]) == nil)
+    }
+
     private func recipe(_ id: String, review: AllergenReview = .reviewed([])) -> Recipe {
         Recipe(
             id: id, name: "Recipe \(id)", heroPhoto: .local(id),
