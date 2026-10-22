@@ -18,6 +18,8 @@ public struct KartaState: Equatable, Sendable {
     /// All Cocinados, independent of whether their recipes are currently saved.
     public var cookHistory: [CookEntry]
     public var session: CookingSession?
+    /// The history slot emitted by this session, independent of older cooks.
+    fileprivate var sessionCookHistoryIndex: Int?
     public var navigation: AppNavigationState
     public var filterState: FilterState
 
@@ -190,6 +192,7 @@ public enum KartaReducer {
                 state.navigation.discardAnchors()
             }
         case let .startCooking(recipe, startedAt):
+            state.sessionCookHistoryIndex = nil
             state.session = recipe.cookingSession(
                 startedAt: startedAt,
                 intolerances: state.safetyProfile.intolerances
@@ -201,9 +204,21 @@ public enum KartaReducer {
         case .exitCooking:
             state.session?.exit()
         case let .respond(outcome):
-            state.session?.respond(outcome)
+            if let event = state.session?.respond(outcome), let session = state.session {
+                let date = Date(timeIntervalSince1970: session.lastStepReachedAt ?? session.startedAt)
+                let entry = CookEntry(event: event, date: date)
+                if let index = state.sessionCookHistoryIndex {
+                    state.cookHistory[index] = entry
+                } else {
+                    state.sessionCookHistoryIndex = state.cookHistory.count
+                    state.cookHistory.append(entry)
+                }
+            }
         case let .inferProbablyCooked(now):
-            state.session?.inferProbablyCooked(at: now)
+            if let event = state.session?.inferProbablyCooked(at: now) {
+                state.sessionCookHistoryIndex = state.cookHistory.count
+                state.cookHistory.append(CookEntry(event: event, date: Date(timeIntervalSince1970: now)))
+            }
         case let .startTimer(now):
             state.session?.startTimer(now: now)
         case let .selectWorld(world):

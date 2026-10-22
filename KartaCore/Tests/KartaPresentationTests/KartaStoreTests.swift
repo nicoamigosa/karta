@@ -344,6 +344,146 @@ struct KartaStoreTests {
         #expect(state.session?.startedAt == 123)
     }
 
+    @Test("An inferred Cocinado enters history at the injected inference time")
+    func reducerRecordsInferredCook() {
+        var state = KartaState(safetyProfile: noIntolerances)
+        KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
+        KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
+
+        KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_250))
+
+        #expect(state.cookHistory == [
+            CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 1_250), wasInferred: true),
+        ])
+    }
+
+    @Test("An explicit Cocinado enters history when the last step was first reached", arguments: [
+        CookOutcome.thumbsUp, .thumbsDown, .photo,
+    ])
+    func reducerRecordsExplicitCook(outcome: CookOutcome) {
+        var state = KartaState(safetyProfile: noIntolerances)
+        KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
+        KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
+        KartaReducer.reduce(&state, action: .previousStep)
+        KartaReducer.reduce(&state, action: .nextStep(now: 1_300))
+
+        KartaReducer.reduce(&state, action: .respond(outcome))
+
+        #expect(state.cookHistory == [
+            CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 1_200)),
+        ])
+    }
+
+    @Test("An explicit response upgrades only its session's inferred Cocinado")
+    func reducerUpgradesSessionCook() {
+        let earlier = CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 500), wasInferred: true)
+        let interleaved = CookEntry(recipeID: "other", date: Date(timeIntervalSince1970: 1_260))
+        var state = KartaState(cookHistory: [earlier], safetyProfile: noIntolerances)
+        KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
+        KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
+        KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_250))
+        KartaReducer.reduce(&state, action: .recordCook(interleaved))
+
+        KartaReducer.reduce(&state, action: .respond(.thumbsUp))
+        KartaReducer.reduce(&state, action: .respond(.photo))
+        KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_300))
+
+        #expect(state.cookHistory == [
+            earlier,
+            CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 1_200)),
+            interleaved,
+        ])
+
+        KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 2_000))
+        KartaReducer.reduce(&state, action: .nextStep(now: 2_200))
+        KartaReducer.reduce(&state, action: .respond(.thumbsDown))
+        #expect(state.cookHistory.count == 4)
+        #expect(state.cookHistory.last == CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 2_200)))
+    }
+
+    @Test("Ignored session actions leave history unchanged", arguments: [
+        [KartaAction.respond(.thumbsUp), .inferProbablyCooked(now: 1_300)],
+        [.nextStep(now: 1_200), .exitCooking, .respond(.photo), .inferProbablyCooked(now: 1_300)],
+        [.nextStep(now: 1_001), .inferProbablyCooked(now: 1_300)],
+        [.nextStep(now: 1_200), .inferProbablyCooked(now: 1_199)],
+    ])
+    func ignoredSessionActionsPreserveHistory(actions: [KartaAction]) {
+        let history = [CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 500))]
+        var state = KartaState(cookHistory: history, safetyProfile: noIntolerances)
+        // With no session, both actions are ignored too.
+        KartaReducer.reduce(&state, action: .respond(.thumbsUp))
+        KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_300))
+        #expect(state.cookHistory == history)
+        KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
+
+        for action in actions {
+            KartaReducer.reduce(&state, action: action)
+        }
+
+        #expect(state.cookHistory == history)
+    }
+
+    @MainActor
+    @Test("Either session Cocinado moves a saved recipe into Repertorio", arguments: [false, true])
+    func sessionCookUpdatesCookbook(wasInferred: Bool) {
+        let cooked = recipe()
+        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        store.send(.saveRecipe(cooked.id))
+        #expect(store.cookbookPresentation(recipes: [cooked]).wantToTry.map(\.recipeID) == ["recipe-1"])
+
+        store.send(.startCooking(cooked, startedAt: 1_000))
+        store.send(.nextStep(now: 1_200))
+        store.send(wasInferred ? .inferProbablyCooked(now: 1_250) : .respond(.thumbsUp))
+
+        let presentation = store.cookbookPresentation(recipes: [cooked])
+        #expect(presentation.repertoire.map(\.recipeID) == ["recipe-1"])
+        #expect(presentation.wantToTry.isEmpty)
+    }
+
+    @Test("Leftovers consumes a session cook only after an explicit response")
+    func sessionCookFeedsOnlyExplicitLeftovers() {
+        let cooked = rankingRecipe("cooked", popularity: 1)
+        let suggested = rankingRecipe("suggested", popularity: 1)
+        var state = KartaState(safetyProfile: noIntolerances)
+        state.session = CookingSession(
+            recipeID: cooked.id, steps: ["Prepare", "Serve"],
+            declaredDuration: 600, startedAt: 1_000
+        )
+        KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
+        KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_250))
+        KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_260))
+        #expect(state.cookHistory.count == 1)
+
+        let clock = StoreTestClock(now: Date(timeIntervalSince1970: 1_300))
+        #expect(LeftoversQuery.suggestions(
+            recipes: [cooked, suggested], cooks: state.cookHistory,
+            recentWindow: 500, clock: clock, filters: state.effectiveFeedFilters
+        ).isEmpty)
+
+        KartaReducer.reduce(&state, action: .respond(.thumbsUp))
+
+        #expect(LeftoversQuery.suggestions(
+            recipes: [cooked, suggested], cooks: state.cookHistory,
+            recentWindow: 500, clock: clock, filters: state.effectiveFeedFilters
+        ).map(\.id) == ["suggested"])
+        #expect(state.cookHistory.count == 1)
+    }
+
+    @Test("An explicit one-step cook uses the injected session start time")
+    func singleStepCookUsesSessionStart() {
+        var state = KartaState(
+            session: CookingSession(recipeID: "one-step", steps: ["Cook"], startedAt: 1_000),
+            safetyProfile: noIntolerances
+        )
+
+        KartaReducer.reduce(&state, action: .respond(.photo))
+        KartaReducer.reduce(&state, action: .respond(.thumbsUp))
+
+        #expect(state.cookHistory == [
+            CookEntry(recipeID: "one-step", date: Date(timeIntervalSince1970: 1_000)),
+        ])
+    }
+
     @Test("Starting a session applies the active intolerance profile to optional steps")
     func reducerHidesUnsafeOptionalCookingSteps() {
         let recipe = Recipe(
