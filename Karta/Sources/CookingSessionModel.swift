@@ -9,12 +9,12 @@ import KartaPresentation
 enum CookingCommand: Equatable {
     case next
     case previous
-    case exit
 }
 
 /// The pure decision behind a drag in cooking mode: horizontal swipes move
-/// between Pasos (right = next, left = previous), a downward swipe exits.
-/// Upward swipes and sub-threshold gestures are ignored.
+/// between Pasos (left = next, right = previous, confirmed 2026-10-19).
+/// There is no vertical gesture in the session — leaving is only ever the
+/// ✕ button, which asks first — so vertical swipes are ignored.
 enum CookingGestureDecision {
     static func command(
         translation: CGSize,
@@ -23,58 +23,22 @@ enum CookingGestureDecision {
         let width = predictedTranslation.width
         let height = predictedTranslation.height
 
-        if height >= KartaDesign.cooking.swipeThreshold,
-           height > abs(width) {
-            return .exit
-        }
         guard abs(width) > abs(height),
               abs(width) >= KartaDesign.cooking.swipeThreshold
         else {
             return nil
         }
-        return width > 0 ? .next : .previous
+        return width < 0 ? .next : .previous
     }
 }
 
-/// The pure decision behind a tap in cooking mode: the left half of the screen
-/// goes back a Paso, the right half advances. Outcome buttons sit above the
-/// tap surface so prompt taps never become navigation.
+/// The pure decision behind a tap in cooking mode: the left half of the card
+/// goes back a Paso, the right half advances. Buttons (play, timer, outcome,
+/// ✕) sit above the tap surface so their taps never navigate.
 enum CookingTapDecision {
     static func command(locationX: CGFloat, width: CGFloat) -> CookingCommand? {
         guard width > 0 else { return nil }
         return locationX < width / 2 ? .previous : .next
-    }
-}
-
-/// A step ingredient resolved to what the cook reads: the ingredient's display
-/// name plus the step-specific quantity.
-struct CookingIngredientRow: Equatable {
-    let name: String
-    let quantity: String
-    let isOptional: Bool
-}
-
-/// Resolves a Paso's ingredient references (ids + step quantities) against the
-/// recipe's visible ingredients — the same safety-filtered projection the
-/// Card reverse consumes, so a hidden optional ingredient can never appear.
-enum CookingStepIngredients {
-    static func rows(
-        for step: CookingStep,
-        in recipe: Recipe,
-        intolerances: Set<Allergen>
-    ) -> [CookingIngredientRow] {
-        let visible = Dictionary(
-            uniqueKeysWithValues: recipe.visibleIngredients(for: intolerances)
-                .map { ($0.id, $0) }
-        )
-        return step.ingredients.compactMap { reference in
-            guard let ingredient = visible[reference.ingredientID] else { return nil }
-            return CookingIngredientRow(
-                name: ingredient.name,
-                quantity: reference.quantity,
-                isOptional: ingredient.isOptional
-            )
-        }
     }
 }
 

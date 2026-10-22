@@ -10,27 +10,27 @@ struct CookingSessionTests {
         let now: Date
     }
 
-    @Test("Gestures map to next / previous / exit")
+    @Test("Gestures map to next / previous; there is no vertical gesture")
     func gestureDecisions() {
         let threshold = KartaDesign.cooking.swipeThreshold
 
-        // Swipe right advances.
-        #expect(CookingGestureDecision.command(
-            translation: CGSize(width: 60, height: 4),
-            predictedTranslation: CGSize(width: threshold, height: 0)
-        ) == .next)
-
-        // Swipe left goes back.
+        // Swipe left advances.
         #expect(CookingGestureDecision.command(
             translation: CGSize(width: -60, height: 4),
             predictedTranslation: CGSize(width: -threshold, height: 0)
+        ) == .next)
+
+        // Swipe right goes back.
+        #expect(CookingGestureDecision.command(
+            translation: CGSize(width: 60, height: 4),
+            predictedTranslation: CGSize(width: threshold, height: 0)
         ) == .previous)
 
-        // Swipe down exits.
+        // Swipe down does nothing: leaving is only the ✕, which asks first.
         #expect(CookingGestureDecision.command(
             translation: CGSize(width: 6, height: 80),
             predictedTranslation: CGSize(width: 0, height: threshold)
-        ) == .exit)
+        ) == nil)
 
         // Swipe up does nothing.
         #expect(CookingGestureDecision.command(
@@ -52,71 +52,9 @@ struct CookingSessionTests {
         #expect(CookingTapDecision.command(locationX: 10, width: 0) == nil)
     }
 
-    @MainActor
-    @Test("Each Paso resolves its own ingredient names and step quantities")
-    func stepIngredientsResolve() throws {
-        let recipes = try SeedResourceAdapter().loadRecipes()
-        let recipe = try #require(recipes.first { !$0.steps.isEmpty })
-        let step = try #require(recipe.steps.first { !$0.ingredients.isEmpty })
-
-        let rows = CookingStepIngredients.rows(
-            for: step,
-            in: recipe,
-            intolerances: []
-        )
-
-        #expect(rows.count == step.ingredients.count)
-        for (row, reference) in zip(rows, step.ingredients) {
-            let ingredient = try #require(
-                recipe.ingredients.first { $0.id == reference.ingredientID }
-            )
-            #expect(row.name == ingredient.name)
-            #expect(!row.name.isEmpty)
-            #expect(row.quantity == reference.quantity)
-            #expect(!row.quantity.isEmpty)
-        }
-    }
-
-    @MainActor
-    @Test("A dairy intolerance hides the optional ingredient from the Paso")
-    func stepIngredientsRespectIntolerances() throws {
-        let recipes = try SeedResourceAdapter().loadRecipes()
-        let intolerances: Set<Allergen> = [.dairy]
-
-        // A seed recipe with an optional dairy ingredient (e.g. the curry's
-        // Greek yogurt), and a hand-built Paso that references it — one that
-        // could never reach the screen through visibleSteps, to prove the row
-        // projection itself applies the filter.
-        var foundDairyOptional = false
-        for recipe in recipes {
-            for optional in recipe.ingredients where optional.isOptional
-                && !optional.allergens.isDisjoint(with: intolerances) {
-                foundDairyOptional = true
-                let step = CookingStep(
-                    detail: "Finish",
-                    ingredients: [StepIngredient(
-                        ingredientID: optional.id,
-                        quantity: optional.quantity
-                    )]
-                )
-
-                let filtered = CookingStepIngredients.rows(
-                    for: step,
-                    in: recipe,
-                    intolerances: intolerances
-                )
-                #expect(filtered.isEmpty)
-
-                let unfiltered = CookingStepIngredients.rows(
-                    for: step,
-                    in: recipe,
-                    intolerances: []
-                )
-                #expect(unfiltered.map(\.name) == [optional.name])
-            }
-        }
-        #expect(foundDairyOptional)
-    }
+    // The Paso ingredient rows now come from `CookingStepPresentation`
+    // (#103); their intolerance filtering is covered in KartaPresentation's
+    // own test suite — the shell joins nothing.
 
     @MainActor
     @Test("Arriving at the last Paso only reports the inference action")

@@ -146,6 +146,32 @@ enum KartaDesign {
                 .weight(.heavy)
         }
 
+        /// Cooking session Resumen (Fraunces 700, 34/39, tracking −0.4).
+        static func cookSummary() -> Font {
+            display(size: 34, relativeTo: .largeTitle, weight: 700)
+        }
+
+        /// Cooking session Detalle (Figtree 500, 17/24).
+        static func cookDetail() -> Font {
+            .custom("Figtree", size: 17, relativeTo: .body)
+                .weight(.medium)
+        }
+
+        /// Cooking session Temporizador readout (Fraunces 900, 36, tabular).
+        static func cookTimer() -> Font {
+            display(size: 36, relativeTo: .title1, weight: 900)
+        }
+
+        /// Up next Resumen (Fraunces 700, 18/22).
+        static func upNextSummary() -> Font {
+            display(size: 18, relativeTo: .headline, weight: 700)
+        }
+
+        /// Outcome prompt title on the last Paso (Fraunces 700, 22).
+        static func cookOutcomeTitle() -> Font {
+            display(size: 22, relativeTo: .title2, weight: 700)
+        }
+
         /// Cookbook grid card title (Fraunces 700, 17/20).
         static func gridTitle() -> Font {
             display(size: 17, relativeTo: .headline, weight: 700)
@@ -391,10 +417,48 @@ enum KartaDesign {
     enum cooking {
         static let swipeThreshold: CGFloat = 40
         static let dragMinimumDistance: CGFloat = 12
-        static let outcomeGlyph: CGFloat = 30
-        static let outcomeHit: CGFloat = 64
-        static let outcomeGap: CGFloat = 28
-        static let ingredientGap: CGFloat = 8
+        /// Card inner edge every block is left-aligned on.
+        static let cardInset: CGFloat = 20
+        static let headerTop: CGFloat = 16
+        static let summaryGap: CGFloat = 16
+        static let detailGap: CGFloat = 6
+        static let mediaHeight: CGFloat = 220
+        static let mediaRadius: CGFloat = 18
+        static let mediaChipInset: CGFloat = 10
+        static let mediaChipRadius: CGFloat = 8
+        static let playCircle: CGFloat = 60
+        static let sectionGap: CGFloat = 16
+        static let ingredientRowGap: CGFloat = 5
+        static let freeSpaceMin: CGFloat = 20
+        static let timerTopGap: CGFloat = 14
+        static let timerRadius: CGFloat = 18
+        static let timerPlay: CGFloat = 52
+        static let timerLabelTracking: CGFloat = 1.2
+        static let upNextLineGap: CGFloat = 14
+        static let upNextHGap: CGFloat = 20
+        static let upNextVGap: CGFloat = 20
+        static let upNextThumb: CGFloat = 64
+        static let upNextThumbRadius: CGFloat = 12
+        static let peekCardCount = 2
+        static let peek1Offset: CGFloat = -4
+        static let peek1Rotation: Double = -1.8
+        static let peek2Offset: CGFloat = -8
+        static let peek2Rotation: Double = 3.5
+        static let segmentWidth: CGFloat = 22
+        static let segmentHeight: CGFloat = 6
+        static let segmentRadius: CGFloat = 3
+        static let segmentGap: CGFloat = 6
+        static let timerPillHeight: CGFloat = 26
+        static let timerPillRadius: CGFloat = 13
+        static let timerPillBorder: CGFloat = 1.5
+        static let timerPillHGap: CGFloat = 10
+        static let outcomeButtonHeight: CGFloat = 68
+        static let outcomeIcon: CGFloat = 22
+        static let finishHeight: CGFloat = 56
+        static let cookedDisc: CGFloat = 40
+        /// Horizontal flight of a Paso leaving the stack (deck curve, x axis).
+        static let leavingTranslationScale: CGFloat = 1.15
+        static let leavingRotation: Double = 9
     }
 
     enum elevation {

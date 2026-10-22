@@ -32,10 +32,38 @@ enum DebugSeeds {
         case "undo-grid":
             // Plain removal inside the cookbook: toast names the recipe.
             store.send(.unsaveRecipe("caesar-salad"))
+        case "cooking-first", "cooking-timer", "cooking-step",
+             "cooking-last", "cooking-answered":
+            seedCooking(name, into: store)
         default:
             break
         }
         return store
+    }
+
+    /// Cooking-session states (#101): enter the tortilla's session and walk to
+    /// the Paso that shows the signed-off board.
+    @MainActor
+    private static func seedCooking(_ name: String, into store: KartaStore) {
+        guard let recipe = try? SeedResourceAdapter().loadRecipes()
+            .first(where: { $0.id == "spanish-tortilla" }) else { return }
+        store.send(.startCooking(
+            recipe,
+            startedAt: Date().timeIntervalSince1970
+        ))
+        let target: Int
+        switch name {
+        case "cooking-timer": target = 1
+        case "cooking-step": target = 2
+        case "cooking-last", "cooking-answered": target = 3
+        default: target = 0
+        }
+        while store.session?.currentIndex != target {
+            store.send(.nextStep(now: Date().timeIntervalSince1970))
+        }
+        if name == "cooking-answered" {
+            store.send(.respond(.thumbsUp))
+        }
     }
 
     private static func state(for name: String) -> KartaState {
@@ -103,6 +131,12 @@ enum DebugSeeds {
                     ],
                     saveCap: nil
                 ),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "cooking-first", "cooking-timer", "cooking-step",
+             "cooking-last", "cooking-answered":
+            return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
             )
