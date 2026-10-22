@@ -98,11 +98,10 @@ struct CookingSessionView: View {
                     Text(presentation.summary)
                     .font(KartaDesign.FontToken.cookSummary())
                     .tracking(-0.4)
-                    .lineSpacing(Self.lineSpacing(
-                        name: "Fraunces", weight: .bold, size: 34,
-                        textStyle: .largeTitle,
-                        target: KartaDesign.cooking.summaryLineHeight
-                    ))
+                    // Fraunces' natural line height at 34 pt exceeds the
+                    // spec's 39 pt, so the exact line height of iOS 26 is
+                    // required — lineSpacing can only add space.
+                    .lineHeight(.exact(points: KartaDesign.cooking.summaryLineHeight))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -725,7 +724,9 @@ struct CookingSessionView: View {
             .traits: [UIFontDescriptor.TraitKey.weight: weight]
         ])
         let natural = UIFont(descriptor: descriptor, size: scaledSize).lineHeight
-        return max(target - natural, 0)
+        // Negative spacing is valid: a target under the natural line height
+        // must not be silently clamped away.
+        return target - natural
     }
 
     /// Report the Paso settling on screen: on the last one, let the session
