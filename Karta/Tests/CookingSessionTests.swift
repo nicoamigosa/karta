@@ -56,36 +56,9 @@ struct CookingSessionTests {
     // (#103); their intolerance filtering is covered in KartaPresentation's
     // own test suite — the shell joins nothing.
 
-    @MainActor
-    @Test("Arriving at the last Paso only reports the inference action")
-    func stepArrivalActions() {
-        let timed = CookingStep(detail: "Simmer", timerSeconds: 600)
-        let actions = CookingStepArrival.actions(
-            for: timed,
-            isLastStep: true,
-            now: 1000
-        )
-
-        #expect(actions.count == 1)
-        guard case let .inferProbablyCooked(inferNow) = actions[0] else {
-            Issue.record("Expected only .inferProbablyCooked")
-            return
-        }
-        #expect(inferNow == 1000)
-
-        // A timer declaration never starts the timer on arrival.
-        #expect(CookingStepArrival.actions(
-            for: timed,
-            isLastStep: false,
-            now: 1000
-        ).isEmpty)
-
-        #expect(CookingStepArrival.actions(
-            for: CookingStep(detail: "Stir"),
-            isLastStep: false,
-            now: 0
-        ).isEmpty)
-    }
+    // The store itself evaluates the inferred Cocinado on arrival at the
+    // finish card (#121); the shell reports nothing, so there is no
+    // step-arrival seam left to test here.
 
     @MainActor
     @Test("Start → advance → last step → response emits the cooked event")

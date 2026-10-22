@@ -34,7 +34,7 @@ enum DebugSeeds {
             store.send(.unsaveRecipe("caesar-salad"))
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
-             "cooking-timer-done":
+             "cooking-timer-done", "cooking-finish", "cooking-shrunk":
             seedCooking(name, into: store)
         default:
             break
@@ -42,12 +42,18 @@ enum DebugSeeds {
         return store
     }
 
-    /// Cooking-session states (#101): enter the tortilla's session and walk to
-    /// the Paso that shows the signed-off board.
+    /// Cooking-session states (#101): enter the session and walk to the
+    /// Paso (or the Cierre) that shows the signed-off board.
     @MainActor
     private static func seedCooking(_ name: String, into store: KartaStore) {
-        guard let recipe = try? SeedResourceAdapter().loadRecipes()
-            .first(where: { $0.id == "spanish-tortilla" }) else { return }
+        let recipe: Recipe?
+        if name == "cooking-shrunk" {
+            recipe = Self.longPasoRecipe
+        } else {
+            recipe = try? SeedResourceAdapter().loadRecipes()
+                .first(where: { $0.id == "spanish-tortilla" })
+        }
+        guard let recipe else { return }
         store.send(.startCooking(
             recipe,
             startedAt: Date().timeIntervalSince1970
@@ -56,10 +62,15 @@ enum DebugSeeds {
         switch name {
         case "cooking-timer", "cooking-timer-running", "cooking-timer-done": target = 1
         case "cooking-step": target = 2
-        case "cooking-last", "cooking-answered": target = 3
+        case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk":
+            target = 3
         default: target = 0
         }
         while store.session?.currentIndex != target {
+            store.send(.nextStep(now: Date().timeIntervalSince1970))
+        }
+        if name == "cooking-finish" || name == "cooking-answered" {
+            // One more swipe past the last Paso lands on the Cierre.
             store.send(.nextStep(now: Date().timeIntervalSince1970))
         }
         if name == "cooking-answered" {
@@ -149,7 +160,7 @@ enum DebugSeeds {
             )
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
-             "cooking-timer-done":
+             "cooking-timer-done", "cooking-finish", "cooking-shrunk":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
@@ -157,6 +168,70 @@ enum DebugSeeds {
         default:
             return KartaState(safetyProfile: SafetyProfile(intolerances: []))
         }
+    }
+
+    /// Synthetic recipes a debug seed adds to the loaded catalog — never
+    /// part of the seed data itself.
+    static func extraRecipes() -> [Recipe] {
+        guard ProcessInfo.processInfo.environment["KARTA_SEED"] == "cooking-shrunk"
+        else { return [] }
+        return [longPasoRecipe]
+    }
+
+    /// The `cooking-step-shrunk` board's Paso: a two-line Resumen, a
+    /// three-line Detalle, six ingredient rows and a 40 min Temporizador,
+    /// so the media window gives way toward 160 pt before the body scrolls.
+    private static var longPasoRecipe: Recipe {
+        let ingredients: [Ingredient] = [
+            Ingredient(id: "lentils", name: "Brown lentils", quantity: "1 1/2 cups"),
+            Ingredient(id: "chorizo", name: "Spanish chorizo", quantity: "1 link (about 4 oz)"),
+            Ingredient(id: "carrots", name: "Nantes carrots", quantity: "2 medium"),
+            Ingredient(id: "potatoes", name: "Yukon Gold potatoes", quantity: "2 medium"),
+            Ingredient(id: "onion", name: "Yellow onion", quantity: "1 medium"),
+            Ingredient(id: "paprika", name: "Sweet paprika", quantity: "1 tsp")
+        ]
+        return Recipe(
+            id: "lentil-stew-long",
+            name: "Lentil Stew",
+            heroPhoto: .local("photos/spanish-tortilla"),
+            totalMinutes: 55,
+            difficulty: .easy,
+            servings: 4,
+            primaryCourse: .dinner,
+            ingredients: ingredients,
+            steps: [
+                CookingStep(
+                    detail: "Soften the onion and the carrots in the oil.",
+                    summary: "Sauté the base",
+                    ingredients: [
+                        StepIngredient(ingredientID: "onion", quantity: "1 medium")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Brown the chorizo so it releases its fat.",
+                    summary: "Brown the chorizo",
+                    ingredients: [
+                        StepIngredient(ingredientID: "chorizo", quantity: "1 link (about 4 oz)")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Add the paprika and the potatoes and stir well.",
+                    summary: "Add paprika and potatoes",
+                    ingredients: [
+                        StepIngredient(ingredientID: "paprika", quantity: "1 tsp")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Cover and simmer over low heat until the lentils are tender. Stir now and then so nothing sticks to the pot.",
+                    summary: "Simmer until the lentils are tender",
+                    ingredients: ingredients.map {
+                        StepIngredient(ingredientID: $0.id, quantity: $0.quantity)
+                    },
+                    timerSeconds: 2400
+                )
+            ],
+            allergenReview: .reviewed([])
+        )
     }
 
     private static func onboarded(

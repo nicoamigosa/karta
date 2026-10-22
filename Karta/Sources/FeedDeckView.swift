@@ -143,7 +143,7 @@ struct FeedScreen: View {
         .task {
             do {
                 let seed = SeedResourceAdapter()
-                recipes = try seed.loadRecipes()
+                recipes = try seed.loadRecipes() + DebugSeeds.extraRecipes()
                 clips = try seed.loadTechniqueClips()
                 manifest = try seed.loadMediaManifest()
                 isLoaded = true

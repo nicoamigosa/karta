@@ -4,11 +4,12 @@ import KartaCore
 import KartaPresentation
 
 /// Cooking mode: the Sesión de cocina. Renders what
-/// `KartaStore.cookingStepPresentation` projects — one Paso per card, on the
-/// same suit-coloured frame as the reverse — and reports shell events
-/// (gestures, prompt responses, step arrivals) back as store actions. No rules
-/// live here: transitions, clamping, the cooked event and the probably-cooked
-/// inference are all decided by `CookingSession`.
+/// `KartaStore.cookingStepPresentation` projects — one Paso per card — and,
+/// after the last Paso, the Cierre card from
+/// `KartaStore.cookingFinishPresentation`. No rules live here: transitions,
+/// clamping, the cooked event and the probably-cooked inference (evaluated
+/// by the store on arrival at the Cierre) are all decided by
+/// `CookingSession`/`KartaReducer`.
 struct CookingSessionView: View {
     let session: CookingSession
     let recipe: Recipe
@@ -22,6 +23,22 @@ struct CookingSessionView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var dragOffset: CGFloat = 0
     @State private var confirmLeave = false
+    @State private var swipeHintVisible = true
+    /// Height of the scrolling area between the pinned header and the
+    /// pinned bottom zone — the viewport the give-way order measures.
+    @State private var bodyViewport: CGFloat = 0
+    /// Measured heights of the scroll content around the media window:
+    /// the Resumen+Detalle block, the FOR THIS STEP section and the
+    /// bottom-zone block when it scrolls (AX sizes).
+    @State private var leadingHeight: CGFloat = 0
+    @State private var rowsHeight: CGFloat = 0
+    @State private var scrolledBottomHeight: CGFloat = 0
+    /// Live scroll metrics for the signalled scroll (fade, chip, at-end).
+    @State private var scrollGeometry: ScrollGeometry?
+    /// Bottom edge of every FOR THIS STEP row, in scroll-body coordinates.
+    @State private var rowBottoms: [Int: CGFloat] = [:]
+    /// Bumped when a card settles so the scroll indicator flashes.
+    @State private var indicatorFlash = 0
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)
@@ -31,8 +48,18 @@ struct CookingSessionView: View {
         Date().timeIntervalSince1970
     }
 
+    /// From AX1 to AX5 nothing stays pinned at the bottom: the Temporizador
+    /// and the finish card's buttons move to the end of the scroll.
+    private var bottomZoneScrolls: Bool {
+        dynamicTypeSize.isAccessibilitySize
+    }
+
     private var presentation: CookingStepPresentation? {
         store.cookingStepPresentation(for: recipe, clips: clips, now: now)
+    }
+
+    private var finishPresentation: CookingFinishPresentation? {
+        store.cookingFinishPresentation(for: recipe, now: now)
     }
 
     var body: some View {
@@ -45,10 +72,8 @@ struct CookingSessionView: View {
                         peekCard(depth: depth)
                     }
 
-                    if let presentation {
-                        card(presentation, width: geometry.size.width)
-                            .zIndex(Double(KartaDesign.cooking.peekCardCount + 1))
-                    }
+                    frontCard(width: geometry.size.width)
+                        .zIndex(Double(KartaDesign.cooking.peekCardCount + 1))
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
             }
@@ -70,13 +95,22 @@ struct CookingSessionView: View {
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
-            reportStepArrival()
+            indicatorFlash += 1
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
         }
         .onChange(of: session.currentIndex) { _, _ in
-            reportStepArrival()
+            indicatorFlash += 1
+        }
+        .onChange(of: session.isOnFinish) { _, _ in
+            indicatorFlash += 1
+        }
+        .task {
+            try? await Task.sleep(
+                for: .seconds(KartaDesign.cooking.swipeHintFadeDelay)
+            )
+            swipeHintVisible = false
         }
     }
 
@@ -86,92 +120,449 @@ struct CookingSessionView: View {
         "Leave cooking? You're on step \(session.currentIndex + 1) of \(session.steps.count)."
     }
 
-    // MARK: - The Paso's card
+    // MARK: - The card
 
-    private func card(
-        _ presentation: CookingStepPresentation,
-        width: CGFloat
+    @ViewBuilder
+    private func frontCard(width: CGFloat) -> some View {
+        if let presentation {
+            pasoCard(presentation, width: width)
+        } else if let finishPresentation {
+            finishCard(finishPresentation, width: width)
+        }
+    }
+
+    /// Shared chrome for the Paso and Cierre cards: the pinned header, the
+    /// scrolling body (with its signalled overflow) and the bottom zone,
+    /// which stays pinned up to xxxL and scrolls from AX1.
+    private func cardShell<ScrollBody: View, Bottom: View>(
+        segments: [CookingStepPresentation.ProgressSegment],
+        width: CGFloat,
+        accessibilityLabel: String,
+        @ViewBuilder scrollBody: @escaping () -> ScrollBody,
+        @ViewBuilder bottomZone: @escaping () -> Bottom
     ) -> some View {
         CardRelief(edgeColors: KartaDesign.ColorToken.cardEdges) {
             VStack(alignment: .leading, spacing: 0) {
-                header(presentation)
+                header(segments)
                     .padding(.top, KartaDesign.cooking.headerTop)
                     .padding(.horizontal, KartaDesign.cooking.cardInset)
 
-                // The card body scrolls when the texts outgrow it at
-                // accessibility text sizes; the bottom zone stays pinned.
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(presentation.summary)
-                            .font(KartaDesign.FontToken.cookSummary())
-                            .tracking(-0.4)
-                            .modifier(SpecLineHeight(
-                                fontName: "Fraunces", fontWeight: .bold,
-                                size: 34,
-                                target: KartaDesign.cooking.summaryLineHeight,
-                                relativeTo: .largeTitle
-                            ))
-                            // ≤ 36 characters fits two lines at the spec'd
-                            // size; bigger text needs more room.
-                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundStyle(KartaDesign.ColorToken.ink)
-                            .padding(.top, KartaDesign.cooking.summaryGap)
-                            .padding(.horizontal, KartaDesign.cooking.cardInset)
-
-                        Text(presentation.detail)
-                            .font(KartaDesign.FontToken.cookDetail())
-                            .modifier(SpecLineHeight(
-                                fontName: "Figtree", fontWeight: .medium,
-                                size: 17,
-                                target: KartaDesign.cooking.detailLineHeight,
-                                relativeTo: .body
-                            ))
-                            .foregroundStyle(KartaDesign.ColorToken.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, KartaDesign.cooking.detailGap)
-                            .padding(.horizontal, KartaDesign.cooking.cardInset)
-
-                        // The media window sits 12 pt from the card edges —
-                        // wider than the text blocks.
-                        mediaWindow(presentation)
-                            .padding(.top, KartaDesign.cooking.sectionGap)
-                            .padding(.horizontal, KartaDesign.cooking.mediaInset)
-
-                        ingredientsSection(presentation)
-                            .padding(.top, KartaDesign.cooking.sectionGap)
-                            .padding(.horizontal, KartaDesign.cooking.cardInset)
-
-                        Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        scrollBody()
+                            .frame(minHeight: bodyViewport, alignment: .top)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .scrollIndicators(.visible)
+                    .scrollIndicatorsFlash(trigger: indicatorFlash)
+                    .scrollBounceBehavior(.basedOnSize)
+                    .coordinateSpace(name: ScrollBodySpace.name)
+                    .onGeometryChange(
+                        for: CGFloat.self,
+                        of: { $0.size.height }
+                    ) { _, newHeight in
+                        bodyViewport = newHeight
+                    }
+                    .onScrollGeometryChange(for: ScrollGeometry.self) { geometry in
+                        geometry
+                    } action: { _, newGeometry in
+                        scrollGeometry = newGeometry
+                    }
+                    .overlay(alignment: .bottom) {
+                        if showsScrollSignal {
+                            scrollFade
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if showsScrollSignal {
+                            signalChip(proxy: proxy)
+                        }
+                    }
                 }
-                .scrollIndicators(.hidden)
-                .scrollBounceBehavior(.basedOnSize)
 
-                // Pinned bottom zone: separators run edge to edge, content
-                // aligns on the card inset.
-                bottomZone(presentation)
-        }
-        .padding(.bottom, KartaDesign.cooking.upNextVGap)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                bottomZone()
+            }
         }
         .offset(x: dragOffset)
         .rotationEffect(.degrees(Double(dragOffset / KartaDesign.deck.dragRotationDivisor)))
         .contentShape(Rectangle())
         .onTapGesture { location in
+            dismissSwipeHint()
             handleTap(locationX: location.x, width: width)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Step \(session.currentIndex + 1) of \(session.steps.count): \(presentation.summary)")
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    // MARK: - The Paso card
+
+    private func pasoCard(
+        _ presentation: CookingStepPresentation,
+        width: CGFloat
+    ) -> some View {
+        cardShell(
+            segments: presentation.progress,
+            width: width,
+            accessibilityLabel: "Step \(session.currentIndex + 1) of \(session.steps.count): \(presentation.summary)"
+        ) {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(presentation.summary)
+                        .font(KartaDesign.FontToken.cookSummary())
+                        .tracking(-0.4)
+                        .modifier(SpecLineHeight(
+                            fontName: "Fraunces", fontWeight: .bold,
+                            size: 34,
+                            target: KartaDesign.cooking.summaryLineHeight,
+                            relativeTo: .largeTitle
+                        ))
+                        // ≤ 36 characters fits two lines at the spec'd
+                        // size; bigger text needs more room.
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                        .padding(.top, KartaDesign.cooking.summaryGap)
+
+                    Text(presentation.detail)
+                        .font(KartaDesign.FontToken.cookDetail())
+                        .modifier(SpecLineHeight(
+                            fontName: "Figtree", fontWeight: .medium,
+                            size: 17,
+                            target: KartaDesign.cooking.detailLineHeight,
+                            relativeTo: .body
+                        ))
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, KartaDesign.cooking.detailGap)
+                }
+                .padding(.horizontal, KartaDesign.cooking.cardInset)
+                .onGeometryChange(
+                    for: CGFloat.self,
+                    of: { $0.size.height }
+                ) { _, newHeight in
+                    leadingHeight = newHeight
+                }
+
+                // The media window gives way 220 → 160 after the free space
+                // has shrunk to its 20 pt minimum, before the body scrolls.
+                mediaWindow(presentation)
+                    .frame(height: mediaHeight(extra: scrolledBottomHeight))
+                    .padding(.top, KartaDesign.cooking.sectionGap)
+                    .padding(.horizontal, KartaDesign.cooking.mediaInset)
+
+                ingredientsSection(presentation)
+                    .padding(.top, KartaDesign.cooking.sectionGap)
+                    .padding(.horizontal, KartaDesign.cooking.cardInset)
+                    .onGeometryChange(
+                        for: CGFloat.self,
+                        of: { $0.size.height }
+                    ) { _, newHeight in
+                        rowsHeight = newHeight
+                    }
+
+                Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
+
+                if bottomZoneScrolls, presentation.timerLabel != nil {
+                    timerBlock(presentation)
+                        .padding(.horizontal, KartaDesign.cooking.cardInset)
+                        .padding(.bottom, KartaDesign.cooking.timerBottomGap)
+                        .onGeometryChange(
+                            for: CGFloat.self,
+                            of: { $0.size.height }
+                        ) { _, newHeight in
+                            scrolledBottomHeight = newHeight
+                        }
+                }
+
+                Color.clear
+                    .frame(height: 0)
+                    .id(ScrollBodyAnchor.end)
+            }
+        } bottomZone: {
+            if !bottomZoneScrolls, presentation.timerLabel != nil {
+                timerBlock(presentation)
+                    .padding(.horizontal, KartaDesign.cooking.cardInset)
+                    .padding(.bottom, KartaDesign.cooking.timerBottomGap)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            swipeHint
+        }
+    }
+
+    /// The media window height after the give-way order: free space down to
+    /// 20 pt first, then the window shrinks 220 → 160, and only then does the
+    /// body scroll (signalled). `extra` is the height of the bottom-zone
+    /// block when it scrolls at accessibility sizes.
+    private func mediaHeight(extra: CGFloat) -> CGFloat {
+        guard bodyViewport > 0 else { return KartaDesign.cooking.mediaHeight }
+        let rest = leadingHeight
+            + KartaDesign.cooking.sectionGap * 2
+            + rowsHeight
+            + KartaDesign.cooking.freeSpaceMin
+            + extra
+        return min(
+            KartaDesign.cooking.mediaHeight,
+            max(KartaDesign.cooking.mediaMinHeight, bodyViewport - rest)
+        )
+    }
+
+    /// The Paso-1-only hint: a left arrow and "Swipe left for step 2" 20 pt
+    /// above the bottom edge, taking no space; it fades after 3 s or on the
+    /// first touch.
+    private var swipeHint: some View {
+        Group {
+            if session.currentIndex == 0, !session.isOnFinish, swipeHintVisible {
+                HStack(spacing: KartaDesign.space.saveIconGap) {
+                    Image(systemName: "arrow.left")
+                    Text("Swipe left for step 2")
+                }
+                .font(.custom("Figtree", size: 13).weight(.bold))
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                .padding(.bottom, KartaDesign.cooking.swipeHintBottom)
+            }
+        }
+        .animation(
+            .easeOut(duration: KartaDesign.cooking.swipeHintFadeDuration),
+            value: swipeHintVisible
+        )
+    }
+
+    private func dismissSwipeHint() {
+        guard swipeHintVisible else { return }
+        swipeHintVisible = false
+    }
+
+    // MARK: - The finish card (Cierre)
+
+    private func finishCard(
+        _ finish: CookingFinishPresentation,
+        width: CGFloat
+    ) -> some View {
+        cardShell(
+            segments: finish.progress,
+            width: width,
+            accessibilityLabel: finishTitle(finish)
+        ) {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(finishTitle(finish))
+                        .font(KartaDesign.FontToken.cookSummary())
+                        .tracking(-0.4)
+                        .modifier(SpecLineHeight(
+                            fontName: "Fraunces", fontWeight: .bold,
+                            size: 34,
+                            target: KartaDesign.cooking.summaryLineHeight,
+                            relativeTo: .largeTitle
+                        ))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                        .padding(.top, KartaDesign.cooking.summaryGap)
+
+                    Text(finish.recipeName)
+                        .font(KartaDesign.FontToken.cookDetail())
+                        .modifier(SpecLineHeight(
+                            fontName: "Figtree", fontWeight: .medium,
+                            size: 17,
+                            target: KartaDesign.cooking.detailLineHeight,
+                            relativeTo: .body
+                        ))
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, KartaDesign.cooking.detailGap)
+                }
+                .padding(.horizontal, KartaDesign.cooking.cardInset)
+                .onGeometryChange(
+                    for: CGFloat.self,
+                    of: { $0.size.height }
+                ) { _, newHeight in
+                    leadingHeight = newHeight
+                }
+
+                // The recipe's Foto fills the free height, never under 160 pt.
+                RecipePhoto(reference: finish.photo, manifest: manifest)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: finishPhotoHeight)
+                    .clipShape(RoundedRectangle(
+                        cornerRadius: KartaDesign.cooking.mediaRadius,
+                        style: .continuous
+                    ))
+                    .padding(.top, KartaDesign.cooking.sectionGap)
+                    .padding(.horizontal, KartaDesign.cooking.mediaInset)
+
+                Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
+
+                if bottomZoneScrolls {
+                    finishBottomContent(finish)
+                        .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
+                        .padding(.bottom, KartaDesign.cooking.bottomZoneVGap)
+                        .onGeometryChange(
+                            for: CGFloat.self,
+                            of: { $0.size.height }
+                        ) { _, newHeight in
+                            scrolledBottomHeight = newHeight
+                        }
+                }
+
+                Color.clear
+                    .frame(height: 0)
+                    .id(ScrollBodyAnchor.end)
+            }
+        } bottomZone: {
+            if !bottomZoneScrolls {
+                VStack(spacing: 0) {
+                    edgeToEdgeLine
+                    finishBottomContent(finish)
+                        .padding(.top, KartaDesign.cooking.bottomZoneTopGap)
+                        .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
+                        .padding(.bottom, KartaDesign.cooking.bottomZoneVGap)
+                }
+            }
+        }
+    }
+
+    private func finishTitle(_ finish: CookingFinishPresentation) -> String {
+        switch finish.outcome {
+        case .asking:
+            return "How did it turn out?"
+        case .answered:
+            return "Cooked. Enjoy it!"
+        }
+    }
+
+    private var finishPhotoHeight: CGFloat {
+        guard bodyViewport > 0 else { return KartaDesign.cooking.mediaMinHeight }
+        let rest = leadingHeight
+            + KartaDesign.cooking.sectionGap
+            + KartaDesign.cooking.freeSpaceMin
+            + scrolledBottomHeight
+        return max(KartaDesign.cooking.mediaMinHeight, bodyViewport - rest)
+    }
+
+    /// The Cierre's pinned bottom zone: the three outcome buttons while the
+    /// prompt is open, or the primary Finish once answered. At AX sizes the
+    /// same content scrolls, stacked one button per row.
+    @ViewBuilder
+    private func finishBottomContent(_ finish: CookingFinishPresentation) -> some View {
+        switch finish.outcome {
+        case .asking:
+            if bottomZoneScrolls {
+                VStack(spacing: KartaDesign.space.cardGap) {
+                    outcomeButton(outcome: .thumbsUp, icon: "hand.thumbsup", label: "Good", stacked: true)
+                    outcomeButton(outcome: .thumbsDown, icon: "hand.thumbsdown", label: "Not great", stacked: true)
+                    outcomeButton(outcome: .photo, icon: "camera", label: "Add photo", stacked: true)
+                }
+            } else {
+                HStack(spacing: KartaDesign.cooking.bottomZoneHGap) {
+                    outcomeButton(outcome: .thumbsUp, icon: "hand.thumbsup", label: "Good", stacked: false)
+                    outcomeButton(outcome: .thumbsDown, icon: "hand.thumbsdown", label: "Not great", stacked: false)
+                    outcomeButton(outcome: .photo, icon: "camera", label: "Add photo", stacked: false)
+                }
+            }
+        case .answered:
+            finishButton
+        }
+    }
+
+    private var finishButton: some View {
+        Button {
+            store.send(.exitCooking)
+        } label: {
+            Text("Finish")
+                .font(KartaDesign.FontToken.ctaLabel())
+                .foregroundStyle(KartaDesign.ColorToken.card)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: KartaDesign.cooking.finishHeight)
+                .background {
+                    RoundedRectangle(
+                        cornerRadius: KartaDesign.radius.cta,
+                        style: .continuous
+                    )
+                    .fill(KartaDesign.ColorToken.brandEdge)
+                    .offset(y: KartaDesign.space.ctaEdge)
+                    RoundedRectangle(
+                        cornerRadius: KartaDesign.radius.cta,
+                        style: .continuous
+                    )
+                    .fill(KartaDesign.ColorToken.brand)
+                }
+                .shadow(
+                    color: KartaDesign.ColorToken.buttonShadow,
+                    radius: KartaDesign.elevation.buttonShadowRadius,
+                    y: KartaDesign.elevation.buttonShadowY
+                )
+        }
+        .accessibilityLabel("Finish cooking")
+    }
+
+    private func outcomeButton(
+        outcome: CookOutcome,
+        icon: String,
+        label: String,
+        stacked: Bool
+    ) -> some View {
+        Button {
+            store.send(.respond(outcome))
+        } label: {
+            Group {
+                if stacked {
+                    HStack(spacing: KartaDesign.space.cardGap) {
+                        Image(systemName: icon)
+                            .font(.system(size: KartaDesign.cooking.outcomeIcon, weight: .semibold))
+                            .frame(width: KartaDesign.cooking.outcomeIcon)
+                        Text(label)
+                            .font(KartaDesign.FontToken.button())
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
+                } else {
+                    VStack(spacing: KartaDesign.space.rankGap) {
+                        Image(systemName: icon)
+                            .font(.system(size: KartaDesign.cooking.outcomeIcon, weight: .semibold))
+                            // Fixed box so all three labels share a baseline.
+                            .frame(height: KartaDesign.cooking.outcomeIcon)
+                        Text(label)
+                            .font(KartaDesign.FontToken.button())
+                            .multilineTextAlignment(.center)
+                    }
+                }
+            }
+            .foregroundStyle(KartaDesign.ColorToken.ink)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: stacked
+                ? KartaDesign.cooking.outcomeButtonAXHeight
+                : KartaDesign.cooking.outcomeButtonHeight)
+            .background {
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.chip,
+                    style: .continuous
+                )
+                .fill(KartaDesign.ColorToken.buttonEdge)
+                .offset(y: KartaDesign.space.reverseButtonEdge)
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.chip,
+                    style: .continuous
+                )
+                .fill(KartaDesign.ColorToken.card)
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.chip,
+                    style: .continuous
+                )
+                .strokeBorder(
+                    KartaDesign.ColorToken.line,
+                    lineWidth: KartaDesign.elevation.backFrameLineWidth
+                )
+            }
+        }
+        .accessibilityLabel(label)
     }
 
     // MARK: - Header: ✕ + progress bar
 
-    private func header(_ presentation: CookingStepPresentation) -> some View {
+    private func header(_ segments: [CookingStepPresentation.ProgressSegment]) -> some View {
         ZStack {
-            progressBar(presentation)
+            progressBar(segments)
                 .frame(maxWidth: .infinity)
 
             HStack {
@@ -208,10 +599,11 @@ struct CookingSessionView: View {
 
     /// One segment per Paso: suit `back` for done and current, `chip` for the
     /// rest. A Temporizador running on another Paso turns its segment into an
-    /// outlined pill; at zero it fills `brand` and reads "Time's up".
-    private func progressBar(_ presentation: CookingStepPresentation) -> some View {
+    /// outlined pill; at zero it fills `brand` and reads "Time's up". The
+    /// finish card has no segment of its own — every Paso shows done.
+    private func progressBar(_ segments: [CookingStepPresentation.ProgressSegment]) -> some View {
         HStack(spacing: KartaDesign.cooking.segmentGap) {
-            ForEach(Array(presentation.progress.enumerated()), id: \.offset) { _, segment in
+            ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
                 segmentView(segment)
             }
         }
@@ -263,9 +655,9 @@ struct CookingSessionView: View {
 
     // MARK: - Media window
 
-    /// The 220 pt Foto del paso window. With a technique clip it keeps the
-    /// photo but swaps the label chip for the clip's name and length and puts
-    /// a play circle in the centre; playback itself is issue #12.
+    /// The Foto del paso window. With a technique clip it keeps the photo but
+    /// swaps the label chip for the clip's name and length and puts a play
+    /// circle in the centre; playback itself is issue #12.
     private func mediaWindow(_ presentation: CookingStepPresentation) -> some View {
         ZStack {
             if let photo = presentation.photo {
@@ -298,8 +690,7 @@ struct CookingSessionView: View {
                 .accessibilityLabel("Play technique clip")
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: KartaDesign.cooking.mediaHeight)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(
             cornerRadius: KartaDesign.cooking.mediaRadius,
             style: .continuous
@@ -308,6 +699,7 @@ struct CookingSessionView: View {
             Text(mediaChipLabel(presentation))
                 .font(.custom("Figtree", size: 12).weight(.heavy))
                 .foregroundStyle(suit.chipInk)
+                .lineLimit(1)
                 .padding(.vertical, KartaDesign.space.stepCueY + 2)
                 .padding(.horizontal, KartaDesign.space.rankGap * 2 + 4)
                 .background(
@@ -358,7 +750,7 @@ struct CookingSessionView: View {
                 .foregroundStyle(suit.chipInk)
                 .padding(.bottom, KartaDesign.cooking.ingredientRowGap)
 
-            ForEach(presentation.ingredientRows, id: \.ingredientID) { row in
+            ForEach(Array(presentation.ingredientRows.enumerated()), id: \.offset) { index, row in
                 (Text(row.quantity + " ")
                     .font(.custom("Figtree", size: 17).weight(.heavy))
                     + Text(row.name)
@@ -371,39 +763,19 @@ struct CookingSessionView: View {
                 ))
                 .foregroundStyle(KartaDesign.ColorToken.ink)
                 .fixedSize(horizontal: false, vertical: true)
+                .id(ScrollBodyAnchor.row(index))
+                .onGeometryChange(
+                    for: CGFloat.self,
+                    of: { $0.frame(in: .named(ScrollBodySpace.name)).maxY }
+                ) { _, newBottom in
+                    rowBottoms[index] = newBottom
+                }
             }
         }
         .accessibilityElement(children: .contain)
     }
 
-    // MARK: - Bottom zone
-
-    @ViewBuilder
-    private func bottomZone(_ presentation: CookingStepPresentation) -> some View {
-        if session.isOnLastStep {
-            VStack(spacing: 0) {
-                edgeToEdgeLine
-                Group {
-                    if session.showsOutcomePrompt {
-                        outcomeFooter
-                    } else {
-                        cookedFooter
-                    }
-                }
-                .padding(.top, KartaDesign.cooking.upNextLineGap)
-                .padding(.horizontal, KartaDesign.cooking.cardInset)
-            }
-        } else {
-            VStack(spacing: 0) {
-                if presentation.timerLabel != nil {
-                    timerBlock(presentation)
-                        .padding(.bottom, KartaDesign.cooking.timerTopGap)
-                        .padding(.horizontal, KartaDesign.cooking.cardInset)
-                }
-                upNextRow(presentation)
-            }
-        }
-    }
+    // MARK: - Bottom zone (pinned up to xxxL)
 
     /// The ready-state Temporizador block: declared duration, TIMER label and
     /// the brand play circle. Starting and running timers are issue #5; the
@@ -444,7 +816,7 @@ struct CookingSessionView: View {
             }
             .accessibilityLabel("Start timer")
         }
-        .padding(.horizontal, KartaDesign.cooking.upNextHGap)
+        .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
         .padding(.vertical, KartaDesign.cooking.timerPaddingY)
         .background(
             suit.chip,
@@ -462,181 +834,98 @@ struct CookingSessionView: View {
             .frame(height: KartaDesign.elevation.backFrameLineWidth)
     }
 
-    private func upNextRow(_ presentation: CookingStepPresentation) -> some View {
-        VStack(spacing: 0) {
-            edgeToEdgeLine
+    // MARK: - Signalled scroll
 
-            HStack(spacing: KartaDesign.space.cardGap) {
-                upNextThumbnail(presentation)
-                    .frame(
-                        width: KartaDesign.cooking.upNextThumb,
-                        height: KartaDesign.cooking.upNextThumb
-                    )
-                    .clipShape(RoundedRectangle(
-                        cornerRadius: KartaDesign.cooking.upNextThumbRadius,
-                        style: .continuous
-                    ))
+    /// Hidden content is always signalled: the fade, the chip and the
+    /// indicator show while the body can still scroll and go away at the end.
+    private var showsScrollSignal: Bool {
+        guard let scrollGeometry else { return false }
+        guard scrollGeometry.contentSize.height > scrollGeometry.containerSize.height + 1
+        else { return false }
+        return scrollGeometry.contentOffset.y + scrollGeometry.containerSize.height
+            < scrollGeometry.contentSize.height - 1
+    }
 
-                VStack(alignment: .leading, spacing: KartaDesign.space.rankGap) {
-                    Text((session.currentIndex == 0 ? "Up next · Swipe left" : "Up next").uppercased())
-                        .font(KartaDesign.FontToken.rankUnit())
-                        .tracking(KartaDesign.type.rankUnitTracking)
-                        .foregroundStyle(suit.chipInk)
-                    Text(presentation.upNext?.summary ?? "")
-                        .font(KartaDesign.FontToken.upNextSummary())
-                        .modifier(SpecLineHeight(
-                            fontName: "Fraunces", fontWeight: .bold,
-                            size: 18,
-                            target: KartaDesign.cooking.upNextLineHeight,
-                            relativeTo: .headline
-                        ))
-                        .foregroundStyle(KartaDesign.ColorToken.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+    /// Rows of FOR THIS STEP below the visible area or under the 32 pt fade.
+    private var hiddenRowCount: Int {
+        guard let scrollGeometry else { return 0 }
+        let threshold = scrollGeometry.contentOffset.y
+            + scrollGeometry.containerSize.height
+            - KartaDesign.cooking.signalFadeHeight
+        return rowBottoms.values.filter { $0 > threshold }.count
+    }
+
+    private var nextHiddenRowIndex: Int? {
+        guard let scrollGeometry else { return nil }
+        let threshold = scrollGeometry.contentOffset.y
+            + scrollGeometry.containerSize.height
+            - KartaDesign.cooking.signalFadeHeight
+        return rowBottoms
+            .filter { $0.value > threshold }
+            .keys
+            .min()
+    }
+
+    private var scrollFade: some View {
+        LinearGradient(
+            colors: [
+                KartaDesign.ColorToken.card.opacity(0),
+                KartaDesign.ColorToken.card
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .frame(height: KartaDesign.cooking.signalFadeHeight)
+        .frame(maxWidth: .infinity)
+        .allowsHitTesting(false)
+    }
+
+    /// The signal chip: "N more ingredients" while rows are hidden, "More
+    /// below" otherwise. A button — it scrolls to the next hidden row and
+    /// never changes Paso.
+    private func signalChip(proxy: ScrollViewProxy) -> some View {
+        let hidden = hiddenRowCount
+        let label = hidden == 0
+            ? "More below"
+            : "\(hidden) more ingredient\(hidden == 1 ? "" : "s")"
+        return Button {
+            withAnimation {
+                if let next = nextHiddenRowIndex {
+                    proxy.scrollTo(ScrollBodyAnchor.row(next), anchor: .top)
+                } else {
+                    proxy.scrollTo(ScrollBodyAnchor.end, anchor: .bottom)
                 }
-                Spacer(minLength: KartaDesign.space.cardGap)
-                Image(systemName: "arrow.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
             }
-            .padding(.top, KartaDesign.cooking.upNextLineGap)
-            .padding(.horizontal, KartaDesign.cooking.cardInset)
-            .padding(.bottom, KartaDesign.cooking.upNextVGap - KartaDesign.space.cardBottom)
-        }
-    }
-
-    @ViewBuilder
-    private func upNextThumbnail(_ presentation: CookingStepPresentation) -> some View {
-        if let photo = presentation.upNext?.photo {
-            RecipePhoto(reference: photo, manifest: manifest)
-        } else {
-            ZStack {
-                KartaDesign.ColorToken.cardEdges[0]
-                Image(systemName: "camera")
-                    .font(.system(size: 18))
-                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
-            }
-        }
-    }
-
-    // MARK: - Last Paso: outcome prompt, then Finish
-
-    private var outcomeFooter: some View {
-        VStack(spacing: KartaDesign.space.cardGap) {
-            Text("How did it turn out?")
-                .font(KartaDesign.FontToken.cookOutcomeTitle())
-                .foregroundStyle(KartaDesign.ColorToken.ink)
-                .frame(maxWidth: .infinity)
-
-            HStack(spacing: KartaDesign.cooking.upNextHGap) {
-                outcomeButton(outcome: .thumbsUp, icon: "hand.thumbsup", label: "Good")
-                outcomeButton(outcome: .thumbsDown, icon: "hand.thumbsdown", label: "Not great")
-                outcomeButton(outcome: .photo, icon: "camera", label: "Add photo")
-            }
-        }
-    }
-
-    private func outcomeButton(
-        outcome: CookOutcome,
-        icon: String,
-        label: String
-    ) -> some View {
-        Button {
-            store.send(.respond(outcome))
         } label: {
-            VStack(spacing: KartaDesign.space.rankGap) {
-                Image(systemName: icon)
-                    .font(.system(size: KartaDesign.cooking.outcomeIcon, weight: .semibold))
-                    // Fixed box so all three labels share a baseline.
-                    .frame(height: KartaDesign.cooking.outcomeIcon)
+            HStack(spacing: KartaDesign.space.rankGap) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 11, weight: .bold))
                 Text(label)
-                    .font(KartaDesign.FontToken.button())
-                    .multilineTextAlignment(.center)
             }
-            .foregroundStyle(KartaDesign.ColorToken.ink)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: KartaDesign.cooking.outcomeButtonHeight)
+            .font(.custom("Figtree", size: 13).weight(.heavy))
+            .foregroundStyle(suit.chipInk)
+            .padding(.horizontal, KartaDesign.space.chipX)
+            .frame(height: KartaDesign.cooking.signalChipHeight)
             .background {
-                RoundedRectangle(
-                    cornerRadius: KartaDesign.radius.chip,
-                    style: .continuous
-                )
-                .fill(KartaDesign.ColorToken.buttonEdge)
-                .offset(y: KartaDesign.space.reverseButtonEdge)
-                RoundedRectangle(
-                    cornerRadius: KartaDesign.radius.chip,
-                    style: .continuous
-                )
-                .fill(KartaDesign.ColorToken.card)
-                RoundedRectangle(
-                    cornerRadius: KartaDesign.radius.chip,
-                    style: .continuous
-                )
-                .strokeBorder(
-                    KartaDesign.ColorToken.line,
-                    lineWidth: KartaDesign.elevation.backFrameLineWidth
-                )
+                Capsule()
+                    .fill(suit.chipEdge)
+                    .offset(y: KartaDesign.space.reverseButtonEdge)
+                Capsule().fill(suit.chip)
             }
         }
-        .accessibilityLabel(label)
-    }
-
-    /// After an answer: check disc, "Cooked. Enjoy it!" and the primary Finish
-    /// button, which ends the session without asking.
-    private var cookedFooter: some View {
-        VStack(spacing: KartaDesign.space.cardGap) {
-            HStack(spacing: KartaDesign.space.cardGap) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(suit.chipInk)
-                    .frame(
-                        width: KartaDesign.cooking.cookedDisc,
-                        height: KartaDesign.cooking.cookedDisc
-                    )
-                    .background(suit.chip, in: Circle())
-                Text("Cooked. Enjoy it!")
-                    .font(KartaDesign.FontToken.cookOutcomeTitle())
-                    .foregroundStyle(KartaDesign.ColorToken.ink)
-            }
-            .frame(maxWidth: .infinity)
-
-            Button {
-                store.send(.exitCooking)
-            } label: {
-                Text("Finish")
-                    .font(KartaDesign.FontToken.ctaLabel())
-                    .foregroundStyle(KartaDesign.ColorToken.card)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: KartaDesign.cooking.finishHeight)
-                    .background {
-                        RoundedRectangle(
-                            cornerRadius: KartaDesign.radius.cta,
-                            style: .continuous
-                        )
-                        .fill(KartaDesign.ColorToken.brandEdge)
-                        .offset(y: KartaDesign.space.ctaEdge)
-                        RoundedRectangle(
-                            cornerRadius: KartaDesign.radius.cta,
-                            style: .continuous
-                        )
-                        .fill(KartaDesign.ColorToken.brand)
-                    }
-                    .shadow(
-                        color: KartaDesign.ColorToken.buttonShadow,
-                        radius: KartaDesign.elevation.buttonShadowRadius,
-                        y: KartaDesign.elevation.buttonShadowY
-                    )
-            }
-            .accessibilityLabel("Finish cooking")
-        }
+        .accessibilityLabel("Scroll down for \(label.lowercased())")
+        .padding(.trailing, KartaDesign.cooking.signalChipHInset)
+        .padding(.bottom, KartaDesign.cooking.signalChipBottomGap)
     }
 
     // MARK: - Deck of Pasos
 
-    /// Offsets of the upcoming Pasos peeking behind the front card
-    /// (`paper` and `cardEdge[0]`, rotated 1.8° / 3.5°). The last Paso has
-    /// nothing behind it.
+    /// Offsets of the upcoming cards peeking behind the front one (`paper`
+    /// and `cardEdge[0]`, rotated 1.8° / 3.5°). Behind the last Paso peeks
+    /// the finish card; the finish card has nothing behind it.
     private var peekOffsets: [Int] {
-        let remaining = session.steps.count - session.currentIndex - 1
+        guard !session.isOnFinish else { return [] }
+        let remaining = session.steps.count - session.currentIndex
         return Array(0..<min(remaining, KartaDesign.cooking.peekCardCount))
     }
 
@@ -660,6 +949,7 @@ struct CookingSessionView: View {
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: KartaDesign.cooking.dragMinimumDistance)
             .onChanged { value in
+                dismissSwipeHint()
                 let horizontal = value.translation.width
                 guard abs(horizontal) > abs(value.translation.height) else {
                     dragOffset = 0
@@ -681,7 +971,7 @@ struct CookingSessionView: View {
             }
     }
 
-    /// The Paso leaves sideways like a card of the deck; the next one settles
+    /// The card leaves sideways like a card of the deck; the next one settles
     /// in from the other side. Reduce Motion: cross-fade.
     private func fly(to command: CookingCommand) {
         let direction: CGFloat = command == .next ? -1 : 1
@@ -731,19 +1021,18 @@ struct CookingSessionView: View {
             store.send(.previousStep)
         }
     }
+}
 
-    /// Report the Paso settling on screen: on the last one, let the session
-    /// itself decide whether the journey already counts as a probable cook.
-    private func reportStepArrival() {
-        guard let step = session.currentStep else { return }
-        for action in CookingStepArrival.actions(
-            for: step,
-            isLastStep: session.isOnLastStep,
-            now: now
-        ) {
-            store.send(action)
-        }
-    }
+/// Coordinate space of the scrolling card body, shared by the row probes
+/// that count hidden ingredient rows for the signal chip.
+private enum ScrollBodySpace {
+    static let name = "cookingScrollBody"
+}
+
+/// Scroll targets inside a card body: an ingredient row or the end marker.
+private enum ScrollBodyAnchor: Hashable {
+    case row(Int)
+    case end
 }
 
 /// Pins a text to the spec's baseline-to-baseline line height: exact at the
