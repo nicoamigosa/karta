@@ -178,6 +178,7 @@ struct CookingSessionView: View {
                         }
                     }
                 }
+                .scrollBounceBehavior(.basedOnSize)
 
                 bottomZone()
             }
