@@ -91,10 +91,11 @@ struct CookingSessionView: View {
     ) -> some View {
         CardRelief(edgeColors: KartaDesign.ColorToken.cardEdges) {
             VStack(alignment: .leading, spacing: 0) {
-                header(presentation)
-                    .padding(.top, KartaDesign.cooking.headerTop)
+                VStack(alignment: .leading, spacing: 0) {
+                    header(presentation)
+                        .padding(.top, KartaDesign.cooking.headerTop)
 
-                Text(presentation.summary)
+                    Text(presentation.summary)
                     .font(KartaDesign.FontToken.cookSummary())
                     .tracking(-0.4)
                     .lineSpacing(5)
@@ -109,20 +110,27 @@ struct CookingSessionView: View {
                     .foregroundStyle(KartaDesign.ColorToken.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, KartaDesign.cooking.detailGap)
-
-                mediaWindow(presentation)
-                    .padding(.top, KartaDesign.cooking.sectionGap)
-
-                ingredientsSection(presentation)
-                    .padding(.top, KartaDesign.cooking.sectionGap)
-
-                Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
-
-                bottomZone(presentation)
             }
             .padding(.horizontal, KartaDesign.cooking.cardInset)
-            .padding(.bottom, KartaDesign.cooking.upNextVGap)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            // The media window sits 12 pt from the card edges — wider than
+            // the text blocks.
+            mediaWindow(presentation)
+                .padding(.top, KartaDesign.cooking.sectionGap)
+                .padding(.horizontal, KartaDesign.cooking.mediaInset)
+
+            ingredientsSection(presentation)
+                .padding(.top, KartaDesign.cooking.sectionGap)
+                .padding(.horizontal, KartaDesign.cooking.cardInset)
+
+            Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
+
+            // Pinned bottom zone: separators run edge to edge, content
+            // aligns on the card inset.
+            bottomZone(presentation)
+        }
+        .padding(.bottom, KartaDesign.cooking.upNextVGap)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .offset(x: dragOffset)
         .rotationEffect(.degrees(Double(dragOffset / KartaDesign.deck.dragRotationDivisor)))
@@ -238,7 +246,9 @@ struct CookingSessionView: View {
             if let photo = presentation.photo {
                 RecipePhoto(reference: photo, manifest: manifest)
             } else {
-                stepPhotoPlaceholder
+                // With a clip the play circle owns the centre; the
+                // placeholder's label would clash with it.
+                stepPhotoPlaceholder(showsLabel: presentation.clip == nil)
             }
 
             if presentation.clip != nil {
@@ -290,17 +300,19 @@ struct CookingSessionView: View {
 
     /// No step photos exist in the catalog yet (#104); the boards draw a beige
     /// window with a camera glyph and an eyebrow where the Foto del paso goes.
-    private var stepPhotoPlaceholder: some View {
+    private func stepPhotoPlaceholder(showsLabel: Bool) -> some View {
         ZStack {
             KartaDesign.ColorToken.cardEdges[0]
             VStack(spacing: KartaDesign.space.cardGap) {
                 Image(systemName: "camera")
                     .font(.system(size: 28))
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
-                Text("Step photo")
-                    .font(KartaDesign.FontToken.rankUnit())
-                    .tracking(KartaDesign.type.rankUnitTracking)
-                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                if showsLabel {
+                    Text("Step photo".uppercased())
+                        .font(KartaDesign.FontToken.rankUnit())
+                        .tracking(KartaDesign.type.rankUnitTracking)
+                        .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -310,7 +322,7 @@ struct CookingSessionView: View {
 
     private func ingredientsSection(_ presentation: CookingStepPresentation) -> some View {
         VStack(alignment: .leading, spacing: KartaDesign.cooking.ingredientRowGap) {
-            Text("For this step")
+            Text("For this step".uppercased())
                 .font(KartaDesign.FontToken.rankUnit())
                 .tracking(KartaDesign.type.rankUnitTracking)
                 .foregroundStyle(KartaDesign.ColorToken.inkMuted)
@@ -319,7 +331,7 @@ struct CookingSessionView: View {
             ForEach(presentation.ingredientRows, id: \.ingredientID) { row in
                 (Text(row.quantity + " ")
                     .font(.custom("Figtree", size: 17).weight(.heavy))
-                    + Text(" " + row.name)
+                    + Text(row.name)
                     .font(.custom("Figtree", size: 17).weight(.medium)))
                 .foregroundStyle(KartaDesign.ColorToken.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -333,16 +345,24 @@ struct CookingSessionView: View {
     @ViewBuilder
     private func bottomZone(_ presentation: CookingStepPresentation) -> some View {
         if session.isOnLastStep {
-            if let cooked = session.cookedEvent, !cooked.wasInferred {
-                cookedFooter
-            } else {
-                outcomeFooter
+            VStack(spacing: 0) {
+                edgeToEdgeLine
+                Group {
+                    if session.showsOutcomePrompt {
+                        outcomeFooter
+                    } else {
+                        cookedFooter
+                    }
+                }
+                .padding(.top, KartaDesign.cooking.upNextLineGap)
+                .padding(.horizontal, KartaDesign.cooking.cardInset)
             }
         } else {
             VStack(spacing: 0) {
                 if presentation.timerLabel != nil {
                     timerBlock(presentation)
                         .padding(.bottom, KartaDesign.cooking.timerTopGap)
+                        .padding(.horizontal, KartaDesign.cooking.cardInset)
                 }
                 upNextRow(presentation)
             }
@@ -390,10 +410,16 @@ struct CookingSessionView: View {
         )
     }
 
+    /// The 1 pt separator between the card body and the pinned bottom zone;
+    /// runs edge to edge like on the boards.
+    private var edgeToEdgeLine: some View {
+        KartaDesign.ColorToken.line
+            .frame(height: KartaDesign.elevation.backFrameLineWidth)
+    }
+
     private func upNextRow(_ presentation: CookingStepPresentation) -> some View {
         VStack(spacing: 0) {
-            KartaDesign.ColorToken.line
-                .frame(height: KartaDesign.elevation.backFrameLineWidth)
+            edgeToEdgeLine
 
             HStack(spacing: KartaDesign.space.cardGap) {
                 upNextThumbnail(presentation)
@@ -407,7 +433,7 @@ struct CookingSessionView: View {
                     ))
 
                 VStack(alignment: .leading, spacing: KartaDesign.space.rankGap) {
-                    Text(session.currentIndex == 0 ? "Up next · Swipe left" : "Up next")
+                    Text((session.currentIndex == 0 ? "Up next · Swipe left" : "Up next").uppercased())
                         .font(KartaDesign.FontToken.rankUnit())
                         .tracking(KartaDesign.type.rankUnitTracking)
                         .foregroundStyle(KartaDesign.ColorToken.inkMuted)
@@ -422,7 +448,7 @@ struct CookingSessionView: View {
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
             }
             .padding(.top, KartaDesign.cooking.upNextLineGap)
-            .padding(.horizontal, KartaDesign.cooking.upNextHGap)
+            .padding(.horizontal, KartaDesign.cooking.cardInset)
             .padding(.bottom, KartaDesign.cooking.upNextVGap - KartaDesign.space.cardBottom)
         }
     }
@@ -625,7 +651,7 @@ struct CookingSessionView: View {
     private func handleTap(locationX: CGFloat, width: CGFloat) {
         guard let command = CookingTapDecision.command(
             locationX: locationX,
-            width: width - 2 * KartaDesign.cooking.cardInset
+            width: width
         ) else { return }
         send(command)
     }

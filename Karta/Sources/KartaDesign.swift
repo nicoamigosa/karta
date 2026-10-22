@@ -422,6 +422,9 @@ enum KartaDesign {
         static let headerTop: CGFloat = 16
         static let summaryGap: CGFloat = 16
         static let detailGap: CGFloat = 6
+        /// The media window is inset 12 pt from the card edges — wider than
+        /// the text blocks (cardInset 20).
+        static let mediaInset: CGFloat = 12
         static let mediaHeight: CGFloat = 220
         static let mediaRadius: CGFloat = 18
         static let mediaChipInset: CGFloat = 10
