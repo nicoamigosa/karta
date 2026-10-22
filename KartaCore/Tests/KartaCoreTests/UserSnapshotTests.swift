@@ -5,6 +5,51 @@ import Testing
 @Suite("User snapshot")
 struct UserSnapshotTests {
 
+    @Test("A snapshot without Cierre fields restores on its original Paso")
+    func legacySessionStaysOnPaso() throws {
+        let data = Data(#"{"version":1,"profile":{"intolerances":[],"householdSize":2},"cookingSession":{"recipeID":"r1","steps":[{"text":"Prepare"},{"text":"Serve"}],"currentIndex":1,"lastStepReachedAt":20}}"#.utf8)
+        let session = try #require(UserSnapshot.restore(from: data).snapshot?.cookingSession)
+        #expect(session.currentIndex == 1)
+        #expect(session.currentStep?.summary == "Serve")
+        #expect(session.isOnLastStep)
+        #expect(session.showsOutcomePrompt)
+        #expect(!session.isOnFinish)
+        #expect(session.finishReachedAt == nil)
+        #expect(session.lastStepReachedAt == 20)
+    }
+
+    @Test("Invalid Cierre state preserves unreadable snapshot bytes", arguments: [
+        #""steps":[],"isOnFinish":true"#,
+        #""steps":[{"text":"Prepare"},{"text":"Serve"}],"isOnFinish":true,"currentIndex":0"#,
+        #""steps":[],"finishReachedAt":20"#,
+        #""steps":[{"text":"Serve"}],"isOnFinish":true,"finishReachedAt":1e400"#,
+    ])
+    func invalidFinishState(fields: String) {
+        let data = Data((#"{"version":1,"profile":{"intolerances":[],"householdSize":2},"cookingSession":{"recipeID":"r1","#
+            + fields + "}}").utf8)
+        let result = UserSnapshot.restore(from: data)
+        #expect(result.snapshot == nil)
+        #expect(result.preservedData == data)
+    }
+
+    @Test("A session at Cierre round-trips its position and first arrival")
+    func roundTripsFinish() throws {
+        var session = CookingSession(recipeID: "recipe-1", steps: ["Prepare", "Serve"])
+        session.next(at: 10)
+        session.next(at: 20)
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 2),
+            cookingSession: session
+        )
+        let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot)
+        #expect(restored.cookingSession == session)
+        var back = try #require(restored.cookingSession)
+        back.previous()
+        back.next(at: 30)
+        #expect(back.isOnFinish)
+        #expect(back.finishReachedAt == 20)
+    }
+
     @Test("A snapshot round-trips the persisted user state")
     func roundTripsPersistedState() throws {
         let firstViewDate = Date(timeIntervalSince1970: 1_000)

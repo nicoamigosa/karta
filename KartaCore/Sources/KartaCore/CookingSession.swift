@@ -155,6 +155,11 @@ public struct CookingSession: Equatable, Sendable {
     /// The injected start time used to measure this session deterministically.
     public let startedAt: TimeInterval
 
+    /// Cierre is a separate position; legacy step members still describe the last Paso.
+    public private(set) var isOnFinish: Bool = false
+    /// The first injected arrival time at Cierre, retained when navigating back.
+    public private(set) var finishReachedAt: TimeInterval?
+
     public private(set) var currentIndex: Int
     public private(set) var isExited: Bool
     /// The emitted success signal once the cook responds (or is inferred), else `nil`.
@@ -178,7 +183,9 @@ public struct CookingSession: Equatable, Sendable {
         cookedEvent: CookedEvent?,
         timers: [Int: StepTimer],
         furthestIndex: Int,
-        lastStepReachedAt: TimeInterval?
+        lastStepReachedAt: TimeInterval?,
+        isOnFinish: Bool = false,
+        finishReachedAt: TimeInterval? = nil
     ) {
         self.recipeID = recipeID
         self.steps = steps
@@ -190,6 +197,8 @@ public struct CookingSession: Equatable, Sendable {
         self.timers = timers
         self.furthestIndex = furthestIndex
         self.lastStepReachedAt = lastStepReachedAt
+        self.isOnFinish = isOnFinish
+        self.finishReachedAt = finishReachedAt
     }
 
     public init(
@@ -252,19 +261,24 @@ public struct CookingSession: Equatable, Sendable {
         return event
     }
 
-    /// Advance to the next step (swipe-right). Clamps at the last step.
+    /// Advance through the Pasos to Cierre, where navigation clamps.
     public mutating func next() {
         advanceToNextStep(at: nil)
     }
 
-    /// Advance to the next step and record the injected time when the last step
-    /// is reached for the first time. Clamps at the last step.
+    /// Advance through the Pasos to Cierre, recording the first injected arrival
+    /// time at the last Paso and at Cierre separately.
     public mutating func next(at now: TimeInterval) {
         advanceToNextStep(at: now)
     }
 
     private mutating func advanceToNextStep(at now: TimeInterval?) {
-        guard !isExited else { return }
+        guard !isExited, !steps.isEmpty, !isOnFinish else { return }
+        if isOnLastStep {
+            isOnFinish = true
+            if finishReachedAt == nil { finishReachedAt = now }
+            return
+        }
         let previousIndex = currentIndex
         currentIndex = min(currentIndex + 1, max(steps.count - 1, 0))
         furthestIndex = max(furthestIndex, currentIndex)
@@ -278,6 +292,10 @@ public struct CookingSession: Equatable, Sendable {
     /// Go back to the previous step (swipe-left). Clamps at the first step.
     public mutating func previous() {
         guard !isExited else { return }
+        if isOnFinish {
+            isOnFinish = false
+            return
+        }
         currentIndex = max(currentIndex - 1, 0)
     }
 
@@ -288,14 +306,17 @@ public struct CookingSession: Equatable, Sendable {
     /// Infer a cook from the complete session rather than time spent on the
     /// final step. The session must have traversed a real multi-step journey, started
     /// a declared timer when the recipe has one, and taken long enough to reach
-    /// the final step relative to the recipe's declared time. Time spent idle on
-    /// the final step does not count. Won't override an explicit response and
-    /// is ignored after exit.
+    /// Cierre relative to the recipe's declared time (the final Paso for legacy
+    /// callers still on a Paso). Time spent idle after that arrival does not count.
+    /// Won't override an explicit response and is ignored after exit.
     @discardableResult
     public mutating func inferProbablyCooked(at now: TimeInterval) -> CookedEvent? {
         let declaredTimerSteps = steps.indices.filter { steps[$0].timerSeconds != nil }
         let startedDeclaredTimer = declaredTimerSteps.isEmpty || declaredTimerSteps.contains { timers[$0] != nil }
-        let lastedLongEnough = lastStepReachedAt.map { reachedAt in
+        // Variant E measures the journey at first arrival at Cierre. Legacy
+        // callers on a Paso retain the first-last-Paso timing rule.
+        let arrival = isOnFinish ? finishReachedAt : lastStepReachedAt
+        let lastedLongEnough = arrival.map { reachedAt in
             now >= reachedAt
                 && declaredDuration > 0
                 && sessionDuration(at: reachedAt) >= declaredDuration * Self.probablyCookedMinimumDurationRatio

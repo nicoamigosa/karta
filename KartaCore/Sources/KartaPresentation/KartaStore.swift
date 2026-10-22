@@ -112,6 +112,15 @@ public struct KartaState: Equatable, Sendable {
         self.viewHistory = viewHistory
         self.cookHistory = cookHistory
         self.session = session
+        // Automatic Cierre inference has a persisted date: its first arrival.
+        // Reconnect that history entry so a resumed answer enriches it in place.
+        if let session, session.cookedEvent?.wasInferred == true,
+           let arrival = session.finishReachedAt {
+            self.sessionCookHistoryIndex = cookHistory.lastIndex {
+                $0.recipeID == session.recipeID && $0.wasInferred
+                    && $0.date == Date(timeIntervalSince1970: arrival)
+            }
+        }
         self.navigation = navigation
         self.filterState = FilterState(
             safetyProfile: safetyProfile,
@@ -198,7 +207,13 @@ public enum KartaReducer {
                 intolerances: state.safetyProfile.intolerances
             )
         case let .nextStep(now):
+            let firstArrival = state.session.map { !$0.isOnFinish && $0.finishReachedAt == nil } ?? false
             state.session?.next(at: now)
+            if firstArrival, state.session?.isOnFinish == true,
+               let event = state.session?.inferProbablyCooked(at: now) {
+                state.sessionCookHistoryIndex = state.cookHistory.count
+                state.cookHistory.append(CookEntry(event: event, date: Date(timeIntervalSince1970: now)))
+            }
         case .previousStep:
             state.session?.previous()
         case .exitCooking:
