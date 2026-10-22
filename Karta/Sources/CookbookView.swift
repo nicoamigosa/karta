@@ -189,6 +189,8 @@ struct CookbookScreen: View {
             }
         }
         .scrollIndicators(.hidden)
+        // The card shadow must not be clipped by the scroll bounds.
+        .scrollClipDisabled()
     }
 
     private func emptyState(title: String, body: String) -> some View {

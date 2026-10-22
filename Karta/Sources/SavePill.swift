@@ -23,11 +23,11 @@ struct CookbookBoxGlyph: View {
     var body: some View {
         GeometryReader { geometry in
             let side = min(geometry.size.width, geometry.size.height)
-            let stroke = side * 0.105
-            let boxWidth = side * 0.78
-            let boxHeight = side * 0.62
-            let lidWidth = side * 0.92
-            let lidHeight = side * 0.24
+            let stroke = side * 0.11
+            let boxWidth = side * 0.66
+            let boxHeight = side * 0.52
+            let lidWidth = side * 0.34
+            let lidHeight = side * 0.22
 
             ZStack {
                 // The dropping card, falling in front of the open lid.
@@ -39,10 +39,10 @@ struct CookbookBoxGlyph: View {
                         .opacity(cardProgress < 0.05 ? 0 : 1)
                 }
 
-                RoundedRectangle(cornerRadius: side * 0.14, style: .continuous)
+                RoundedRectangle(cornerRadius: side * 0.15, style: .continuous)
                     .stroke(ink, lineWidth: stroke)
                     .frame(width: boxWidth, height: boxHeight)
-                    .offset(y: side * 0.17)
+                    .offset(y: side * 0.18)
                     .overlay {
                         if checked {
                             CheckMark()
@@ -52,24 +52,24 @@ struct CookbookBoxGlyph: View {
                                     lineCap: .round,
                                     lineJoin: .round
                                 ))
-                                .frame(width: side * 0.34, height: side * 0.26)
-                                .offset(y: side * 0.17)
+                                .frame(width: side * 0.3, height: side * 0.24)
+                                .offset(y: side * 0.18)
                         } else {
                             Capsule()
                                 .fill(ink)
-                                .frame(width: side * 0.26, height: stroke)
-                                .offset(y: side * 0.08)
+                                .frame(width: side * 0.2, height: stroke * 0.9)
+                                .offset(y: side * 0.1)
                         }
                     }
 
-                // The lid sits centred over the box when closed; the open
-                // rotation pivots it up around its leading edge.
-                RoundedRectangle(cornerRadius: side * 0.1, style: .continuous)
+                // The lid is a small arch joined to the top of the box, as on
+                // the signed-off boards; opening pivots it up on its hinge.
+                RoundedRectangle(cornerRadius: side * 0.08, style: .continuous)
                     .stroke(ink, lineWidth: stroke)
                     .frame(width: lidWidth, height: lidHeight)
-                    .offset(y: -side * 0.3)
+                    .offset(y: -side * 0.14)
                     .rotationEffect(
-                        .degrees(-60 * lidOpen),
+                        .degrees(-70 * lidOpen),
                         anchor: .leading
                     )
             }
@@ -107,6 +107,9 @@ struct SavePill: View {
     @State private var checkTrim: CGFloat = 0
     @State private var animating = false
     @State private var bump = false
+    /// Set inside the bump so the pill tints to Saved with the spring, not
+    /// after it — the spec's "tints to the saved state with a 1.07 bump".
+    @State private var tintApplied = false
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)
@@ -117,7 +120,7 @@ struct SavePill: View {
     }
 
     private var tinted: Bool {
-        isSaved && !animating
+        isSaved && (tintApplied || !animating)
     }
 
     var body: some View {
@@ -133,8 +136,8 @@ struct SavePill: View {
                     lidOpen: lidOpen,
                     droppingCardColor: suit.back,
                     cardProgress: cardProgress,
-                    checked: tinted || checkTrim > 0,
-                    checkTrim: tinted ? 1 : checkTrim,
+                    checked: isSaved && (animating ? checkTrim > 0 : true),
+                    checkTrim: animating ? checkTrim : 1,
                     ink: tinted ? suit.chipInk : KartaDesign.ColorToken.ink
                 )
                 .frame(width: KartaDesign.space.saveGlyph, height: KartaDesign.space.saveGlyph)
@@ -170,6 +173,17 @@ struct SavePill: View {
     }
 
     private func save() {
+        if reduceMotion {
+            // The saved change itself rides the animation so the pill
+            // cross-fades to Saved instead of jumping.
+            withAnimation(.easeInOut(duration: KartaDesign.deck.faceRevealDuration)) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            if SaveTap.effect(of: store.state.lastSaveResult) == .cookbookFull {
+                onCookbookFull()
+            }
+            return
+        }
         store.send(.saveRecipe(recipe.id))
         switch SaveTap.effect(of: store.state.lastSaveResult) {
         case .cookbookFull:
@@ -187,20 +201,12 @@ struct SavePill: View {
         lidOpen = 0
         cardProgress = 0
         checkTrim = 0
+        tintApplied = false
         store.send(.unsaveRecipe(recipe.id))
         onUnsave()
     }
 
     private func playSaveAnimation() {
-        guard !reduceMotion else {
-            // Reduce Motion: cross-fade straight to the saved state.
-            animating = false
-            withAnimation(.easeInOut(duration: KartaDesign.deck.faceRevealDuration)) {
-                checkTrim = 1
-            }
-            return
-        }
-
         animating = true
         typealias timeline = KartaDesign.save
         withAnimation(.easeInOut(duration: timeline.lidOpenDuration)) {
@@ -223,6 +229,7 @@ struct SavePill: View {
             ))
             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 bump = true
+                tintApplied = true
             }
             try? await Task.sleep(for: .seconds(
                 timeline.checkDrawDelay - timeline.savedSwapDelay
