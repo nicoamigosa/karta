@@ -7,6 +7,8 @@ struct FeedScreen: View {
     let store: KartaStore
 
     @State private var recipes: [Recipe] = []
+    // An empty clip library cannot fail validation; clips load with the seed.
+    @State private var clips = try! TechniqueClipLibrary(clips: [])
     @State private var manifest = MediaAssetManifest([:])
     @State private var isLoaded = false
     @State private var loadError: String?
@@ -115,6 +117,8 @@ struct FeedScreen: View {
                 CookingSessionView(
                     session: session,
                     recipe: recipe,
+                    clips: clips,
+                    manifest: manifest,
                     store: store
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -139,7 +143,8 @@ struct FeedScreen: View {
         .task {
             do {
                 let seed = SeedResourceAdapter()
-                recipes = try seed.loadRecipes()
+                recipes = try seed.loadRecipes() + DebugSeeds.extraRecipes()
+                clips = try seed.loadTechniqueClips()
                 manifest = try seed.loadMediaManifest()
                 isLoaded = true
             } catch {

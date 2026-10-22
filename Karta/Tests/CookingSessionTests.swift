@@ -10,27 +10,27 @@ struct CookingSessionTests {
         let now: Date
     }
 
-    @Test("Gestures map to next / previous / exit")
+    @Test("Gestures map to next / previous; there is no vertical gesture")
     func gestureDecisions() {
         let threshold = KartaDesign.cooking.swipeThreshold
 
-        // Swipe right advances.
-        #expect(CookingGestureDecision.command(
-            translation: CGSize(width: 60, height: 4),
-            predictedTranslation: CGSize(width: threshold, height: 0)
-        ) == .next)
-
-        // Swipe left goes back.
+        // Swipe left advances.
         #expect(CookingGestureDecision.command(
             translation: CGSize(width: -60, height: 4),
             predictedTranslation: CGSize(width: -threshold, height: 0)
+        ) == .next)
+
+        // Swipe right goes back.
+        #expect(CookingGestureDecision.command(
+            translation: CGSize(width: 60, height: 4),
+            predictedTranslation: CGSize(width: threshold, height: 0)
         ) == .previous)
 
-        // Swipe down exits.
+        // Swipe down does nothing: leaving is only the ✕, which asks first.
         #expect(CookingGestureDecision.command(
             translation: CGSize(width: 6, height: 80),
             predictedTranslation: CGSize(width: 0, height: threshold)
-        ) == .exit)
+        ) == nil)
 
         // Swipe up does nothing.
         #expect(CookingGestureDecision.command(
@@ -52,102 +52,53 @@ struct CookingSessionTests {
         #expect(CookingTapDecision.command(locationX: 10, width: 0) == nil)
     }
 
-    @MainActor
-    @Test("Each Paso resolves its own ingredient names and step quantities")
-    func stepIngredientsResolve() throws {
-        let recipes = try SeedResourceAdapter().loadRecipes()
-        let recipe = try #require(recipes.first { !$0.steps.isEmpty })
-        let step = try #require(recipe.steps.first { !$0.ingredients.isEmpty })
+    // The Paso ingredient rows now come from `CookingStepPresentation`
+    // (#103); their intolerance filtering is covered in KartaPresentation's
+    // own test suite — the shell joins nothing.
 
-        let rows = CookingStepIngredients.rows(
-            for: step,
-            in: recipe,
-            intolerances: []
+    @Test("The signal chip counts rows measured in the scroll viewport")
+    func hiddenRowCounting() {
+        // Row bottoms live in the scroll viewport's coordinate space: they
+        // move with the content, so the threshold is only the viewport
+        // height minus the fade — the offset is never added back.
+        let viewport: CGFloat = 500
+        let fade: CGFloat = 32
+
+        // Rows at viewport positions 400 / 480 / 520: only the last two are
+        // below the fade's top edge (500 − 32 = 468).
+        var result = CookingScrollSignal.hiddenRows(
+            rowBottoms: [0: 400, 1: 480, 2: 520],
+            viewportHeight: viewport,
+            fadeHeight: fade
         )
+        #expect(result.count == 2)
+        #expect(result.nextIndex == 1)
 
-        #expect(rows.count == step.ingredients.count)
-        for (row, reference) in zip(rows, step.ingredients) {
-            let ingredient = try #require(
-                recipe.ingredients.first { $0.id == reference.ingredientID }
-            )
-            #expect(row.name == ingredient.name)
-            #expect(!row.name.isEmpty)
-            #expect(row.quantity == reference.quantity)
-            #expect(!row.quantity.isEmpty)
-        }
-    }
-
-    @MainActor
-    @Test("A dairy intolerance hides the optional ingredient from the Paso")
-    func stepIngredientsRespectIntolerances() throws {
-        let recipes = try SeedResourceAdapter().loadRecipes()
-        let intolerances: Set<Allergen> = [.dairy]
-
-        // A seed recipe with an optional dairy ingredient (e.g. the curry's
-        // Greek yogurt), and a hand-built Paso that references it — one that
-        // could never reach the screen through visibleSteps, to prove the row
-        // projection itself applies the filter.
-        var foundDairyOptional = false
-        for recipe in recipes {
-            for optional in recipe.ingredients where optional.isOptional
-                && !optional.allergens.isDisjoint(with: intolerances) {
-                foundDairyOptional = true
-                let step = CookingStep(
-                    detail: "Finish",
-                    ingredients: [StepIngredient(
-                        ingredientID: optional.id,
-                        quantity: optional.quantity
-                    )]
-                )
-
-                let filtered = CookingStepIngredients.rows(
-                    for: step,
-                    in: recipe,
-                    intolerances: intolerances
-                )
-                #expect(filtered.isEmpty)
-
-                let unfiltered = CookingStepIngredients.rows(
-                    for: step,
-                    in: recipe,
-                    intolerances: []
-                )
-                #expect(unfiltered.map(\.name) == [optional.name])
-            }
-        }
-        #expect(foundDairyOptional)
-    }
-
-    @MainActor
-    @Test("Arriving at the last Paso only reports the inference action")
-    func stepArrivalActions() {
-        let timed = CookingStep(detail: "Simmer", timerSeconds: 600)
-        let actions = CookingStepArrival.actions(
-            for: timed,
-            isLastStep: true,
-            now: 1000
+        // After the user scrolls down 60 pt the same rows read 340 / 420 /
+        // 460 in viewport space — all visible, no scroll offset subtracted
+        // twice.
+        result = CookingScrollSignal.hiddenRows(
+            rowBottoms: [0: 340, 1: 420, 2: 460],
+            viewportHeight: viewport,
+            fadeHeight: fade
         )
+        #expect(result.count == 0)
+        #expect(result.nextIndex == nil)
 
-        #expect(actions.count == 1)
-        guard case let .inferProbablyCooked(inferNow) = actions[0] else {
-            Issue.record("Expected only .inferProbablyCooked")
-            return
-        }
-        #expect(inferNow == 1000)
-
-        // A timer declaration never starts the timer on arrival.
-        #expect(CookingStepArrival.actions(
-            for: timed,
-            isLastStep: false,
-            now: 1000
-        ).isEmpty)
-
-        #expect(CookingStepArrival.actions(
-            for: CookingStep(detail: "Stir"),
-            isLastStep: false,
-            now: 0
-        ).isEmpty)
+        // A card without ingredient rows (the Cierre) reports nothing, so
+        // the chip falls back to "More below".
+        result = CookingScrollSignal.hiddenRows(
+            rowBottoms: [:],
+            viewportHeight: viewport,
+            fadeHeight: fade
+        )
+        #expect(result.count == 0)
+        #expect(result.nextIndex == nil)
     }
+
+    // The store itself evaluates the inferred Cocinado on arrival at the
+    // finish card (#121); the shell reports nothing, so there is no
+    // step-arrival seam left to test here.
 
     @MainActor
     @Test("Start → advance → last step → response emits the cooked event")
