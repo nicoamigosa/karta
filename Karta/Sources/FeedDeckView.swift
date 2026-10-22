@@ -10,6 +10,9 @@ struct FeedScreen: View {
     @State private var manifest = MediaAssetManifest([:])
     @State private var isLoaded = false
     @State private var loadError: String?
+    @State private var cookbookOpen = false
+    @State private var reverseFromCookbook = false
+    @State private var unsaveOrigin: UnsaveOrigin = .feedReverse
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -32,12 +35,49 @@ struct FeedScreen: View {
                         systemImage: "fork.knife",
                         description: Text("There are no recipes compatible with your intolerances.")
                     )
+                } else if cookbookOpen {
+                    // The cookbook is not a Mundo: its own door opens and
+                    // closes it, in place of the deck.
+                    CookbookScreen(
+                        recipes: recipes,
+                        manifest: manifest,
+                        store: store,
+                        onClose: {
+                            cookbookOpen = false
+                        },
+                        onOpenRecipe: { row in
+                            reverseFromCookbook = true
+                            store.send(.pushRoute(.recipeDetail(recipeID: row.recipeID)))
+                        },
+                        onUnsaveFromGrid: { row in
+                            unsaveOrigin = .cookbookGrid
+                            store.send(.unsaveRecipe(row.recipeID))
+                        },
+                        onUndo: { toast in
+                            store.send(.undoUnsave)
+                            // Undo returns the card to its slot and opens the
+                            // reverse again — not an Apertura. Skipped when the
+                            // toast raced its own expiry and nothing was restored.
+                            if unsaveOrigin.undoReopensReverse,
+                               store.cookbook.isSaved(toast.recipeID) {
+                                store.send(.pushRoute(.recipeDetail(recipeID: toast.recipeID)))
+                            }
+                        }
+                    )
+                    .transition(.opacity)
                 } else {
                     FeedDeck(
                         cards: FeedDeckCard.cards(in: feed),
                         manifest: manifest,
-                        store: store
+                        store: store,
+                        onOpenCookbook: {
+                            cookbookOpen = true
+                        },
+                        onOpenCard: {
+                            reverseFromCookbook = false
+                        }
                     )
+                    .transition(.opacity)
                 }
             } else {
                 OnboardingView(store: store)
@@ -52,7 +92,17 @@ struct FeedScreen: View {
                     recipe: recipe,
                     presentation: reverse,
                     manifest: manifest,
-                    store: store
+                    store: store,
+                    openedFromCookbook: reverseFromCookbook,
+                    onUnsave: {
+                        unsaveOrigin = reverseFromCookbook
+                            ? .cookbookReverse
+                            : .feedReverse
+                    },
+                    unsaveToast: store.unsaveToast(recipes: recipes),
+                    onUndo: {
+                        store.send(.undoUnsave)
+                    }
                 )
                 .transition(reverseTransition)
             }
@@ -70,6 +120,10 @@ struct FeedScreen: View {
         .animation(
             reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
             value: store.session?.isExited == false
+        )
+        .animation(
+            reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
+            value: cookbookOpen
         )
         .animation(
             reduceMotion ? .easeOut(duration: KartaDesign.deck.faceRevealDuration) : KartaDesign.deckAnimation,
@@ -107,6 +161,10 @@ private struct SystemClock: KartaClock {
 private struct FeedDeck: View {
     let manifest: MediaAssetManifest
     let store: KartaStore
+    /// The cookbook's own door: a box button right of the For You pill.
+    let onOpenCookbook: () -> Void
+    /// Called when the front Card is tapped open.
+    let onOpenCard: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var cards: [FeedDeckCard]
@@ -118,9 +176,17 @@ private struct FeedDeck: View {
     @State private var hintVisible = true
     @State private var transitionDirection = 0
 
-    init(cards: [FeedDeckCard], manifest: MediaAssetManifest, store: KartaStore) {
+    init(
+        cards: [FeedDeckCard],
+        manifest: MediaAssetManifest,
+        store: KartaStore,
+        onOpenCookbook: @escaping () -> Void,
+        onOpenCard: @escaping () -> Void
+    ) {
         self.manifest = manifest
         self.store = store
+        self.onOpenCookbook = onOpenCookbook
+        self.onOpenCard = onOpenCard
         _cards = State(initialValue: cards)
         _currentIndex = State(initialValue: FeedDeckAnchor.initialIndex(
             cards: cards,
@@ -130,13 +196,65 @@ private struct FeedDeck: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("karta")
-                .font(KartaDesign.FontToken.wordmark())
-                .tracking(KartaDesign.type.wordmarkTracking)
-                .foregroundStyle(KartaDesign.ColorToken.brand)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, KartaDesign.space.screenX)
-                .accessibilityAddTraits(.isHeader)
+            HStack(spacing: 0) {
+                Text("karta")
+                    .font(KartaDesign.FontToken.wordmark())
+                    .tracking(KartaDesign.type.wordmarkTracking)
+                    .foregroundStyle(KartaDesign.ColorToken.brand)
+                    .accessibilityAddTraits(.isHeader)
+
+                Spacer()
+
+                // The Mundo pill (the dropdown itself is issue #8) and, 10 pt
+                // to its right, the cookbook's door (board *P1*).
+                HStack(spacing: KartaDesign.space.rankGap) {
+                    Text("For You")
+                        .font(KartaDesign.FontToken.switchActive())
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(KartaDesign.ColorToken.ink)
+                }
+                .padding(.horizontal, KartaDesign.space.saveButtonX)
+                .frame(height: KartaDesign.space.doorButton)
+                .background {
+                    Capsule()
+                        .fill(KartaDesign.ColorToken.buttonEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Capsule().fill(KartaDesign.ColorToken.card)
+                    Capsule().strokeBorder(
+                        KartaDesign.ColorToken.line,
+                        lineWidth: KartaDesign.elevation.backFrameLineWidth
+                    )
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("For You")
+
+                Button(action: onOpenCookbook) {
+                    CookbookBoxGlyph(ink: KartaDesign.ColorToken.ink)
+                        .frame(
+                            width: KartaDesign.space.doorGlyph,
+                            height: KartaDesign.space.doorGlyph
+                        )
+                        .frame(
+                            width: KartaDesign.space.doorButton,
+                            height: KartaDesign.space.doorButton
+                        )
+                        .background {
+                            Circle()
+                                .fill(KartaDesign.ColorToken.buttonEdge)
+                                .offset(y: KartaDesign.space.reverseButtonEdge)
+                            Circle().fill(KartaDesign.ColorToken.card)
+                            Circle().strokeBorder(
+                                KartaDesign.ColorToken.line,
+                                lineWidth: KartaDesign.elevation.backFrameLineWidth
+                            )
+                        }
+                }
+                .padding(.leading, KartaDesign.space.doorGap)
+                .accessibilityLabel("Open your cookbook")
+            }
+            .padding(.horizontal, KartaDesign.space.screenX)
 
             GeometryReader { geometry in
                 ZStack {
@@ -310,6 +428,7 @@ private struct FeedDeck: View {
     private func openCurrentCard() {
         stopEntryNudge()
         guard cards.indices.contains(currentIndex) else { return }
+        onOpenCard()
         for action in CardOpening.actions(recipeID: cards[currentIndex].id, at: Date()) {
             store.send(action)
         }
