@@ -37,6 +37,22 @@ enum KartaDesign {
             blue: 25 / 255,
             opacity: 0.25
         )
+        /// Intolerance flag (colder and darker than any suit; no warning icon).
+        static let alert = Color(hex: 0xB3122E)
+        static let alertInk = Color(hex: 0xFFFAF0)
+        /// Cookbook switch track / toast second line (`#EADDC7`).
+        static let creamLine = Color(hex: 0xEADDC7)
+        /// Empty-state icon stroke and Undo pill edge (`#C9B79C`).
+        static let mutedStroke = Color(hex: 0xC9B79C)
+        /// The pressed cookbook door's darker 2 pt edge.
+        static let inkEdge = Color(hex: 0x2E0F0A)
+        /// Scrim under the cookbook-full sheet.
+        static let scrim = Color(
+            red: 46 / 255,
+            green: 26 / 255,
+            blue: 18 / 255,
+            opacity: 0.55
+        )
     }
 
     enum FontToken {
@@ -130,6 +146,76 @@ enum KartaDesign {
                 .weight(.heavy)
         }
 
+        /// Cookbook grid card title (Fraunces 700, 17/20).
+        static func gridTitle() -> Font {
+            display(size: 17, relativeTo: .headline, weight: 700)
+        }
+
+        /// Cookbook grid time / intolerance tag (Figtree 800, 12).
+        static func gridMeta() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .caption)
+                .weight(.heavy)
+        }
+
+        /// Cookbook switch, active segment (Figtree 800, 14).
+        static func switchActive() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// Cookbook switch, resting segment (Figtree 700, 14).
+        static func switchResting() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .body)
+                .weight(.bold)
+        }
+
+        /// Cupo count line under the switch (Figtree 700, 13).
+        static func cupoCount() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
+        /// Empty-state heading (Fraunces 700, 22).
+        static func emptyTitle() -> Font {
+            display(size: 22, relativeTo: .title2, weight: 700)
+        }
+
+        /// Empty-state body (Figtree 600, 15/22).
+        static func emptyBody() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.semibold)
+        }
+
+        /// Intolerance note on the reverse (Figtree 800, 14).
+        static func intoleranceNote() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// Undo toast title (Figtree 800, 15).
+        static func toastTitle() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// Undo toast second line (Figtree 600, 13).
+        static func toastSecondLine() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.semibold)
+        }
+
+        /// Sheet count under "Your cookbook is full" (Figtree 800, 13, tracked).
+        static func sheetCount() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.heavy)
+        }
+
+        /// Sheet body line (Figtree 500, 15).
+        static func sheetBody() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.medium)
+        }
+
         private static func display(
             name: String = "Fraunces",
             size: CGFloat,
@@ -216,6 +302,51 @@ enum KartaDesign {
         static let backFrameInset: CGFloat = 9
         static let onboarding: CGFloat = 28
         static let onboardingGap: CGFloat = 24
+        static let cookbookBlockGap: CGFloat = 18
+        static let cookbookGridGap: CGFloat = 12
+        static let cookbookGridCardPadding: CGFloat = 8
+        static let cookbookGridCardBottom: CGFloat = 12
+        static let cookbookGridPhotoHeight: CGFloat = 118
+        static let cookbookGridPhotoRadius: CGFloat = 12
+        static let switchTrackRadius: CGFloat = 14
+        static let switchTrackInset: CGFloat = 4
+        static let switchSegmentRadius: CGFloat = 11
+        static let doorButton: CGFloat = 40
+        static let doorGlyph: CGFloat = 18
+        static let doorGap: CGFloat = 10
+        static let emptyIcon: CGFloat = 64
+        static let intoleranceTagY: CGFloat = 2
+        static let intoleranceTagX: CGFloat = 7
+        static let intoleranceNoteY: CGFloat = 10
+        static let intoleranceNoteX: CGFloat = 12
+        static let intoleranceNoteRadius: CGFloat = 14
+        static let toastRadius: CGFloat = 18
+        static let toastPadding: CGFloat = 12
+        static let toastLeading: CGFloat = 16
+        static let toastUndoHit: CGFloat = 40
+        static let toastSideMargin: CGFloat = 22
+        static let toastBottomInset: CGFloat = 40
+        static let toastDuration: TimeInterval = 5
+        static let sheetTopRadius: CGFloat = 26
+        static let sheetHandleWidth: CGFloat = 36
+        static let sheetHandleHeight: CGFloat = 5
+        static let fanCardWidth: CGFloat = 26
+        static let fanCardHeight: CGFloat = 34
+        static let notNowHit: CGFloat = 48
+    }
+
+    enum save {
+        static let duration: TimeInterval = 0.8
+        static let lidOpenDelay: TimeInterval = 0
+        static let lidOpenDuration: TimeInterval = 0.18
+        static let cardDropDelay: TimeInterval = 0.15
+        static let cardDropDuration: TimeInterval = 0.25
+        static let lidCloseDelay: TimeInterval = 0.42
+        static let lidCloseDuration: TimeInterval = 0.18
+        static let savedSwapDelay: TimeInterval = 0.58
+        static let bumpScale: CGFloat = 1.07
+        static let checkDrawDelay: TimeInterval = 0.62
+        static let checkDrawDuration: TimeInterval = 0.18
     }
 
     enum deck {
@@ -297,28 +428,32 @@ enum KartaDesign {
                 back: Color(hex: 0xE3A33B),
                 edge: Color(hex: 0xB5761C),
                 chip: Color(hex: 0xF6DFAE),
-                chipInk: Color(hex: 0x6B4A10)
+                chipInk: Color(hex: 0x6B4A10),
+                chipEdge: Color(hex: 0xE3C27F)
             )
         case .lunch:
             SuitTokens(
                 back: Color(hex: 0x7C9A6D),
                 edge: Color(hex: 0x58724A),
                 chip: Color(hex: 0xDCE6D2),
-                chipInk: Color(hex: 0x3F5A34)
+                chipInk: Color(hex: 0x3F5A34),
+                chipEdge: Color(hex: 0xB9C9AA)
             )
         case .dinner:
             SuitTokens(
                 back: Color(hex: 0xC8553D),
                 edge: Color(hex: 0x9E3E2B),
                 chip: Color(hex: 0xF4CDBF),
-                chipInk: Color(hex: 0x7E2F1F)
+                chipInk: Color(hex: 0x7E2F1F),
+                chipEdge: Color(hex: 0xE2A794)
             )
         case .dessert:
             SuitTokens(
                 back: Color(hex: 0xC2677A),
                 edge: Color(hex: 0x9C4459),
                 chip: Color(hex: 0xF4D3D9),
-                chipInk: Color(hex: 0x7A2E40)
+                chipInk: Color(hex: 0x7A2E40),
+                chipEdge: Color(hex: 0xE2A9B3)
             )
         }
     }
@@ -329,6 +464,7 @@ struct SuitTokens {
     let edge: Color
     let chip: Color
     let chipInk: Color
+    let chipEdge: Color
 }
 
 private extension Color {

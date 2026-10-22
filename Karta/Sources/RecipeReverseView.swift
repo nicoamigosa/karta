@@ -11,17 +11,20 @@ struct RecipeReverseView: View {
     let presentation: RecipeReversePresentation
     let manifest: MediaAssetManifest
     let store: KartaStore
+    /// True when the reverse was opened from a cookbook grid slot: unsaving
+    /// flips the card back into the grid and Undo reopens the reverse.
+    let openedFromCookbook: Bool
+    /// Called after the pill unsaves, so the shell records the toast's origin.
+    let onUnsave: () -> Void
+    /// The Undo receipt projected by the parent from the full catalog.
+    let unsaveToast: UnsaveToast?
+    /// Called when the reverse's own Undo pill restores the removal.
+    let onUndo: () -> Void
+
+    @State private var showFullSheet = false
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)
-    }
-
-    private var isSaved: Bool {
-        store.cookbook.isSaved(recipe.id)
-    }
-
-    private var saveBlocked: Bool {
-        !isSaved && store.cookbook.isAtCap
     }
 
     var body: some View {
@@ -35,6 +38,7 @@ struct RecipeReverseView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: KartaDesign.space.cardGap) {
                             titleRow
+                            intoleranceNote
                             ingredientsSection
                             stepsSection
                         }
@@ -86,6 +90,61 @@ struct RecipeReverseView: View {
             }
             .padding(.horizontal, KartaDesign.space.reverseCardX)
             .padding(.vertical, KartaDesign.space.reverseCardY)
+
+            if let toast = unsaveToast {
+                VStack {
+                    Spacer()
+                    UnsaveToastView(toast: toast, onUndo: {
+                        onUndo()
+                    }, onExpire: {
+                        store.send(.dismissUnsaveToast)
+                    })
+                }
+                .padding(
+                    .bottom,
+                    KartaDesign.space.reverseCardY + KartaDesign.space.cardBottom
+                        + KartaDesign.space.ctaHeight + KartaDesign.space.cardGap
+                )
+                .padding(.horizontal, KartaDesign.space.reverseCardX + KartaDesign.space.cardX)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            if showFullSheet, let full = store.blockedByCap {
+                CookbookFullSheet(
+                    presentation: full,
+                    onUnlock: {
+                        // Paywall hook — the paywall itself is issue #14.
+                        PaywallHook.open()
+                    },
+                    onDismiss: {
+                        showFullSheet = false
+                    }
+                )
+            }
+        }
+        .animation(.easeOut(duration: 0.25), value: store.state.pendingUnsave != nil)
+        .animation(.easeOut(duration: 0.3), value: showFullSheet)
+    }
+
+    /// The crimson note under the title block for a saved recipe carrying a
+    /// new Intolerancia — no warning icon (`docs/design/karta-v1.md`, board
+    /// *R2 · crimson fill, no icon*).
+    @ViewBuilder
+    private var intoleranceNote: some View {
+        if let note = presentation.intoleranceNote {
+            Text(note)
+                .font(KartaDesign.FontToken.intoleranceNote())
+                .foregroundStyle(KartaDesign.ColorToken.alertInk)
+                .padding(.vertical, KartaDesign.space.intoleranceNoteY)
+                .padding(.horizontal, KartaDesign.space.intoleranceNoteX)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    KartaDesign.ColorToken.alert,
+                    in: RoundedRectangle(
+                        cornerRadius: KartaDesign.space.intoleranceNoteRadius,
+                        style: .continuous
+                    )
+                )
         }
     }
 
@@ -98,6 +157,9 @@ struct RecipeReverseView: View {
 
             HStack {
                 Button {
+                    // Closing the surface that hosts the toast dismisses it,
+                    // so a stale receipt can't resurface elsewhere later.
+                    store.send(.dismissUnsaveToast)
                     store.send(.popRoute)
                 } label: {
                     Image(systemName: "xmark")
@@ -116,27 +178,20 @@ struct RecipeReverseView: View {
 
                 Spacer()
 
-                Button {
-                    store.send(isSaved ? .unsaveRecipe(recipe.id) : .saveRecipe(recipe.id))
-                } label: {
-                    HStack(spacing: KartaDesign.space.saveIconGap) {
-                        Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: KartaDesign.space.saveGlyph))
-                        Text(isSaved ? "Saved" : "Save")
-                            .font(KartaDesign.FontToken.button())
+                SavePill(
+                    recipe: recipe,
+                    store: store,
+                    onUnsave: {
+                        onUnsave()
+                        if openedFromCookbook {
+                            // The card flips back into its cookbook slot; the
+                            // Undo toast appears in the cookbook.
+                            store.send(.popRoute)
+                        }
+                    },
+                    onCookbookFull: {
+                        showFullSheet = true
                     }
-                    .foregroundStyle(
-                        saveBlocked
-                            ? KartaDesign.ColorToken.inkMuted
-                            : KartaDesign.ColorToken.ink
-                    )
-                    .padding(.horizontal, KartaDesign.space.saveButtonX)
-                    .frame(height: KartaDesign.space.reverseButtonHit)
-                    .reverseChrome(circle: false)
-                }
-                .disabled(saveBlocked)
-                .accessibilityHint(
-                    saveBlocked ? "Your cookbook is full" : "Saves the recipe to your cookbook"
                 )
             }
         }

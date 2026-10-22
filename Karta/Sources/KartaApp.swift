@@ -4,9 +4,7 @@ import KartaPresentation
 
 @main
 struct KartaApp: App {
-    @State private var store = KartaStore(state: KartaState(
-        safetyProfile: SafetyProfile(intolerances: [])
-    ))
+    @State private var store = DebugSeeds.store()
 
     var body: some Scene {
         WindowGroup {
