@@ -98,7 +98,11 @@ struct CookingSessionView: View {
                     Text(presentation.summary)
                     .font(KartaDesign.FontToken.cookSummary())
                     .tracking(-0.4)
-                    .lineSpacing(5)
+                    .lineSpacing(Self.lineSpacing(
+                        name: "Fraunces", weight: .bold, size: 34,
+                        textStyle: .largeTitle,
+                        target: KartaDesign.cooking.summaryLineHeight
+                    ))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,6 +111,11 @@ struct CookingSessionView: View {
 
                 Text(presentation.detail)
                     .font(KartaDesign.FontToken.cookDetail())
+                    .lineSpacing(Self.lineSpacing(
+                        name: "Figtree", weight: .medium, size: 17,
+                        textStyle: .body,
+                        target: KartaDesign.cooking.detailLineHeight
+                    ))
                     .foregroundStyle(KartaDesign.ColorToken.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, KartaDesign.cooking.detailGap)
@@ -263,7 +272,12 @@ struct CookingSessionView: View {
                             width: KartaDesign.cooking.playCircle,
                             height: KartaDesign.cooking.playCircle
                         )
-                        .background(Circle().fill(KartaDesign.ColorToken.card))
+                        .background {
+                            Circle()
+                                .fill(KartaDesign.ColorToken.buttonEdge)
+                                .offset(y: KartaDesign.space.reverseButtonEdge)
+                            Circle().fill(KartaDesign.ColorToken.card)
+                        }
                 }
                 .accessibilityLabel("Play technique clip")
             }
@@ -333,6 +347,11 @@ struct CookingSessionView: View {
                     .font(.custom("Figtree", size: 17).weight(.heavy))
                     + Text(row.name)
                     .font(.custom("Figtree", size: 17).weight(.medium)))
+                .lineSpacing(Self.lineSpacing(
+                    name: "Figtree", weight: .heavy, size: 17,
+                    textStyle: .body,
+                    target: KartaDesign.cooking.ingredientLineHeight
+                ))
                 .foregroundStyle(KartaDesign.ColorToken.ink)
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -395,7 +414,12 @@ struct CookingSessionView: View {
                         width: KartaDesign.cooking.timerPlay,
                         height: KartaDesign.cooking.timerPlay
                     )
-                    .background(Circle().fill(KartaDesign.ColorToken.brand))
+                    .background {
+                        Circle()
+                            .fill(KartaDesign.ColorToken.brandEdge)
+                            .offset(y: KartaDesign.space.ctaEdge)
+                        Circle().fill(KartaDesign.ColorToken.brand)
+                    }
             }
             .accessibilityLabel("Start timer")
         }
@@ -439,6 +463,11 @@ struct CookingSessionView: View {
                         .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                     Text(presentation.upNext?.summary ?? "")
                         .font(KartaDesign.FontToken.upNextSummary())
+                        .lineSpacing(Self.lineSpacing(
+                            name: "Fraunces", weight: .bold, size: 18,
+                            textStyle: .headline,
+                            target: KartaDesign.cooking.upNextLineHeight
+                        ))
                         .foregroundStyle(KartaDesign.ColorToken.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -495,6 +524,8 @@ struct CookingSessionView: View {
             VStack(spacing: KartaDesign.space.rankGap) {
                 Image(systemName: icon)
                     .font(.system(size: KartaDesign.cooking.outcomeIcon, weight: .semibold))
+                    // Fixed box so all three labels share a baseline.
+                    .frame(height: KartaDesign.cooking.outcomeIcon)
                 Text(label)
                     .font(KartaDesign.FontToken.button())
             }
@@ -676,6 +707,25 @@ struct CookingSessionView: View {
         case .previous:
             store.send(.previousStep)
         }
+    }
+
+    /// `lineSpacing` that lands a text on `target` pt baseline to baseline:
+    /// the font's natural line height is subtracted from the target.
+    private static func lineSpacing(
+        name: String,
+        weight: UIFont.Weight,
+        size: CGFloat,
+        textStyle: UIFont.TextStyle,
+        target: CGFloat
+    ) -> CGFloat {
+        let scaledSize = UIFontMetrics(forTextStyle: textStyle)
+            .scaledValue(for: size)
+        let descriptor = UIFontDescriptor(fontAttributes: [
+            .name: name,
+            .traits: [UIFontDescriptor.TraitKey.weight: weight]
+        ])
+        let natural = UIFont(descriptor: descriptor, size: scaledSize).lineHeight
+        return max(target - natural, 0)
     }
 
     /// Report the Paso settling on screen: on the last one, let the session

@@ -422,6 +422,13 @@ enum KartaDesign {
         static let headerTop: CGFloat = 16
         static let summaryGap: CGFloat = 16
         static let detailGap: CGFloat = 6
+        /// Target baseline-to-baseline heights of the session texts
+        /// (spec: Resumen 34/39, Detalle 17/24, ingredient rows 17/23,
+        /// Up next Resumen 18/22).
+        static let summaryLineHeight: CGFloat = 39
+        static let detailLineHeight: CGFloat = 24
+        static let ingredientLineHeight: CGFloat = 23
+        static let upNextLineHeight: CGFloat = 22
         /// The media window is inset 12 pt from the card edges — wider than
         /// the text blocks (cardInset 20).
         static let mediaInset: CGFloat = 12
