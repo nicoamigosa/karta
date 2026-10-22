@@ -302,7 +302,6 @@ enum KartaDesign {
         static let backFrameInset: CGFloat = 9
         static let onboarding: CGFloat = 28
         static let onboardingGap: CGFloat = 24
-        static let cookbookTop: CGFloat = 58
         static let cookbookBlockGap: CGFloat = 18
         static let cookbookGridGap: CGFloat = 12
         static let cookbookGridCardPadding: CGFloat = 8

@@ -62,6 +62,8 @@ struct CookbookBoxGlyph: View {
                         }
                     }
 
+                // The lid sits centred over the box when closed; the open
+                // rotation pivots it up around its leading edge.
                 RoundedRectangle(cornerRadius: side * 0.1, style: .continuous)
                     .stroke(ink, lineWidth: stroke)
                     .frame(width: lidWidth, height: lidHeight)
@@ -70,7 +72,6 @@ struct CookbookBoxGlyph: View {
                         .degrees(-60 * lidOpen),
                         anchor: .leading
                     )
-                    .offset(x: -side * 0.46)
             }
             .frame(width: side, height: side)
         }

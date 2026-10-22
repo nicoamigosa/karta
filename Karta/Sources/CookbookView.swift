@@ -64,7 +64,6 @@ struct CookbookScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, KartaDesign.space.screenX)
-        .padding(.top, KartaDesign.space.cookbookTop)
         .background(KartaDesign.ColorToken.paper.ignoresSafeArea())
         .overlay(alignment: .bottom) {
             if let toast = store.unsaveToast(recipes: recipes) {

@@ -34,23 +34,30 @@ struct CookbookShellTests {
     }
 
     @MainActor
-    @Test("Save, blocked save and unsave Undo go through the store, not the view")
-    func saveUnsaveRoundTrip() {
+    @Test("Save lands in Want to try, unsave removes it, Undo restores it")
+    func saveUnsaveRoundTrip() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let recipe = try #require(recipes.first)
         let store = KartaStore(state: KartaState(
             safetyProfile: SafetyProfile(intolerances: [])
         ))
 
-        store.send(.saveRecipe("recipe-a"))
-        #expect(store.cookbook.isSaved("recipe-a"))
+        store.send(.saveRecipe(recipe.id))
+        #expect(store.cookbook.isSaved(recipe.id))
         #expect(SaveTap.effect(of: store.state.lastSaveResult) == .saved)
+        #expect(store.cookbookPresentation(recipes: recipes)
+            .wantToTry.map(\.recipeID) == [recipe.id])
 
-        store.send(.unsaveRecipe("recipe-a"))
-        #expect(!store.cookbook.isSaved("recipe-a"))
+        store.send(.unsaveRecipe(recipe.id))
+        #expect(!store.cookbook.isSaved(recipe.id))
         #expect(store.state.pendingUnsave != nil)
+        #expect(store.cookbookPresentation(recipes: recipes).wantToTry.isEmpty)
 
         store.send(.undoUnsave)
-        #expect(store.cookbook.isSaved("recipe-a"))
+        #expect(store.cookbook.isSaved(recipe.id))
         #expect(store.state.pendingUnsave == nil)
+        #expect(store.cookbookPresentation(recipes: recipes)
+            .wantToTry.map(\.recipeID) == [recipe.id])
     }
 
     @MainActor
