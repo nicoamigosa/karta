@@ -17,6 +17,9 @@ struct CookingSessionView: View {
     let store: KartaStore
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // Read so the body re-evaluates on Dynamic Type changes: the Fraunces
+    // tokens resolve their point size eagerly in `KartaDesign.FontToken`.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var dragOffset: CGFloat = 0
     @State private var confirmLeave = false
 
@@ -91,51 +94,65 @@ struct CookingSessionView: View {
     ) -> some View {
         CardRelief(edgeColors: KartaDesign.ColorToken.cardEdges) {
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    header(presentation)
-                        .padding(.top, KartaDesign.cooking.headerTop)
+                header(presentation)
+                    .padding(.top, KartaDesign.cooking.headerTop)
+                    .padding(.horizontal, KartaDesign.cooking.cardInset)
 
-                    Text(presentation.summary)
-                    .font(KartaDesign.FontToken.cookSummary())
-                    .tracking(-0.4)
-                    // Fraunces' natural line height at 34 pt exceeds the
-                    // spec's 39 pt, so the exact line height of iOS 26 is
-                    // required — lineSpacing can only add space.
-                    .lineHeight(.exact(points: KartaDesign.cooking.summaryLineHeight))
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                // The card body scrolls when the texts outgrow it at
+                // accessibility text sizes; the bottom zone stays pinned.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(presentation.summary)
+                            .font(KartaDesign.FontToken.cookSummary())
+                            .tracking(-0.4)
+                            .modifier(SpecLineHeight(
+                                fontName: "Fraunces", fontWeight: .bold,
+                                size: 34,
+                                target: KartaDesign.cooking.summaryLineHeight,
+                                relativeTo: .largeTitle
+                            ))
+                            // ≤ 36 characters fits two lines at the spec'd
+                            // size; bigger text needs more room.
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(KartaDesign.ColorToken.ink)
+                            .padding(.top, KartaDesign.cooking.summaryGap)
+                            .padding(.horizontal, KartaDesign.cooking.cardInset)
+
+                        Text(presentation.detail)
+                            .font(KartaDesign.FontToken.cookDetail())
+                            .modifier(SpecLineHeight(
+                                fontName: "Figtree", fontWeight: .medium,
+                                size: 17,
+                                target: KartaDesign.cooking.detailLineHeight,
+                                relativeTo: .body
+                            ))
+                            .foregroundStyle(KartaDesign.ColorToken.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, KartaDesign.cooking.detailGap)
+                            .padding(.horizontal, KartaDesign.cooking.cardInset)
+
+                        // The media window sits 12 pt from the card edges —
+                        // wider than the text blocks.
+                        mediaWindow(presentation)
+                            .padding(.top, KartaDesign.cooking.sectionGap)
+                            .padding(.horizontal, KartaDesign.cooking.mediaInset)
+
+                        ingredientsSection(presentation)
+                            .padding(.top, KartaDesign.cooking.sectionGap)
+                            .padding(.horizontal, KartaDesign.cooking.cardInset)
+
+                        Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
+                    }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(KartaDesign.ColorToken.ink)
-                    .padding(.top, KartaDesign.cooking.summaryGap)
+                }
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
 
-                Text(presentation.detail)
-                    .font(KartaDesign.FontToken.cookDetail())
-                    .lineSpacing(Self.lineSpacing(
-                        name: "Figtree", weight: .medium, size: 17,
-                        textStyle: .body,
-                        target: KartaDesign.cooking.detailLineHeight
-                    ))
-                    .foregroundStyle(KartaDesign.ColorToken.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, KartaDesign.cooking.detailGap)
-            }
-            .padding(.horizontal, KartaDesign.cooking.cardInset)
-
-            // The media window sits 12 pt from the card edges — wider than
-            // the text blocks.
-            mediaWindow(presentation)
-                .padding(.top, KartaDesign.cooking.sectionGap)
-                .padding(.horizontal, KartaDesign.cooking.mediaInset)
-
-            ingredientsSection(presentation)
-                .padding(.top, KartaDesign.cooking.sectionGap)
-                .padding(.horizontal, KartaDesign.cooking.cardInset)
-
-            Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
-
-            // Pinned bottom zone: separators run edge to edge, content
-            // aligns on the card inset.
-            bottomZone(presentation)
+                // Pinned bottom zone: separators run edge to edge, content
+                // aligns on the card inset.
+                bottomZone(presentation)
         }
         .padding(.bottom, KartaDesign.cooking.upNextVGap)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -230,7 +247,7 @@ struct CookingSessionView: View {
                 .font(.custom("Figtree", size: 13).weight(.heavy).monospacedDigit())
                 .foregroundStyle(fired ? KartaDesign.ColorToken.card : suit.chipInk)
                 .padding(.horizontal, KartaDesign.cooking.timerPillHGap)
-                .frame(height: KartaDesign.cooking.timerPillHeight)
+                .frame(minHeight: KartaDesign.cooking.timerPillHeight)
                 .background {
                     Capsule().fill(fired ? KartaDesign.ColorToken.brand : KartaDesign.ColorToken.card)
                     if !fired {
@@ -346,10 +363,11 @@ struct CookingSessionView: View {
                     .font(.custom("Figtree", size: 17).weight(.heavy))
                     + Text(row.name)
                     .font(.custom("Figtree", size: 17).weight(.medium)))
-                .lineSpacing(Self.lineSpacing(
-                    name: "Figtree", weight: .heavy, size: 17,
-                    textStyle: .body,
-                    target: KartaDesign.cooking.ingredientLineHeight
+                .modifier(SpecLineHeight(
+                    fontName: "Figtree", fontWeight: .heavy,
+                    size: 17,
+                    target: KartaDesign.cooking.ingredientLineHeight,
+                    relativeTo: .body
                 ))
                 .foregroundStyle(KartaDesign.ColorToken.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -396,6 +414,10 @@ struct CookingSessionView: View {
                 Text(presentation.timerLabel ?? "")
                     .font(KartaDesign.FontToken.cookTimer())
                     .monospacedDigit()
+                    .lineLimit(1)
+                    // Shrink rather than truncate the digits when the scaled
+                    // Fraunces no longer fits beside TIMER and the play disc.
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(suit.chipInk)
                 Text("TIMER")
                     .font(.custom("Figtree", size: 12).weight(.heavy))
@@ -462,10 +484,11 @@ struct CookingSessionView: View {
                         .foregroundStyle(suit.chipInk)
                     Text(presentation.upNext?.summary ?? "")
                         .font(KartaDesign.FontToken.upNextSummary())
-                        .lineSpacing(Self.lineSpacing(
-                            name: "Fraunces", weight: .bold, size: 18,
-                            textStyle: .headline,
-                            target: KartaDesign.cooking.upNextLineHeight
+                        .modifier(SpecLineHeight(
+                            fontName: "Fraunces", fontWeight: .bold,
+                            size: 18,
+                            target: KartaDesign.cooking.upNextLineHeight,
+                            relativeTo: .headline
                         ))
                         .foregroundStyle(KartaDesign.ColorToken.ink)
                         .fixedSize(horizontal: false, vertical: true)
@@ -527,10 +550,11 @@ struct CookingSessionView: View {
                     .frame(height: KartaDesign.cooking.outcomeIcon)
                 Text(label)
                     .font(KartaDesign.FontToken.button())
+                    .multilineTextAlignment(.center)
             }
             .foregroundStyle(KartaDesign.ColorToken.ink)
             .frame(maxWidth: .infinity)
-            .frame(height: KartaDesign.cooking.outcomeButtonHeight)
+            .frame(minHeight: KartaDesign.cooking.outcomeButtonHeight)
             .background {
                 RoundedRectangle(
                     cornerRadius: KartaDesign.radius.chip,
@@ -582,7 +606,7 @@ struct CookingSessionView: View {
                     .font(KartaDesign.FontToken.ctaLabel())
                     .foregroundStyle(KartaDesign.ColorToken.card)
                     .frame(maxWidth: .infinity)
-                    .frame(height: KartaDesign.cooking.finishHeight)
+                    .frame(minHeight: KartaDesign.cooking.finishHeight)
                     .background {
                         RoundedRectangle(
                             cornerRadius: KartaDesign.radius.cta,
@@ -708,27 +732,6 @@ struct CookingSessionView: View {
         }
     }
 
-    /// `lineSpacing` that lands a text on `target` pt baseline to baseline:
-    /// the font's natural line height is subtracted from the target.
-    private static func lineSpacing(
-        name: String,
-        weight: UIFont.Weight,
-        size: CGFloat,
-        textStyle: UIFont.TextStyle,
-        target: CGFloat
-    ) -> CGFloat {
-        let scaledSize = UIFontMetrics(forTextStyle: textStyle)
-            .scaledValue(for: size)
-        let descriptor = UIFontDescriptor(fontAttributes: [
-            .name: name,
-            .traits: [UIFontDescriptor.TraitKey.weight: weight]
-        ])
-        let natural = UIFont(descriptor: descriptor, size: scaledSize).lineHeight
-        // Negative spacing is valid: a target under the natural line height
-        // must not be silently clamped away.
-        return target - natural
-    }
-
     /// Report the Paso settling on screen: on the last one, let the session
     /// itself decide whether the journey already counts as a probable cook.
     private func reportStepArrival() {
@@ -739,6 +742,48 @@ struct CookingSessionView: View {
             now: now
         ) {
             store.send(action)
+        }
+    }
+}
+
+/// Pins a text to the spec's baseline-to-baseline line height: exact at the
+/// default Dynamic Type size and scaled with the same curve afterwards, so
+/// lines keep their spec'd proportion instead of overlapping at accessibility
+/// sizes. A target below the font's natural line height (e.g. Fraunces 34 →
+/// 39) needs iOS 26's exact line height — `lineSpacing` can only add space —
+/// and a target above it adds the difference.
+private struct SpecLineHeight: ViewModifier {
+    let fontName: String
+    let fontWeight: UIFont.Weight
+
+    @ScaledMetric private var scaledSize: CGFloat
+    @ScaledMetric private var scaledTarget: CGFloat
+
+    init(
+        fontName: String,
+        fontWeight: UIFont.Weight,
+        size: CGFloat,
+        target: CGFloat,
+        relativeTo textStyle: Font.TextStyle
+    ) {
+        self.fontName = fontName
+        self.fontWeight = fontWeight
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: textStyle)
+        _scaledTarget = ScaledMetric(wrappedValue: target, relativeTo: textStyle)
+    }
+
+    func body(content: Content) -> some View {
+        let descriptor = UIFontDescriptor(fontAttributes: [
+            .name: fontName,
+            .traits: [UIFontDescriptor.TraitKey.weight: fontWeight]
+        ])
+        let natural = UIFont(descriptor: descriptor, size: scaledSize).lineHeight
+        return Group {
+            if scaledTarget < natural {
+                content.lineHeight(.exact(points: scaledTarget))
+            } else {
+                content.lineSpacing(scaledTarget - natural)
+            }
         }
     }
 }
