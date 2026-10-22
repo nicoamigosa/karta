@@ -43,6 +43,9 @@ struct FeedScreen: View {
                         manifest: manifest,
                         store: store,
                         onClose: {
+                            // Leaving the surface that hosts the toast
+                            // dismisses it — same rule as the reverse's ✕.
+                            store.send(.dismissUnsaveToast)
                             cookbookOpen = false
                         },
                         onOpenRecipe: { row in

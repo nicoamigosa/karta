@@ -319,7 +319,8 @@ struct UnsaveToastView: View {
             y: KartaDesign.elevation.buttonShadowY
         )
         .accessibilityElement(children: .contain)
-        .task {
+        // Each removal gets its own ~5 s: a second unsave restarts the timer.
+        .task(id: toast) {
             // The toast stays about five seconds; the receipt is transient.
             try? await Task.sleep(for: .seconds(KartaDesign.space.toastDuration))
             guard !Task.isCancelled else { return }
