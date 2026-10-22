@@ -367,6 +367,8 @@ private struct CookingSessionDTO: Codable {
     let startedAt: TimeInterval
     let currentIndex: Int
     let furthestIndex: Int
+    let isOnFinish: Bool
+    let finishReachedAt: TimeInterval?
     let lastStepReachedAt: TimeInterval?
     let isExited: Bool
     let cookedEvent: CookedEventDTO?
@@ -379,6 +381,8 @@ private struct CookingSessionDTO: Codable {
         startedAt = session.startedAt
         currentIndex = session.currentIndex
         furthestIndex = session.furthestIndex
+        isOnFinish = session.isOnFinish
+        finishReachedAt = session.finishReachedAt
         lastStepReachedAt = session.lastStepReachedAt
         isExited = session.isExited
         cookedEvent = session.cookedEvent.map(CookedEventDTO.init)
@@ -401,6 +405,8 @@ private struct CookingSessionDTO: Codable {
         currentIndex = try container.decodeIfPresent(Int.self, forKey: .currentIndex) ?? 0
         furthestIndex = try container.decodeIfPresent(Int.self, forKey: .furthestIndex)
             ?? currentIndex
+        isOnFinish = try container.decodeIfPresent(Bool.self, forKey: .isOnFinish) ?? false
+        finishReachedAt = try container.decodeIfPresent(TimeInterval.self, forKey: .finishReachedAt)
         lastStepReachedAt = try container.decodeIfPresent(
             TimeInterval.self,
             forKey: .lastStepReachedAt
@@ -421,6 +427,12 @@ private struct CookingSessionDTO: Codable {
                   furthestIndex >= currentIndex,
                   steps.isEmpty ? furthestIndex == 0 : steps.indices.contains(furthestIndex),
                   lastStepReachedAt?.isFinite ?? true else {
+                throw SnapshotDecodingError.invalidValue
+            }
+
+            guard finishReachedAt?.isFinite ?? true,
+                  !isOnFinish || (!steps.isEmpty && currentIndex == steps.count - 1),
+                  finishReachedAt == nil || (!steps.isEmpty && furthestIndex == steps.count - 1) else {
                 throw SnapshotDecodingError.invalidValue
             }
 
@@ -449,7 +461,9 @@ private struct CookingSessionDTO: Codable {
                 cookedEvent: try cookedEvent?.domainValue,
                 timers: timersByStep,
                 furthestIndex: furthestIndex,
-                lastStepReachedAt: lastStepReachedAt
+                lastStepReachedAt: lastStepReachedAt,
+                isOnFinish: isOnFinish,
+                finishReachedAt: finishReachedAt
             )
         }
     }
@@ -461,6 +475,8 @@ private struct CookingSessionDTO: Codable {
         case startedAt
         case currentIndex
         case furthestIndex
+        case isOnFinish
+        case finishReachedAt
         case lastStepReachedAt
         case isExited
         case cookedEvent

@@ -127,85 +127,165 @@ Layout rules (reference: canvas board *Reverse A centered · course on top*):
 
 ## The cooking session
 
-Signed off on 2026-10-19 by the founder. Reference: canvas page *Cooking · round 3* (four
-boards *Chosen · step 1–4*, the board *Chosen · step 3 while the step 2 timer runs*, and a
-prototype to swipe), PNGs in `docs/design/screens/`: `cooking-step-first.png` (*UP NEXT ·
-SWIPE LEFT*), `cooking-step-timer.png` (Temporizador ready), `cooking-step.png`,
-`cooking-last-step.png` and `cooking-last-step-answered.png` (technique clip, outcome before
-and after answering), and `cooking-timer-elsewhere-{running,done}.png` (a running
-Temporizador seen from another Paso, #5). On the boards of Pasos 1–3 the Foto del paso is a
-placeholder because no step photos exist yet (#104); build the window as on Paso 4. The
-*Leave cooking?* sheet has no board yet; only its text below is signed off. Product terms:
-`CONTEXT.md` → **Paso**, **Resumen**, **Detalle**, **Foto del paso**, **Cantidad**,
-**Temporizador**; ADR 0014.
+Signed off on 2026-10-19 by the founder. On 2026-10-22 (#101) the founder also signed off how a
+Paso fits on a real phone, the finish card and what gives way when a Paso does not fit. That
+round replaces the Up next row and the outcome on the last Paso of *Cooking · round 3*.
+Reference: the design canvas *Karta · Cooking fit (#101)*
+(<https://claude.ai/artifact/UHnP8RdK9jP9a1fkDeLUm5>; rounds D and E side by side, the signed
+boards are the `Signed*` artboards), plus *Cooking · round 3* in the canvas linked from #15 for
+everything this section does not change. PNGs in `docs/design/screens/`, all drawn on an iPhone
+17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `cooking-step-first.png` | Paso 1 with the swipe hint |
+| `cooking-step-timer.png` | Paso 2, Temporizador ready |
+| `cooking-step.png` | Paso 3 |
+| `cooking-last-step.png` | last Paso with the technique clip; the finish card peeks behind |
+| `cooking-finish.png`, `cooking-finish-answered.png` | the finish card, before and after the outcome |
+| `cooking-timer-elsewhere-{running,done}.png` | a running Temporizador seen from another Paso (#5) |
+| `cooking-step-shrunk.png` | a long Paso: the media window gives way (see *When a Paso does not fit*) |
+| `cooking-step-ax.png` | Paso 2 at Dynamic Type AX1: the card scrolls with the signal |
+
+On the boards of Pasos 1–3 the Foto del paso is a placeholder because no step photos exist yet
+(#104); build the window as on the last Paso. The *Leave cooking?* sheet has no board yet; only
+its text below is signed off. Product terms: `CONTEXT.md` → **Paso**, **Resumen**,
+**Detalle**, **Foto del paso**, **Cantidad**, **Temporizador**, **Cocinado**; ADR 0008 and 0014.
 
 Each Paso is a card the same size as the reverse, on the same suit-coloured frame. The cook
-passes them sideways like a deck.
+passes them sideways like a deck. After the last Paso comes one more card, the **finish card**.
 
 ```
- suit colour, 30 pt above and below, 10 pt at the sides
+ suit colour fills the screen, safe areas included
+ card: 30 pt inside each safe area (top, bottom), 10 pt at the sides
 ┌───────────────────────────────┐  card face, radius 26, same edge + shadow
-│ (✕)        ▬ ▬ ▭ ▭            │  ✕ + progress bar, nothing else
+│ (✕)        ▬ ▬ ▭ ▭            │  ✕ + progress bar, nothing else  (pinned)
 │ Fry until tender              │  Resumen, ≤ 36 characters, ≤ 2 lines
 │ Medium heat. They should      │  Detalle
 │ soften, not brown.            │
 │ ┌───────────────────────────┐ │
-│ │       Foto del paso       │ │  220 pt high, inset 12, radius 18
+│ │       Foto del paso       │ │  220 pt high (160 at the least), inset 12, radius 18
 │ │[When it looks like this…] │ │  label chip (or the clip's name)
 │ └───────────────────────────┘ │
 │ FOR THIS STEP                 │
 │ 4 medium Yukon Gold potatoes  │  Cantidad first, then the name
 │ 1 medium Yellow onion         │
 │                               │  ≥ 20 pt, grows with free space
-│ [ 12:00 TIMER            (▶) ]│  only on a Paso with a Temporizador
-│───────────────────────────────│
-│ [img] UP NEXT                 │  next Paso: Foto del paso + Resumen
-│       Fold the potatoes in… ← │
+│ [ 12:00 TIMER            (▶) ]│  only on a Paso with a Temporizador  (pinned)
 └───────────────────────────────┘
 ```
 
+### On the screen
+
+- **Boards are measured on the device, safe areas included.** The suit colour fills the whole
+  screen, Dynamic Island and home indicator areas too. The card sits 30 pt inside the top safe
+  area, 30 pt inside the bottom safe area and 10 pt from the sides. On an iPhone 17 that is
+  62 + 30 pt at the top and 34 + 30 pt at the bottom, so the card is 382 × 718 pt. Never check a
+  layout against a frame without safe areas (the old 390 × 844 boards): that hid the overflow of
+  #101.
+
+### The Paso card
+
 Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
 
-- **Header** (16 pt from the top): the ✕ tactile button (as on the reverse) on the left and
-  the **progress bar** centred: one 22 × 6 pt segment per Paso, radius 3, suit `back` for done
-  and current, suit `chip` for the rest. No Course label, no "Step 2 of 4" text.
+- **Header** (16 pt from the top, pinned): the ✕ tactile button (as on the reverse) on the left
+  and the **progress bar** centred: one 22 × 6 pt segment per Paso, radius 3, suit `back` for
+  done and current, suit `chip` for the rest. No Course label, no "Step 2 of 4" text. The
+  finish card has no segment of its own.
 - **Resumen**: Fraunces 700, 34 / 39 pt, tracking −0.4, `ink`, 16 pt below the header. At most
   36 characters, so never more than two lines.
 - **Detalle**: Figtree 500, 17 / 24 pt, `ink`, 6 pt below.
-- **Media window**: 16 pt below, inset 12 pt from the card edges, 220 pt high, radius 18.
-  It always shows the Foto del paso (`object-fit: cover`). A chip at the bottom-left (10 pt
-  in; `card` fill, Figtree 800 12 pt, suit `chipInk`, radius 8) reads *When it looks like
-  this, move on*. If the Paso has a technique clip, the chip shows the clip's name and length
-  instead, and a 60 pt `card` circle with a play glyph sits in the centre: tapping it plays the
-  clip **in the same window**; when it ends, the photo returns.
+- **Media window**: 16 pt below, inset 12 pt from the card edges, 220 pt high, radius 18; it
+  gives way down to 160 pt (*When a Paso does not fit*). It always shows the Foto del paso
+  (`object-fit: cover`). A chip at the bottom-left (10 pt in; `card` fill, Figtree 800 12 pt,
+  suit `chipInk`, radius 8) reads *When it looks like this, move on*. If the Paso has a
+  technique clip, the chip shows the clip's name and length instead, and a 60 pt `card` circle
+  with a play glyph sits in the centre: tapping it plays the clip **in the same window**; when
+  it ends, the photo returns.
 - **FOR THIS STEP**: 16 pt below; eyebrow as *YOU'LL NEED* on the reverse. One row per
   ingredient, 5 pt apart: the Cantidad in Figtree 800 17 / 23, then the name in Figtree 500.
   No boxes, no leaders, no wrapping tricks: a long row simply wraps.
 - **Free space**: at least 20 pt, and it absorbs whatever is left, so the bottom zone is
   always pinned to the bottom of the card.
-- **Bottom zone**, pinned:
-  - **Temporizador** (only on a Paso that declares one): 14 pt above the line; suit `chip`
-    fill, radius 18; the time in Fraunces 900 36 pt, suit `chipInk`, tabular figures, plus
-    *TIMER* (Figtree 800 12, tracking 1.2); a 52 pt `brand` circle with a play glyph on the
-    right. Running: the remaining time, a pause button and a thin progress line. Done:
-    `brand` fill, *Time's up* and a *Stop* pill (canvas page *Cooking · round 2*, board D2).
-  - **Up next** (every Paso but the last): 1 pt `line` on top, 14 / 20 / 20 pt padding; a
-    64 pt thumbnail (the next Foto del paso, radius 12), the eyebrow *UP NEXT* (on the first
-    Paso, *UP NEXT · SWIPE LEFT*) and the next Resumen in Fraunces 700 18 / 22; a left arrow
-    on the right edge, `inkMuted`.
-  - **Last Paso**: *How did it turn out?* (Fraunces 700 22, centred) and three 68 pt tactile
-    buttons with an icon and a label: *Good*, *Not great*, *Add photo*. No emoji. After an
-    answer: a check disc, *Cooked. Enjoy it!* and **Finish** (the primary button, 56 pt),
-    which ends the session without asking.
+- **Bottom zone**, pinned, only on a Paso that declares a **Temporizador**: 20 pt from the
+  sides, 14 pt from the bottom edge; suit `chip` fill, radius 18; the time in Fraunces 900
+  36 pt, suit `chipInk`, tabular figures, plus *TIMER* (Figtree 800 12, tracking 1.2); a 52 pt
+  `brand` circle with a play glyph on the right. Running: the remaining time, a pause button
+  and a thin progress line. Done: `brand` fill, *Time's up* and a *Stop* pill (canvas page
+  *Cooking · round 2*, board D2). A Paso without a Temporizador has no bottom zone.
+- **No Up next.** The next Paso is one swipe away and already peeks behind the card. On the
+  first Paso only, a hint floats 20 pt above the bottom edge, centred, and takes no space: a
+  left arrow and *Swipe left for step 2* (Figtree 700 13, `inkMuted`). It fades out after 3 s
+  (600 ms) or on the first touch, like the deck hint (`deck.hint`).
 
-Behaviour:
+### The finish card
+
+- The card after the last Paso, same size and frame. Swiping left on the last Paso (or tapping
+  its right half) reaches it; it peeks behind the last Paso as the next Paso does. Swiping
+  right goes back to the last Paso. The ✕ works as on any Paso.
+- Header as on a Paso, with every segment of the progress bar done.
+- *How did it turn out?* in the Resumen style; below it, the recipe name in the Detalle style.
+- The recipe's Foto (not a Foto del paso), inset 12 pt, radius 18, `cover`, filling the free
+  height (160 pt at the least). No chip, no play button.
+- Bottom zone, pinned: 1 pt `line` on top, 14 / 20 / 20 pt padding, three 68 pt tactile buttons
+  with an icon and a label: *Good*, *Not great*, *Add photo*. No emoji.
+- After an answer the title becomes *Cooked. Enjoy it!* and the three buttons give way to
+  **Finish** (the primary button, 56 pt), which ends the session without asking.
+- The answer is the only explicit Cocinado (ADR 0008); a session that ends without it is left
+  to the inferred one.
+
+### When a Paso does not fit
+
+The card height comes from the screen; the content does not. When the content is taller than
+the card, things give way in this order, and only in this order:
+
+1. The free space shrinks to its 20 pt minimum.
+2. The media window shrinks from 220 pt to 160 pt. The photo stays `cover`, the chip stays at
+   the bottom-left and the play button stays centred.
+3. The body scrolls. The header and the bottom zone stay pinned and everything between them
+   scrolls under the bottom zone. Hidden content is **always** signalled:
+   - a 32 pt fade from transparent to `card` along the bottom of the scrolling area, right
+     above the bottom zone (or the card edge when there is none);
+   - a chip on the right, 16 pt in and 8 pt above that edge: suit `chip` fill, Figtree 800
+     13 pt suit `chipInk`, 32 pt high, radius 16, the chip relief of `elevation.chip` and a
+     down arrow. It reads *N more ingredients* (*1 more ingredient*) while rows of FOR THIS
+     STEP are below the edge or under the fade, and *More below* for anything else. It is a
+     button: tapping it scrolls to the next hidden row, and it never changes Paso;
+   - the scroll indicator, visible and flashed when the card appears.
+
+   The fade and the chip go away once the end of the body is reached.
+
+Never give way: the Resumen, the Detalle, any row of FOR THIS STEP (never truncated, never
+set smaller, never in columns), the 20 pt of free space when scrolled to the end, and the
+type sizes. Nothing is ever clipped without the signal.
+
+With the seed at the default text size on an iPhone 17 every Paso fits with the window at
+220 pt (Paso 2: about 90 pt free; last Paso: about 85 pt free). A Paso with a two-line
+Resumen, a three-line Detalle, six ingredients and a Temporizador fits with the window at
+166 pt (`cooking-step-shrunk.png`). The canvas measures every case live under each board.
+
+### Text size
+
+Text follows Dynamic Type, scaled relative to: Resumen, the finish-card title and the timer
+digits → `.largeTitle`; Detalle, ingredient rows and **Finish** → `.body`; *FOR THIS STEP*,
+*TIMER* and the media chip → `.caption1`; the outcome labels, the swipe hint and the signal chip
+→ `.footnote`. Buttons and circles keep their size and grow only if their label needs it.
+
+- **Up to xxxL** the rules above apply as they are.
+- **From AX1 to AX5** nothing stays pinned at the bottom: the Temporizador, and on the finish
+  card the outcome buttons (or **Finish**), move to the end of the scroll. The outcome buttons
+  stack one per row, 56 pt high, the icon left of the label. The header stays pinned. Steps 1–3
+  of *When a Paso does not fit* still apply, with the same signal (`cooking-step-ax.png`).
+
+### Behaviour
 
 - **Moving between Pasos**: swipe left for the next Paso, right for the previous one; the
-  card leaves like a card of the deck. The next one or two Pasos peek behind the front card
-  (translated 4 / 8 pt, rotated 1.8° / 3.5°, `paper` and `cardEdge[0]`); the last Paso has
-  nothing behind it. Tapping the right half of the card also advances and the left half goes
-  back; buttons (play, timer, outcome, ✕) never move between Pasos. There is no vertical
-  gesture in the session.
+  card leaves like a card of the deck. The next one or two cards peek behind the front card
+  (translated 4 / 8 pt, rotated 1.8° / 3.5°, `paper` and `cardEdge[0]`); behind the last Paso
+  peeks the finish card, and the finish card has nothing behind it. Tapping the right half of
+  the card also advances and the left half goes back; buttons (play, timer, outcome, signal
+  chip, ✕) never move between Pasos. The only vertical gesture is scrolling a card whose
+  content does not fit.
 - **Leaving**: only the ✕, and it always asks first: a sheet *Leave cooking? You're on step
   3 of 4.* with *Keep cooking* and *Leave*. Leaving ends the session for good (#34).
 - **A running Temporizador seen from another Paso**: its Paso's segment in the progress bar

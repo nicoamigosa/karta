@@ -10,6 +10,7 @@ public struct CookingStepPresentation: Equatable, Sendable {
     /// Countdown display, initially the declared duration, then the remaining time.
     public let timerLabel: String?
     public let ingredientRows: [IngredientRow]
+    @available(*, deprecated, message: "Variant E uses Cierre after the last Paso; Up next is no longer rendered.")
     public let upNext: UpNext?
     public let progress: [ProgressSegment]
 
@@ -29,6 +30,7 @@ public struct CookingStepPresentation: Equatable, Sendable {
         }
     }
 
+    @available(*, deprecated, message: "Variant E no longer renders Up next.")
     public struct UpNext: Equatable, Sendable {
         public let summary: String
         public let photo: MediaReference?
@@ -92,7 +94,7 @@ public struct CookingStepPresentation: Equatable, Sendable {
 }
 
 /// Round up fractional seconds so a running timer does not display zero early.
-private func countdownLabel(_ remaining: TimeInterval) -> String {
+func countdownLabel(_ remaining: TimeInterval) -> String {
     let seconds = Int(ceil(max(remaining, 0)))
     let minutes = seconds / 60
     let remainder = seconds % 60
@@ -105,7 +107,7 @@ extension KartaState {
         clips: TechniqueClipLibrary,
         now: TimeInterval
     ) -> CookingStepPresentation? {
-        guard let session, !session.isExited, session.recipeID == recipe.id,
+        guard let session, !session.isExited, !session.isOnFinish, session.recipeID == recipe.id,
               let step = session.currentStep,
               canOpenRecipe(recipe) else { return nil }
         return CookingStepPresentation(
