@@ -166,7 +166,7 @@ public struct CookingSession: Equatable, Sendable {
     /// evidence of the journey.
     private(set) var furthestIndex: Int
     /// The first injected time at which the session reached the last step.
-    private(set) var lastStepReachedAt: TimeInterval?
+    public private(set) var lastStepReachedAt: TimeInterval?
 
     init(
         recipeID: String,
