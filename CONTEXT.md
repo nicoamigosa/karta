@@ -222,6 +222,12 @@ _Avoid_: like, favorito
 El recorrido paso a paso de una receta concreta, desde que se entra hasta que se sale.
 _Avoid_: modo cocina, ejecución
 
+**Cierre** (código: `finish`):
+La posición después del último Paso de la Sesión de cocina, donde la usuaria responde
+cómo salió y termina la sesión. No es un Paso: no tiene segmento de progreso propio,
+ingredientes ni Temporizador.
+_Avoid_: carta, tarjeta, Paso final como nombre del Cierre
+
 **Temporizador**:
 La cuenta atrás que declara un Paso y que la usuaria arranca a propósito. Sigue corriendo
 aunque cambie de Paso, salga de la app o bloquee el móvil, y avisa al terminar aunque el móvil
