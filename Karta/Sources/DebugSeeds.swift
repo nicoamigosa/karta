@@ -34,7 +34,8 @@ enum DebugSeeds {
             store.send(.unsaveRecipe("caesar-salad"))
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
-             "cooking-timer-done", "cooking-finish", "cooking-shrunk":
+             "cooking-timer-done", "cooking-finish", "cooking-shrunk",
+             "cooking-scroll":
             seedCooking(name, into: store)
         default:
             break
@@ -49,6 +50,8 @@ enum DebugSeeds {
         let recipe: Recipe?
         if name == "cooking-shrunk" {
             recipe = Self.longPasoRecipe
+        } else if name == "cooking-scroll" {
+            recipe = Self.scrollingPasoRecipe
         } else {
             recipe = try? SeedResourceAdapter().loadRecipes()
                 .first(where: { $0.id == "spanish-tortilla" })
@@ -62,7 +65,8 @@ enum DebugSeeds {
         switch name {
         case "cooking-timer", "cooking-timer-running", "cooking-timer-done": target = 1
         case "cooking-step": target = 2
-        case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk":
+        case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk",
+             "cooking-scroll":
             target = 3
         default: target = 0
         }
@@ -160,7 +164,8 @@ enum DebugSeeds {
             )
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
-             "cooking-timer-done", "cooking-finish", "cooking-shrunk":
+             "cooking-timer-done", "cooking-finish", "cooking-shrunk",
+             "cooking-scroll":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
@@ -173,9 +178,14 @@ enum DebugSeeds {
     /// Synthetic recipes a debug seed adds to the loaded catalog — never
     /// part of the seed data itself.
     static func extraRecipes() -> [Recipe] {
-        guard ProcessInfo.processInfo.environment["KARTA_SEED"] == "cooking-shrunk"
-        else { return [] }
-        return [longPasoRecipe]
+        switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
+        case "cooking-shrunk":
+            return [longPasoRecipe]
+        case "cooking-scroll":
+            return [scrollingPasoRecipe]
+        default:
+            return []
+        }
     }
 
     /// The `cooking-step-shrunk` board's Paso: a two-line Resumen, a
@@ -225,6 +235,65 @@ enum DebugSeeds {
                     detail: "Cover and simmer over low heat until the lentils are tender. Stir now and then so nothing sticks to the pot.",
                     summary: "Simmer until the lentils are tender",
                     ingredients: ingredients.map {
+                        StepIngredient(ingredientID: $0.id, quantity: $0.quantity)
+                    },
+                    timerSeconds: 2400
+                )
+            ],
+            allergenReview: .reviewed([])
+        )
+    }
+
+    /// A Paso that overflows even with the media window at its 160 pt floor:
+    /// nine ingredient rows so the signalled scroll (fade + chip + indicator)
+    /// engages at the default text size.
+    private static var scrollingPasoRecipe: Recipe {
+        let extras: [Ingredient] = [
+            Ingredient(id: "lentils", name: "Brown lentils", quantity: "1 1/2 cups"),
+            Ingredient(id: "chorizo", name: "Spanish chorizo", quantity: "1 link (about 4 oz)"),
+            Ingredient(id: "carrots", name: "Nantes carrots", quantity: "2 medium"),
+            Ingredient(id: "potatoes", name: "Yukon Gold potatoes", quantity: "2 medium"),
+            Ingredient(id: "onion", name: "Yellow onion", quantity: "1 medium"),
+            Ingredient(id: "paprika", name: "Sweet paprika", quantity: "1 tsp"),
+            Ingredient(id: "garlic", name: "Garlic cloves", quantity: "3"),
+            Ingredient(id: "bay", name: "Bay leaves", quantity: "2"),
+            Ingredient(id: "stock", name: "Chicken stock", quantity: "4 cups")
+        ]
+        return Recipe(
+            id: "lentil-stew-scrolling",
+            name: "Lentil Stew",
+            heroPhoto: .local("photos/spanish-tortilla"),
+            totalMinutes: 55,
+            difficulty: .easy,
+            servings: 4,
+            primaryCourse: .dinner,
+            ingredients: extras,
+            steps: [
+                CookingStep(
+                    detail: "Soften the onion and the carrots in the oil.",
+                    summary: "Sauté the base",
+                    ingredients: [
+                        StepIngredient(ingredientID: "onion", quantity: "1 medium")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Brown the chorizo so it releases its fat.",
+                    summary: "Brown the chorizo",
+                    ingredients: [
+                        StepIngredient(ingredientID: "chorizo", quantity: "1 link (about 4 oz)")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Add the paprika and the potatoes and stir well.",
+                    summary: "Add paprika and potatoes",
+                    ingredients: [
+                        StepIngredient(ingredientID: "paprika", quantity: "1 tsp")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Cover and simmer over low heat until the lentils are tender. Stir now and then so nothing sticks to the pot.",
+                    summary: "Simmer until the lentils are tender",
+                    ingredients: extras.map {
                         StepIngredient(ingredientID: $0.id, quantity: $0.quantity)
                     },
                     timerSeconds: 2400

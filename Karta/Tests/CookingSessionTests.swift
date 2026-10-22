@@ -56,6 +56,46 @@ struct CookingSessionTests {
     // (#103); their intolerance filtering is covered in KartaPresentation's
     // own test suite — the shell joins nothing.
 
+    @Test("The signal chip counts rows measured in the scroll viewport")
+    func hiddenRowCounting() {
+        // Row bottoms live in the scroll viewport's coordinate space: they
+        // move with the content, so the threshold is only the viewport
+        // height minus the fade — the offset is never added back.
+        let viewport: CGFloat = 500
+        let fade: CGFloat = 32
+
+        // Rows at viewport positions 400 / 480 / 520: only the last two are
+        // below the fade's top edge (500 − 32 = 468).
+        var result = CookingScrollSignal.hiddenRows(
+            rowBottoms: [0: 400, 1: 480, 2: 520],
+            viewportHeight: viewport,
+            fadeHeight: fade
+        )
+        #expect(result.count == 2)
+        #expect(result.nextIndex == 1)
+
+        // After the user scrolls down 60 pt the same rows read 340 / 420 /
+        // 460 in viewport space — all visible, no scroll offset subtracted
+        // twice.
+        result = CookingScrollSignal.hiddenRows(
+            rowBottoms: [0: 340, 1: 420, 2: 460],
+            viewportHeight: viewport,
+            fadeHeight: fade
+        )
+        #expect(result.count == 0)
+        #expect(result.nextIndex == nil)
+
+        // A card without ingredient rows (the Cierre) reports nothing, so
+        // the chip falls back to "More below".
+        result = CookingScrollSignal.hiddenRows(
+            rowBottoms: [:],
+            viewportHeight: viewport,
+            fadeHeight: fade
+        )
+        #expect(result.count == 0)
+        #expect(result.nextIndex == nil)
+    }
+
     // The store itself evaluates the inferred Cocinado on arrival at the
     // finish card (#121); the shell reports nothing, so there is no
     // step-arrival seam left to test here.

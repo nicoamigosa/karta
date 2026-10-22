@@ -92,6 +92,12 @@ enum KartaDesign {
                 .weight(.bold)
         }
 
+        /// Outcome labels on the Cierre card (Figtree 700, 14 → footnote).
+        static func cookOutcomeLabel() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
         static func body() -> Font {
             .custom("Figtree", size: 16, relativeTo: .body)
         }
@@ -154,7 +160,7 @@ enum KartaDesign {
 
         /// Cooking session Temporizador readout (Fraunces 900, 36, tabular).
         static func cookTimer() -> Font {
-            display(size: 36, relativeTo: .title1, weight: 900)
+            display(size: 36, relativeTo: .largeTitle, weight: 900)
         }
 
         /// Cookbook grid card title (Fraunces 700, 17/20).

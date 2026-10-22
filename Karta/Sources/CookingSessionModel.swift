@@ -42,6 +42,23 @@ enum CookingTapDecision {
     }
 }
 
+/// The pure decision behind the signalled scroll's *N more ingredients* chip:
+/// which FOR THIS STEP rows sit hidden under the fade. `rowBottoms` are the
+/// rows' bottom edges measured in the scroll viewport's own coordinate space,
+/// so they already move with the scroll — the threshold is simply
+/// `viewportHeight - fadeHeight`, with no content offset added.
+enum CookingScrollSignal {
+    static func hiddenRows(
+        rowBottoms: [Int: CGFloat],
+        viewportHeight: CGFloat,
+        fadeHeight: CGFloat
+    ) -> (count: Int, nextIndex: Int?) {
+        let threshold = viewportHeight - fadeHeight
+        let hidden = rowBottoms.filter { $0.value > threshold }
+        return (hidden.count, hidden.keys.min())
+    }
+}
+
 /// The pure decision behind the cooking overlay: which recipe the active
 /// session renders, if the session is still running. An exited session leaves
 /// the overlay hidden even while its result remains in the store.

@@ -101,9 +101,11 @@ struct CookingSessionView: View {
             UIApplication.shared.isIdleTimerDisabled = false
         }
         .onChange(of: session.currentIndex) { _, _ in
+            resetMeasuredBody()
             indicatorFlash += 1
         }
         .onChange(of: session.isOnFinish) { _, _ in
+            resetMeasuredBody()
             indicatorFlash += 1
         }
         .task {
@@ -112,6 +114,15 @@ struct CookingSessionView: View {
             )
             swipeHintVisible = false
         }
+    }
+
+    /// The geometry probes of the outgoing card do not carry over: the row
+    /// bottoms of one Paso must not count towards the next card's chip, and a
+    /// scrolled bottom zone (timer at AX, Cierre buttons) must not keep
+    /// shrinking the next card's media window.
+    private func resetMeasuredBody() {
+        rowBottoms = [:]
+        scrolledBottomHeight = 0
     }
 
     /// The signed-off text of the leave sheet (no board yet; the title carries
@@ -318,7 +329,7 @@ struct CookingSessionView: View {
                     Image(systemName: "arrow.left")
                     Text("Swipe left for step 2")
                 }
-                .font(.custom("Figtree", size: 13).weight(.bold))
+                .font(.custom("Figtree", size: 13, relativeTo: .footnote).weight(.bold))
                 .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                 .padding(.bottom, KartaDesign.cooking.swipeHintBottom)
             }
@@ -513,7 +524,7 @@ struct CookingSessionView: View {
                             .font(.system(size: KartaDesign.cooking.outcomeIcon, weight: .semibold))
                             .frame(width: KartaDesign.cooking.outcomeIcon)
                         Text(label)
-                            .font(KartaDesign.FontToken.button())
+                            .font(KartaDesign.FontToken.cookOutcomeLabel())
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
@@ -524,7 +535,7 @@ struct CookingSessionView: View {
                             // Fixed box so all three labels share a baseline.
                             .frame(height: KartaDesign.cooking.outcomeIcon)
                         Text(label)
-                            .font(KartaDesign.FontToken.button())
+                            .font(KartaDesign.FontToken.cookOutcomeLabel())
                             .multilineTextAlignment(.center)
                     }
                 }
@@ -698,7 +709,7 @@ struct CookingSessionView: View {
         ))
         .overlay(alignment: .bottomLeading) {
             Text(mediaChipLabel(presentation))
-                .font(.custom("Figtree", size: 12).weight(.heavy))
+                .font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.heavy))
                 .foregroundStyle(suit.chipInk)
                 .lineLimit(1)
                 .padding(.vertical, KartaDesign.space.stepCueY + 2)
@@ -788,12 +799,9 @@ struct CookingSessionView: View {
                     .font(KartaDesign.FontToken.cookTimer())
                     .monospacedDigit()
                     .lineLimit(1)
-                    // Shrink rather than truncate the digits when the scaled
-                    // Fraunces no longer fits beside TIMER and the play disc.
-                    .minimumScaleFactor(0.5)
                     .foregroundStyle(suit.chipInk)
                 Text("TIMER")
-                    .font(.custom("Figtree", size: 12).weight(.heavy))
+                    .font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.heavy))
                     .tracking(KartaDesign.cooking.timerLabelTracking)
                     .foregroundStyle(suit.chipInk)
             }
@@ -848,23 +856,16 @@ struct CookingSessionView: View {
     }
 
     /// Rows of FOR THIS STEP below the visible area or under the 32 pt fade.
-    private var hiddenRowCount: Int {
-        guard let scrollGeometry else { return 0 }
-        let threshold = scrollGeometry.contentOffset.y
-            + scrollGeometry.containerSize.height
-            - KartaDesign.cooking.signalFadeHeight
-        return rowBottoms.values.filter { $0 > threshold }.count
-    }
-
-    private var nextHiddenRowIndex: Int? {
-        guard let scrollGeometry else { return nil }
-        let threshold = scrollGeometry.contentOffset.y
-            + scrollGeometry.containerSize.height
-            - KartaDesign.cooking.signalFadeHeight
-        return rowBottoms
-            .filter { $0.value > threshold }
-            .keys
-            .min()
+    /// `rowBottoms` are measured in the scroll viewport's coordinate space, so
+    /// the threshold is the viewport bottom minus the fade (see
+    /// `CookingScrollSignal`).
+    private var hiddenRows: (count: Int, nextIndex: Int?) {
+        guard let scrollGeometry else { return (0, nil) }
+        return CookingScrollSignal.hiddenRows(
+            rowBottoms: rowBottoms,
+            viewportHeight: scrollGeometry.containerSize.height,
+            fadeHeight: KartaDesign.cooking.signalFadeHeight
+        )
     }
 
     private var scrollFade: some View {
@@ -885,13 +886,13 @@ struct CookingSessionView: View {
     /// below" otherwise. A button — it scrolls to the next hidden row and
     /// never changes Paso.
     private func signalChip(proxy: ScrollViewProxy) -> some View {
-        let hidden = hiddenRowCount
+        let hidden = hiddenRows.count
         let label = hidden == 0
             ? "More below"
             : "\(hidden) more ingredient\(hidden == 1 ? "" : "s")"
         return Button {
             withAnimation {
-                if let next = nextHiddenRowIndex {
+                if let next = hiddenRows.nextIndex {
                     proxy.scrollTo(ScrollBodyAnchor.row(next), anchor: .top)
                 } else {
                     proxy.scrollTo(ScrollBodyAnchor.end, anchor: .bottom)
@@ -903,7 +904,7 @@ struct CookingSessionView: View {
                     .font(.system(size: 11, weight: .bold))
                 Text(label)
             }
-            .font(.custom("Figtree", size: 13).weight(.heavy))
+            .font(.custom("Figtree", size: 13, relativeTo: .footnote).weight(.heavy))
             .foregroundStyle(suit.chipInk)
             .padding(.horizontal, KartaDesign.space.chipX)
             .frame(height: KartaDesign.cooking.signalChipHeight)
