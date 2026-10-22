@@ -33,7 +33,7 @@ enum DebugSeeds {
             // Plain removal inside the cookbook: toast names the recipe.
             store.send(.unsaveRecipe("caesar-salad"))
         case "cooking-first", "cooking-timer", "cooking-step",
-             "cooking-last", "cooking-answered":
+             "cooking-last", "cooking-answered", "cooking-timer-running":
             seedCooking(name, into: store)
         default:
             break
@@ -53,7 +53,7 @@ enum DebugSeeds {
         ))
         let target: Int
         switch name {
-        case "cooking-timer": target = 1
+        case "cooking-timer", "cooking-timer-running": target = 1
         case "cooking-step": target = 2
         case "cooking-last", "cooking-answered": target = 3
         default: target = 0
@@ -63,6 +63,12 @@ enum DebugSeeds {
         }
         if name == "cooking-answered" {
             store.send(.respond(.thumbsUp))
+        }
+        if name == "cooking-timer-running" {
+            // Timer running on another Paso: start it on the timer step,
+            // then view the step after it.
+            store.send(.startTimer(now: Date().timeIntervalSince1970))
+            store.send(.nextStep(now: Date().timeIntervalSince1970))
         }
     }
 
@@ -135,7 +141,7 @@ enum DebugSeeds {
                 safetyProfile: SafetyProfile(intolerances: [])
             )
         case "cooking-first", "cooking-timer", "cooking-step",
-             "cooking-last", "cooking-answered":
+             "cooking-last", "cooking-answered", "cooking-timer-running":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
