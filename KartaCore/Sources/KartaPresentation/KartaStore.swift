@@ -205,6 +205,8 @@ public enum KartaReducer {
             state.session?.exit()
         case let .respond(outcome):
             if let event = state.session?.respond(outcome), let session = state.session {
+                // A one-step session starts on its last step. Legacy sessions
+                // without step timing also fall back to the injected start.
                 let date = Date(timeIntervalSince1970: session.lastStepReachedAt ?? session.startedAt)
                 let entry = CookEntry(event: event, date: date)
                 if let index = state.sessionCookHistoryIndex {
