@@ -441,6 +441,8 @@ enum KartaDesign {
         static let ingredientRowGap: CGFloat = 5
         static let freeSpaceMin: CGFloat = 20
         static let timerTopGap: CGFloat = 14
+        /// Inner vertical padding of the Temporizador block: 52 + 2×10 = 72 pt.
+        static let timerPaddingY: CGFloat = 10
         static let timerRadius: CGFloat = 18
         static let timerPlay: CGFloat = 52
         static let timerLabelTracking: CGFloat = 1.2
@@ -465,7 +467,7 @@ enum KartaDesign {
         static let outcomeButtonHeight: CGFloat = 68
         static let outcomeIcon: CGFloat = 22
         static let finishHeight: CGFloat = 56
-        static let cookedDisc: CGFloat = 40
+        static let cookedDisc: CGFloat = 34
         /// Horizontal flight of a Paso leaving the stack (deck curve, x axis).
         static let leavingTranslationScale: CGFloat = 1.15
         static let leavingRotation: Double = 9

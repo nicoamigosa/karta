@@ -338,7 +338,7 @@ struct CookingSessionView: View {
             Text("For this step".uppercased())
                 .font(KartaDesign.FontToken.rankUnit())
                 .tracking(KartaDesign.type.rankUnitTracking)
-                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                .foregroundStyle(suit.chipInk)
                 .padding(.bottom, KartaDesign.cooking.ingredientRowGap)
 
             ForEach(presentation.ingredientRows, id: \.ingredientID) { row in
@@ -423,7 +423,7 @@ struct CookingSessionView: View {
             .accessibilityLabel("Start timer")
         }
         .padding(.horizontal, KartaDesign.cooking.upNextHGap)
-        .padding(.vertical, KartaDesign.cooking.timerTopGap)
+        .padding(.vertical, KartaDesign.cooking.timerPaddingY)
         .background(
             suit.chip,
             in: RoundedRectangle(
@@ -459,7 +459,7 @@ struct CookingSessionView: View {
                     Text((session.currentIndex == 0 ? "Up next · Swipe left" : "Up next").uppercased())
                         .font(KartaDesign.FontToken.rankUnit())
                         .tracking(KartaDesign.type.rankUnitTracking)
-                        .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                        .foregroundStyle(suit.chipInk)
                     Text(presentation.upNext?.summary ?? "")
                         .font(KartaDesign.FontToken.upNextSummary())
                         .lineSpacing(Self.lineSpacing(
