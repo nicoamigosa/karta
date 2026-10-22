@@ -147,7 +147,6 @@ struct CookingSessionView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
 
                 // Pinned bottom zone: separators run edge to edge, content
