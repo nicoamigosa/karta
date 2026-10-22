@@ -129,7 +129,13 @@ Layout rules (reference: canvas board *Reverse A centered · course on top*):
 
 Signed off on 2026-10-19 by the founder. Reference: canvas page *Cooking · round 3* (four
 boards *Chosen · step 1–4*, the board *Chosen · step 3 while the step 2 timer runs*, and a
-prototype to swipe), PNGs in `docs/design/screens/cooking-*.png`. Product terms:
+prototype to swipe), PNGs in `docs/design/screens/`: `cooking-step-first.png` (*UP NEXT ·
+SWIPE LEFT*), `cooking-step-timer.png` (Temporizador ready), `cooking-step.png`,
+`cooking-last-step.png` and `cooking-last-step-answered.png` (technique clip, outcome before
+and after answering), and `cooking-timer-elsewhere-{running,done}.png` (a running
+Temporizador seen from another Paso, #5). On the boards of Pasos 1–3 the Foto del paso is a
+placeholder because no step photos exist yet (#104); build the window as on Paso 4. The
+*Leave cooking?* sheet has no board yet; only its text below is signed off. Product terms:
 `CONTEXT.md` → **Paso**, **Resumen**, **Detalle**, **Foto del paso**, **Cantidad**,
 **Temporizador**; ADR 0014.
 
