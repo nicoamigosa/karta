@@ -62,22 +62,22 @@ struct KartaStoreTests {
     func worldSwitchPreservesForYouAnchor() {
         var state = KartaState(safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
-        let savedAnchor = ScrollAnchor(recipeID: "saved-2", relativeOffset: 0.75)
+        let leftoversAnchor = ScrollAnchor(recipeID: "leftovers-2", relativeOffset: 0.75)
 
         KartaReducer.reduce(
             &state,
             action: .setFeedAnchor(anchor, world: .forYou)
         )
-        KartaReducer.reduce(&state, action: .selectWorld(.saved))
+        KartaReducer.reduce(&state, action: .selectWorld(.leftovers))
         KartaReducer.reduce(
             &state,
-            action: .setFeedAnchor(savedAnchor, world: .saved)
+            action: .setFeedAnchor(leftoversAnchor, world: .leftovers)
         )
         KartaReducer.reduce(&state, action: .selectWorld(.forYou))
 
         #expect(state.navigation.world == .forYou)
         #expect(state.navigation.anchor(for: .forYou) == anchor)
-        #expect(state.navigation.anchor(for: .saved) == savedAnchor)
+        #expect(state.navigation.anchor(for: .leftovers) == leftoversAnchor)
     }
 
     @Test("Changing feed filters discards the session anchors")
@@ -191,7 +191,6 @@ struct KartaStoreTests {
         let profile = SafetyProfile(intolerances: [.dairy, .gluten])
         var state = KartaState(safetyProfile: profile)
 
-        KartaReducer.reduce(&state, action: .selectWorld(.saved))
         KartaReducer.reduce(&state, action: .selectWorld(.leftovers))
         KartaReducer.reduce(&state, action: .selectWorld(.forYou))
 
