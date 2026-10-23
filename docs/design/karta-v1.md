@@ -322,7 +322,8 @@ probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
   difficulty. Tapping a card flips it into its reverse, as in the Feed.
 - **The door** (canvas page *Cookbook door · round 1*, board *P1*): the
   cookbook is not a Mundo. On For You, a 40 pt tactile circle with the same
-  box icon as Save (18 pt) sits right of the **For You** pill, 10 pt gap.
+  box icon as Save (18 pt) sits right of the **For You** pill, 10 pt gap The
+  filter button sits left of the pill (*The feed header* below).
 - **Header inside the cookbook** (board *H3*): the wordmark stays on the
   left and the door button stays on the right, pressed: `ink` fill and
   border, a darker 2 pt edge, the box icon in `card`. Tapping it again goes
@@ -400,6 +401,194 @@ probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
     padding, 14 pt Figtree 800: **Contains dairy, one of your
     intolerances**. Nothing else on the reverse or in the cooking session
     changes; allergens are tagged per recipe, so no ingredient is marked.
+
+## The feed header: Mundos and filters
+
+Signed off on 2026-10-23 by the founder (#8, #6). Reference: the design canvas *Karta · Cabecera
+del feed (#8 #6)* (<https://claude.ai/artifact/Cugzu4JgxTBR4D3AXAxQYk>). Page *Ronda 2*: column E
+is the signed panel, and the two empty boards are signed as drawn. Page *Ronda 1*: variants A–C,
+whose A gave the header and the Mundo menu. PNGs in `docs/design/screens/`, all drawn on an
+iPhone 17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `feed-header.png` | the feed with the header, no filters applied |
+| `feed-world-menu.png` | the Mundo menu open |
+| `feed-filters.png` | the filter panel open, editing 30 min + One pan |
+| `feed-filters-intolerance.png` | the panel right after adding gluten as an Intolerancia |
+| `feed-filters-applied.png` | the feed with two filters applied (badge) |
+| `feed-empty-filters.png` | nothing matches the applied filters |
+| `feed-empty-profile.png` | nothing matches the Intolerancias, with no filter applied (ADR 0004) |
+
+`feed-header.png` replaces the header of `feed-cookbook-door.png`; the door itself does not
+change. Product terms: `CONTEXT.md` → **Mundo**, **Filtros**, **Intolerancia**, **Dieta**,
+**Etiqueta**, **Frontera**; ADR 0002, 0004, 0009, 0013.
+
+```
+ paper, safe areas included
+ karta            (≡) [For You ▾] (□)    header: 44 pt row, 6 pt below the top safe area
+┌─────────────────────────────────────┐  panel: 10 pt below the header row, 10 pt at the sides
+│ Filters                     [Reset] │    pointer centred under (≡)
+│ ┌─ NEVER SHOW ME ───── Always free ┐│
+│ │ [Dairy][ Egg ][Fish][Gluten][Nuts]││  multi-choice track, saved as you tap
+│ │ Saved as you tap. Reset and …    ││
+│ └──────────────────────────────────┘│
+│ READY IN                    MINUTES │
+│ [ Any | 20 | 30 | 45 | 60 ]         │  single-choice track
+│ DIFFICULTY                          │
+│ [ Any | Easy | Up to medium ]       │
+│ PRACTICAL                ANY NUMBER │
+│ [One pan| Oven |Make ahead|Shareable]  multi-choice track
+│ DIET                                │
+│ [ Any | Vegetarian | Vegan ]        │
+│ [         Show 2 recipes          ] │  pinned to the bottom of the panel
+└─────────────────────────────────────┘
+```
+
+### The header
+
+- On the feed of either Mundo, one row: the wordmark on the left; on the right, 10 pt apart,
+  the **filter button**, the **Mundo pill** and the **cookbook door** (#7). The row is 44 pt
+  high and sits 6 pt below the top safe area, 22 pt from the sides. The deck starts 20 pt
+  below the row.
+- **Filter button**: a 40 pt tactile circle like the door (`card` fill, 1 pt `line`, 2 pt
+  `buttonEdge`), with an 18 pt sliders icon (two lines with knobs, stroke 1.7, `ink`).
+  - **Badge**: when one or more filters are applied, a 20 pt `brand` circle sits on its
+    top-right corner (offset −5 / −5), with a 2 pt `paper` ring and the count in Figtree 800
+    11 pt `card`. The count is the number of applied controls: a time, a difficulty and a Diet
+    count one each, and each Practical tag counts one. Intolerancias never count and never
+    show a badge.
+  - **Pressed** while the panel is open: `ink` fill and border, a 2 pt `inkEdge` edge, the icon
+    in `card` (as the door inside the cookbook).
+- **Mundo pill**: as signed in #7 (Figtree 700 14 pt, 40 pt high, chevron). It reads the
+  current Mundo: **For You** or **Leftovers**. Pressed while its menu is open: `ink` fill, the
+  chevron turned up.
+- Inside the cookbook the header stays as signed in #7 (wordmark and pressed door only): no
+  filter button and no pill.
+
+### The Mundo menu
+
+- Tapping the pill opens a small menu 10 pt below the header row, its right edge on the pill's
+  right edge, 252 pt wide: `card` fill, 1 pt `line`, radius 18, 6 pt padding, the button relief
+  plus a drop shadow (0, 18, 34, −10, `shadow`).
+- Two rows, 62 pt high, radius 13, 12 pt padding: a 26 pt line icon, the name (Figtree 800
+  16 pt) over one line in Figtree 600 13 pt `inkMuted`, and an 18 pt check on the current row,
+  which also has a `paper` fill.
+  - **For You** · *Your deck for today* (icon: two cards fanned).
+  - **Leftovers** · *Reuse what you cooked* (icon: a bowl with steam).
+- Everything below the header row is dimmed with `scrim`. Tapping a row selects that Mundo and
+  closes the menu; tapping the current one, the pill or the scrim only closes it.
+- Switching Mundo keeps each Mundo's position (ADR 0009) and **never changes the filters**:
+  there is one set of filters and one set of Intolerancias for both Mundos.
+
+### The filter panel
+
+- Tapping the filter button opens a panel that drops from the button, 10 pt below the header
+  row and 10 pt from the sides: `card` fill, 1 pt `line`, radius 24, the button relief plus
+  the drop shadow of the Mundo menu. A pointer (a 12 pt square turned 45°, same fill and
+  border) sits on its top edge, centred under the filter button. Everything below the header
+  row is dimmed with `scrim`.
+- **Every option of every filter is visible at once.** No row folds, no popover.
+- Layout: a scrolling body (padding 14 pt top, 16 pt sides, 14 pt between blocks) and a
+  footer that never scrolls (padding 14 / 16 / 16 pt) with the **Show N recipes** button.
+- Order, top to bottom:
+  1. **Title row**: *Filters* (Fraunces 700, 24 pt) and, on the right, a **Reset** tactile
+     pill (34 pt high, 14 pt side padding, Figtree 700 14 pt).
+  2. **NEVER SHOW ME**, in its own block: `paper` fill, radius 16, 12 pt padding, 9 pt gap.
+     Heading: a 14 pt shield and *NEVER SHOW ME* in `ink`; *Always free* on the right
+     (Figtree 700 12 pt `inkMuted`). A multi-choice track with the five allergens in this
+     order: **Dairy**, **Egg**, **Fish**, **Gluten**, **Nuts** (`Allergen.allCases`). Under it,
+     one line in Figtree 600 13 / 18 pt `inkMuted`: *Saved as you tap. Reset and Clear never
+     touch it.*
+  3. **READY IN**, with *MINUTES* on the right: a single-choice track **Any · 20 · 30 · 45 ·
+     60** (`maxMinutes` nil, 20, 30, 45, 60).
+  4. **DIFFICULTY**: a single-choice track **Any · Easy · Up to medium** (`maxDifficulty` nil,
+     `easy`, `medium`).
+  5. **PRACTICAL**, with *ANY NUMBER* on the right: a multi-choice track **One pan · Oven ·
+     Make ahead · Shareable** (`one-pan`, `oven`, `make-ahead`, `shareable`). A recipe must
+     have every tag that is on.
+  6. **DIET**: a single-choice track **Any · Vegetarian · Vegan** (vegan recipes also match
+     Vegetarian).
+  7. Footer: **Show N recipes** (*Show 1 recipe* for one), the primary button: `brand` fill,
+     54 pt high, radius 18, Figtree 800 17 pt `card`, 3 pt `brandEdge` plus the soft shadow.
+- Course is **not** a filter on this screen.
+- **Section headings**: Figtree 800 12 pt, tracking 1.2, `inkMuted`, 8 pt above their track.
+- **Tracks** (the cookbook switch, extended): `track` fill, radius 14, 4 pt inset, 4 pt between
+  equal-width segments, each segment 40 pt high, radius 11, one line, never wrapping.
+  - Single choice: the chosen segment is a tactile `card` segment (1 pt `line`, 2 pt
+    `buttonEdge`, Figtree 800 14 pt `ink`); the others have no fill (Figtree 700 14 pt
+    `inkMuted`). Exactly one is always chosen; **Any** is the default.
+  - Multi-choice (NEVER SHOW ME and PRACTICAL): each segment toggles on its own. On: `ink`
+    fill and border, 2 pt `inkEdge`, Figtree 800 13 pt `card`. Off: no fill, Figtree 700 13 pt
+    `inkMuted`.
+
+### Behaviour
+
+- **Filters are a draft.** Changing time, difficulty, Practical or Diet changes only the
+  panel. **Show N recipes** applies them all at once and closes the panel; applying a change
+  discards the scroll anchors and the feed starts at the top (ADR 0009). Closing the panel any
+  other way (the filter button again or the scrim) throws the draft away.
+- **N** is the number of recipes the current Mundo would offer with the draft and the current
+  Intolerancias, updated live. With nothing matching, the button reads *Show 0 recipes* and
+  applying it leads to the empty state below.
+- **Reset** sets every filter in the panel back to **Any** / off. Like any other change, it is
+  applied with **Show N recipes**.
+- **Intolerancias are not part of the draft.** Tapping an allergen saves it at once, on every
+  surface that proposes recipes (`CONTEXT.md` → Intolerancia), even if the panel is then closed
+  without applying. N updates with it. Reset, Clear and the empty states never change it, and
+  no premium check stands in front of it. After a change, the line under the track becomes, in
+  Figtree 800 13 pt `ink`:
+  - added: *Saved. Gluten is now hidden everywhere. Reset and Clear never touch it.*
+  - removed: *Saved. Gluten recipes can show up again.*
+- The panel is the same in both Mundos and edits the same filters.
+
+### Empty states
+
+Both take the place of the deck, on `paper` and with no card, centred between the header row
+and the bottom safe area, 36 pt from the sides. The header stays as it is, badge included. Icon
+64 pt in a thin `emptyIcon` stroke; title Fraunces 700 22 pt; one line in Figtree 600
+15 / 22 pt `inkMuted`; then full-width 54 pt buttons, 10 pt apart.
+
+- **Nothing fits these filters** (`feed-empty-filters.png`): the applied filters leave no
+  recipe, but the Intolerancias alone would leave some. Icon: the sliders. The line says what
+  is applied, built by `KartaPresentation` (example: *No one-pan recipe is ready in 20 min.*).
+  Buttons:
+  - **Change filters** (primary) opens the panel with the applied filters.
+  - **Clear all filters** (tactile, `card` fill, Figtree 800 17 pt `ink`) clears time,
+    difficulty, Practical and Diet at once and shows the feed. It never touches the
+    Intolerancias.
+  - Under them, a 14 pt shield and Figtree 700 13 / 18 pt `inkMuted`: *Clearing keeps your
+    intolerances: dairy stays hidden.* (the declared Intolerancias, lowercase, joined with
+    commas and *and*; *stay hidden* for more than one).
+- **No recipes fit your intolerances yet** (`feed-empty-profile.png`, ADR 0004): no recipe in
+  the catalog is compatible with the Intolerancias, with or without filters. This is a content
+  failure, not a dead end the user made, and it never offers to loosen an Intolerancia. Icon:
+  the shield. The line: *None of our recipes is free of dairy, egg, fish, gluten and nuts. That
+  gap is ours to fill, not yours.* One tactile button, **Check my intolerances**, opens the
+  panel.
+- When both are true, the profile state wins: clearing filters would not help.
+- The Frontera (*you're all caught up*) and the empty Leftovers Mundo (nothing cooked yet) are
+  not part of this section.
+
+### Fit, text size and scroll
+
+- Measured on an iPhone 17 at the default text size: the panel ends at 727 pt (745 pt with the
+  confirmation line), at least 95 pt above the bottom safe area. Its height is never fixed: it hugs its
+  content, up to the top of the bottom safe area.
+- **When it does not fit** (a smaller phone, a larger text size), the panel stops at the top of
+  the bottom safe area and the body scrolls under the pinned footer. Hidden content is always
+  signalled: a 32 pt fade from transparent to `card` right above the footer, and the scroll
+  indicator, flashed when the panel opens. The title row scrolls with the body.
+- Text follows Dynamic Type, scaled relative to: *Filters* and the empty-state titles →
+  `.title2`; segment labels, the menu rows and **Show N recipes** → `.body`; section headings,
+  *Always free*, the menu row lines and the notes → `.footnote`; the badge → `.caption2`.
+  Buttons and circles keep their size and grow only if their label needs it.
+- **Up to xxxL** the tracks stay as drawn. A segment label never wraps and never truncates:
+  if one does not fit, **that track** switches to its stacked form.
+- **Stacked form** (every track from AX1 on): one full-width row per option, 48 pt high, in a
+  `track` container with the same 4 pt inset; the chosen or on rows keep their colours, and an
+  on multi-choice row adds a check at the right. Not drawn: an implementation that needs more
+  than this asks under *Open decisions*.
 
 ## Suits (Course icons)
 
