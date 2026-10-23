@@ -1,9 +1,8 @@
 import KartaCore
 
-/// The three top-level recipe worlds in the app.
+/// The two Mundos offered by the feed header.
 public enum World: String, CaseIterable, Equatable, Hashable, Sendable {
     case forYou
-    case saved
     case leftovers
 }
 

@@ -26,8 +26,18 @@ public struct KartaState: Equatable, Sendable {
     /// The safety profile is kept separate from the non-safety draft.
     public var safetyProfile: SafetyProfile { filterState.safetyProfile }
 
-    /// The time, difficulty and one-pan controls currently applied.
+    /// The non-safety filters currently applied across both Mundos.
     public var filterDraft: FilterDraft { filterState.filterDraft }
+
+    /// Badge count for applied non-safety filters. Zero means no badge;
+    /// Intolerancias never contribute, regardless of how many are declared.
+    public var appliedFilterCount: Int {
+        (filterDraft.maxMinutes == nil ? 0 : 1)
+            + (filterDraft.maxDifficulty == nil ? 0 : 1)
+            + (filterDraft.course == nil ? 0 : 1)
+            + (filterDraft.diet == nil ? 0 : 1)
+            + filterDraft.practicalTags.count
+    }
 
     /// The single effective filter value consumed by Core queries.
     public var effectiveFeedFilters: FeedFilters {
@@ -67,6 +77,25 @@ public struct KartaState: Equatable, Sendable {
             recentWindow: FeedPolicy.recentViewWindow,
             clock: clock
         )
+    }
+
+    /// Preview a Mundo with an uncommitted draft and the current safety
+    /// profile. Both feed stretches count; the frontier does not. Leftovers
+    /// remains unavailable until its store integration in #9.
+    public func draftRecipeCount(
+        for world: World,
+        draft: FilterDraft,
+        recipes: [Recipe],
+        clock: any KartaClock
+    ) -> Int? {
+        switch world {
+        case .forYou:
+            var preview = self
+            preview.filterState.reduce(.apply(draft))
+            return preview.feed(recipes: recipes, clock: clock)?.recipes.count
+        case .leftovers:
+            return nil
+        }
     }
 
     /// Build the feed Card projection with the active safety profile.
