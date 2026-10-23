@@ -321,6 +321,7 @@ struct MundoMenuView: View {
                 lineWidth: KartaDesign.elevation.backFrameLineWidth
             )
         }
+        .compositingGroup()
         .shadow(
             color: KartaDesign.ColorToken.frontShadow,
             radius: KartaDesign.elevation.menuShadowRadius,
