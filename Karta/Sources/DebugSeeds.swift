@@ -35,7 +35,7 @@ enum DebugSeeds {
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
-             "cooking-scroll":
+             "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins":
             seedCooking(name, into: store)
         default:
             break
@@ -52,6 +52,10 @@ enum DebugSeeds {
             recipe = Self.longPasoRecipe
         } else if name == "cooking-scroll" {
             recipe = Self.scrollingPasoRecipe
+        } else if name == "cooking-timer-twins" {
+            recipe = Self.timerTwinsRecipe
+        } else if name == "cooking-overflow-twins" {
+            recipe = Self.overflowTwinsRecipe
         } else {
             recipe = try? SeedResourceAdapter().loadRecipes()
                 .first(where: { $0.id == "spanish-tortilla" })
@@ -64,6 +68,7 @@ enum DebugSeeds {
         let target: Int
         switch name {
         case "cooking-timer", "cooking-timer-running", "cooking-timer-done": target = 1
+        case "cooking-timer-twins", "cooking-overflow-twins": target = 1
         case "cooking-step": target = 2
         case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk",
              "cooking-scroll":
@@ -165,7 +170,7 @@ enum DebugSeeds {
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
-             "cooking-scroll":
+             "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
@@ -183,6 +188,10 @@ enum DebugSeeds {
             return [longPasoRecipe]
         case "cooking-scroll":
             return [scrollingPasoRecipe]
+        case "cooking-timer-twins":
+            return [timerTwinsRecipe]
+        case "cooking-overflow-twins":
+            return [overflowTwinsRecipe]
         default:
             return []
         }
@@ -297,6 +306,117 @@ enum DebugSeeds {
                         StepIngredient(ingredientID: $0.id, quantity: $0.quantity)
                     },
                     timerSeconds: 2400
+                )
+            ],
+            allergenReview: .reviewed([])
+        )
+    }
+
+    /// Two consecutive Pasos that declare the same Temporizador and measure
+    /// the same (#123): at AX sizes the scrolled bottom zone must re-measure
+    /// on the second Paso even though its height matches the first's.
+    private static var timerTwinsRecipe: Recipe {
+        let ingredients: [Ingredient] = [
+            Ingredient(id: "rice", name: "Bomba rice", quantity: "2 cups"),
+            Ingredient(id: "stock", name: "Chicken stock", quantity: "4 cups"),
+            Ingredient(id: "saffron", name: "Saffron threads", quantity: "1 pinch")
+        ]
+        let stepIngredients = ingredients.map {
+            StepIngredient(ingredientID: $0.id, quantity: $0.quantity)
+        }
+        return Recipe(
+            id: "saffron-rice-timer-twins",
+            name: "Saffron Rice",
+            heroPhoto: .local("photos/spanish-tortilla"),
+            totalMinutes: 40,
+            difficulty: .easy,
+            servings: 4,
+            primaryCourse: .dinner,
+            ingredients: ingredients,
+            steps: [
+                CookingStep(
+                    detail: "Warm the stock with the saffron.",
+                    summary: "Warm the stock",
+                    ingredients: [
+                        StepIngredient(ingredientID: "stock", quantity: "4 cups"),
+                        StepIngredient(ingredientID: "saffron", quantity: "1 pinch")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Simmer the rice over low heat, uncovered.",
+                    summary: "Simmer the rice",
+                    ingredients: stepIngredients,
+                    timerSeconds: 1200
+                ),
+                CookingStep(
+                    detail: "Simmer the rice over low heat, uncovered.",
+                    summary: "Simmer the rice",
+                    ingredients: stepIngredients,
+                    timerSeconds: 1200
+                ),
+                CookingStep(
+                    detail: "Rest off the heat, covered, before serving.",
+                    summary: "Rest the rice",
+                    ingredients: [
+                        StepIngredient(ingredientID: "rice", quantity: "2 cups")
+                    ]
+                )
+            ],
+            allergenReview: .reviewed([])
+        )
+    }
+
+    /// Two consecutive Pasos that overflow identically (#123): the same nine
+    /// rows land at the same positions, so the *N more ingredients* chip must
+    /// read the same count on both.
+    private static var overflowTwinsRecipe: Recipe {
+        let extras: [Ingredient] = [
+            Ingredient(id: "lentils", name: "Brown lentils", quantity: "1 1/2 cups"),
+            Ingredient(id: "chorizo", name: "Spanish chorizo", quantity: "1 link (about 4 oz)"),
+            Ingredient(id: "carrots", name: "Nantes carrots", quantity: "2 medium"),
+            Ingredient(id: "potatoes", name: "Yukon Gold potatoes", quantity: "2 medium"),
+            Ingredient(id: "onion", name: "Yellow onion", quantity: "1 medium"),
+            Ingredient(id: "paprika", name: "Sweet paprika", quantity: "1 tsp"),
+            Ingredient(id: "garlic", name: "Garlic cloves", quantity: "3"),
+            Ingredient(id: "bay", name: "Bay leaves", quantity: "2"),
+            Ingredient(id: "stock", name: "Chicken stock", quantity: "4 cups")
+        ]
+        let twinRows = extras.map {
+            StepIngredient(ingredientID: $0.id, quantity: $0.quantity)
+        }
+        return Recipe(
+            id: "lentil-stew-overflow-twins",
+            name: "Lentil Stew",
+            heroPhoto: .local("photos/spanish-tortilla"),
+            totalMinutes: 55,
+            difficulty: .easy,
+            servings: 4,
+            primaryCourse: .dinner,
+            ingredients: extras,
+            steps: [
+                CookingStep(
+                    detail: "Soften the onion and the carrots in the oil.",
+                    summary: "Sauté the base",
+                    ingredients: [
+                        StepIngredient(ingredientID: "onion", quantity: "1 medium")
+                    ]
+                ),
+                CookingStep(
+                    detail: "Cover and simmer over low heat until the lentils are tender. Stir now and then so nothing sticks to the pot.",
+                    summary: "Simmer until the lentils are tender",
+                    ingredients: twinRows
+                ),
+                CookingStep(
+                    detail: "Cover and simmer over low heat until the lentils are tender. Stir now and then so nothing sticks to the pot.",
+                    summary: "Simmer until the lentils are tender",
+                    ingredients: twinRows
+                ),
+                CookingStep(
+                    detail: "Season and serve with bread.",
+                    summary: "Season and serve",
+                    ingredients: [
+                        StepIngredient(ingredientID: "paprika", quantity: "1 tsp")
+                    ]
                 )
             ],
             allergenReview: .reviewed([])
