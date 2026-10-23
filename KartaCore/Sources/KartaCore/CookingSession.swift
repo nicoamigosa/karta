@@ -338,10 +338,12 @@ public struct CookingSession: Equatable, Sendable {
     // MARK: - In-step timers
 
     /// Start the current step's timer at `now`, if that step declares one.
+    /// A running timer keeps its original start; a finished timer can start again.
     /// Starting a timer after exit is ignored; timers already running continue
     /// to be readable.
     public mutating func startTimer(now: TimeInterval) {
         guard !isExited, let seconds = currentStep?.timerSeconds else { return }
+        if let timer = timers[currentIndex], !timer.hasFired(at: now) { return }
         timers[currentIndex] = StepTimer(startedAt: now, duration: TimeInterval(seconds))
     }
 
