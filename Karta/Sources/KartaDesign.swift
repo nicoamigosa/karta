@@ -199,6 +199,18 @@ enum KartaDesign {
                 .weight(.bold)
         }
 
+        /// Mundo menu row name (Figtree 800, 16).
+        static func mundoName() -> Font {
+            .custom("Figtree", size: 16, relativeTo: .callout)
+                .weight(.heavy)
+        }
+
+        /// Filter-button badge count (Figtree 800, 11).
+        static func filterBadge() -> Font {
+            .custom("Figtree", size: 11, relativeTo: .caption2)
+                .weight(.heavy)
+        }
+
         /// Empty-state heading (Fraunces 700, 22).
         static func emptyTitle() -> Font {
             display(size: 22, relativeTo: .title2, weight: 700)
@@ -295,7 +307,11 @@ enum KartaDesign {
 
     enum space {
         static let screenX: CGFloat = 22
-        static let headerToDeck: CGFloat = 22
+        /// The feed header row's height and its gap under the top safe area
+        /// (*The feed header*, signed 2026-10-23).
+        static let headerRowHeight: CGFloat = 44
+        static let headerTopGap: CGFloat = 6
+        static let headerToDeck: CGFloat = 20
         static let cardTop: CGFloat = 12
         static let cardX: CGFloat = 12
         static let cardBottom: CGFloat = 18
@@ -351,6 +367,23 @@ enum KartaDesign {
         static let toastSideMargin: CGFloat = 22
         static let toastBottomInset: CGFloat = 40
         static let toastDuration: TimeInterval = 5
+        /// Feed header controls and the Mundo menu (boards *A* of Ronda 1).
+        static let headerButtonGap: CGFloat = 10
+        static let filterGlyph: CGFloat = 18
+        static let filterGlyphStroke: CGFloat = 1.7
+        static let filterBadge: CGFloat = 20
+        static let filterBadgeOutset: CGFloat = 5
+        static let filterBadgeRing: CGFloat = 2
+        static let mundoMenuTopGap: CGFloat = 10
+        static let mundoMenuWidth: CGFloat = 252
+        static let mundoMenuRadius: CGFloat = 18
+        static let mundoMenuPadding: CGFloat = 6
+        static let mundoRowHeight: CGFloat = 62
+        static let mundoRowRadius: CGFloat = 13
+        static let mundoRowPadding: CGFloat = 12
+        static let mundoRowIcon: CGFloat = 26
+        static let mundoRowCheck: CGFloat = 18
+        static let menuEdge: CGFloat = 2
         static let sheetTopRadius: CGFloat = 26
         static let sheetHandleWidth: CGFloat = 36
         static let sheetHandleHeight: CGFloat = 5
@@ -494,6 +527,10 @@ enum KartaDesign {
         static let backShadowRadius: CGFloat = 11
         static let buttonShadowY: CGFloat = 6
         static let buttonShadowRadius: CGFloat = 6
+        /// Mundo menu drop shadow: (0, 18, 34, −10, shadow), the same recipe
+        /// as the front Card's.
+        static let menuShadowY: CGFloat = 18
+        static let menuShadowRadius: CGFloat = 17
     }
 
     enum layout {
