@@ -79,6 +79,13 @@ public struct KartaState: Equatable, Sendable {
         )
     }
 
+    /// For You's emptiness and copy, using the applied draft. Unavailable
+    /// before onboarding, just like the feed itself.
+    public func feedEmptyState(recipes: [Recipe], clock: any KartaClock) -> FeedEmptyState? {
+        guard let feed = feed(recipes: recipes, clock: clock) else { return nil }
+        return FeedEmptyState(feed: feed, recipes: recipes, draft: filterDraft, safetyProfile: safetyProfile)
+    }
+
     /// Preview a Mundo with an uncommitted draft and the current safety
     /// profile. Both feed stretches count; the frontier does not. Leftovers
     /// remains unavailable until its store integration in #9.
@@ -326,6 +333,11 @@ public final class KartaStore {
     /// the presentation state.
     public func feed(recipes: [Recipe], clock: any KartaClock) -> Feed? {
         state.feed(recipes: recipes, clock: clock)
+    }
+
+    /// The shell's For You empty-state projection.
+    public func feedEmptyState(recipes: [Recipe], clock: any KartaClock) -> FeedEmptyState? {
+        state.feedEmptyState(recipes: recipes, clock: clock)
     }
 
     /// The shell-facing projection for a recipe Card, using the store's profile.
