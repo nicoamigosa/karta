@@ -9,10 +9,24 @@ public struct CookingStepPresentation: Equatable, Sendable {
     public let clip: Clip?
     /// Countdown display, initially the declared duration, then the remaining time.
     public let timerLabel: String?
+    /// The bottom zone on the current Paso, evaluated against the injected clock.
+    public let timer: Timer?
     public let ingredientRows: [IngredientRow]
     @available(*, deprecated, message: "Variant E uses Cierre after the last Paso; Up next is no longer rendered.")
     public let upNext: UpNext?
     public let progress: [ProgressSegment]
+
+    public struct Timer: Equatable, Sendable {
+        public let state: State
+        /// Absolute end time for the shell to mirror in AlarmKit; nil until started.
+        public let endsAt: TimeInterval?
+
+        public enum State: Equatable, Sendable {
+            case ready(label: String)
+            case running(remainingLabel: String, fractionElapsed: Double)
+            case finished
+        }
+    }
 
     public struct ProgressSegment: Equatable, Sendable {
         /// Index in the session's visible steps; also the timer's navigation target.
@@ -85,6 +99,20 @@ public struct CookingStepPresentation: Equatable, Sendable {
         }
         timerLabel = session.currentStepTimerRemaining(at: now).map(countdownLabel)
             ?? step.timerSeconds.map { countdownLabel(TimeInterval($0)) }
+        timer = step.timerSeconds.map { seconds in
+            guard let started = session.timers[session.currentIndex] else {
+                return Timer(state: .ready(label: countdownLabel(TimeInterval(seconds))), endsAt: nil)
+            }
+            let endsAt = started.startedAt + started.duration
+            if started.hasFired(at: now) {
+                return Timer(state: .finished, endsAt: endsAt)
+            }
+            let fraction = min(max((now - started.startedAt) / started.duration, 0), 1)
+            return Timer(
+                state: .running(remainingLabel: countdownLabel(started.remaining(at: now)), fractionElapsed: fraction),
+                endsAt: endsAt
+            )
+        }
         let ingredients = recipe.visibleIngredients(for: intolerances)
         ingredientRows = step.ingredients.compactMap { use in
             guard let ingredient = ingredients.first(where: { $0.id == use.ingredientID }) else { return nil }
