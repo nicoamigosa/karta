@@ -262,7 +262,7 @@ struct MundoMenuView: View {
                                 .font(KartaDesign.FontToken.mundoName())
                                 .foregroundStyle(KartaDesign.ColorToken.ink)
                             Text(row.subtitle)
-                                .font(KartaDesign.FontToken.hint())
+                                .font(KartaDesign.FontToken.mundoLine())
                                 .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                                 .lineLimit(1)
                         }

@@ -201,8 +201,14 @@ enum KartaDesign {
 
         /// Mundo menu row name (Figtree 800, 16).
         static func mundoName() -> Font {
-            .custom("Figtree", size: 16, relativeTo: .callout)
+            .custom("Figtree", size: 16, relativeTo: .body)
                 .weight(.heavy)
+        }
+
+        /// Line under the Mundo menu row name (Figtree 600, 13).
+        static func mundoLine() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.semibold)
         }
 
         /// Filter-button badge count (Figtree 800, 11).
