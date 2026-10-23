@@ -98,6 +98,13 @@ enum KartaDesign {
                 .weight(.bold)
         }
 
+        /// The Cierre's primary Finish label (Figtree 800, 17 → body, per the
+        /// spec's Dynamic Type table).
+        static func cookFinishLabel() -> Font {
+            .custom("Figtree", size: 17, relativeTo: .body)
+                .weight(.heavy)
+        }
+
         static func body() -> Font {
             .custom("Figtree", size: 16, relativeTo: .body)
         }

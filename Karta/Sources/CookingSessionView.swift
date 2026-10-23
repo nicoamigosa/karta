@@ -123,6 +123,14 @@ struct CookingSessionView: View {
     private func resetMeasuredBody() {
         rowBottoms = [:]
         scrolledBottomHeight = 0
+        leadingHeight = 0
+        rowsHeight = 0
+    }
+
+    /// One identity per position — every Paso and the Cierre — so the scroll
+    /// body (and its probes) is rebuilt on every transition.
+    private var scrollBodyIdentity: Int {
+        session.isOnFinish ? -1 : session.currentIndex
     }
 
     /// The signed-off text of the leave sheet (no board yet; the title carries
@@ -163,6 +171,12 @@ struct CookingSessionView: View {
                         scrollBody()
                             .frame(minHeight: bodyViewport, alignment: .top)
                     }
+                    // A fresh scroll view (and fresh geometry probes) per
+                    // card: a measurement equal to the previous Paso's would
+                    // never re-fire on the same views, leaving zeros that
+                    // nobody measures again. The new card also starts at the
+                    // top of its own scroll, not the outgoing card's offset.
+                    .id(scrollBodyIdentity)
                     .scrollIndicators(.visible)
                     .scrollIndicatorsFlash(trigger: indicatorFlash)
                     .scrollBounceBehavior(.basedOnSize)
@@ -482,7 +496,7 @@ struct CookingSessionView: View {
             store.send(.exitCooking)
         } label: {
             Text("Finish")
-                .font(KartaDesign.FontToken.ctaLabel())
+                .font(KartaDesign.FontToken.cookFinishLabel())
                 .foregroundStyle(KartaDesign.ColorToken.card)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: KartaDesign.cooking.finishHeight)
