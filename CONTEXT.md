@@ -75,7 +75,7 @@ _Avoid_: tag libre, categoría, etiquetas en español, `quick`, `breakfast` como
 
 **Dieta**:
 El régimen alimentario para el que una receta es apta: `vegetarian` o `vegan`, donde
-vegan implica vegetarian. Es un filtro para decidir, no una garantía: la única garantía dura
+vegan implica vegetarian. Es uno de los Filtros, no una garantía: la única garantía dura
 es la Intolerancia.
 _Avoid_: etiqueta de dieta, restricción, preferencia
 
@@ -184,8 +184,23 @@ _Avoid_: fin del feed, corte, paginación
 
 **Mundo**:
 Cada una de las vistas de recetas que se eligen desde el desplegable superior: For You y
-Leftovers. El Cookbook no es un Mundo: tiene otra forma y su propia puerta.
+Leftovers. El Cookbook no es un Mundo: tiene otra forma y su propia puerta. Cambiar de Mundo
+nunca cambia los Filtros ni las Intolerancias: son los mismos en los dos.
 _Avoid_: pestaña, sección, tab
+
+**Filtros**:
+Lo que la usuaria elige para estrechar lo que se le propone: tiempo, dificultad, Etiquetas
+prácticas y Dieta. Hay un solo juego para todos los Mundos. Se editan como borrador y se
+aplican de una vez; Reset y "Clear all filters" sólo los tocan a ellos. La Intolerancia no es
+un Filtro: se guarda aparte, al momento, y nada la afloja. El Course no es un Filtro en pantalla.
+_Avoid_: preferencias, ajustes, filtro de seguridad (para la Intolerancia)
+
+**Vacío por filtros / Vacío por perfil**:
+Dos razones distintas para no tener ninguna receta que ofrecer. Vacío por filtros: los Filtros
+aplicados no dejan ninguna, pero sin ellos sí habría; se ofrece cambiarlos o quitarlos. Vacío
+por perfil: ninguna receta del catálogo es compatible con las Intolerancias, con o sin Filtros;
+es un fallo de contenido (ADR 0004) y nunca se ofrece aflojar una Intolerancia.
+_Avoid_: agotado (que es pasar la Frontera), sin resultados
 
 **Cookbook**:
 Las recetas guardadas de la usuaria. Guardar es un acto explícito y deliberado,
