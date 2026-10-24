@@ -43,8 +43,9 @@ struct FilterPanelView: View {
         self.maxHeight = maxHeight
         self.onApply = onApply
         // The draft starts from the applied filters; the store is untouched
-        // until "Show N recipes" sends `.filter(.apply(_))`.
-        _draft = State(initialValue: store.state.filterDraft)
+        // until "Show N recipes" sends `.filter(.apply(_))`. A debug seed can
+        // hand the panel an unapplied draft instead (board `feed-filters.png`).
+        _draft = State(initialValue: DebugSeeds.panelInitialDraft ?? store.state.filterDraft)
         _lastIntolerance = State(initialValue: DebugSeeds.panelIntoleranceNote)
     }
 
@@ -67,7 +68,8 @@ struct FilterPanelView: View {
     }
 
     private var footerHeight: CGFloat {
-        2 * KartaDesign.space.filterFooterPadding
+        KartaDesign.space.filterFooterTopPadding
+            + KartaDesign.space.filterFooterPadding
             + KartaDesign.space.ctaHeight
             + KartaDesign.space.ctaEdge
     }
@@ -154,7 +156,7 @@ struct FilterPanelView: View {
                 }
             }
             .accessibilityIdentifier("filterApply")
-            .padding(.top, KartaDesign.space.filterFooterPadding)
+            .padding(.top, KartaDesign.space.filterFooterTopPadding)
             .padding(.horizontal, KartaDesign.space.filterPanelPadding)
             .padding(.bottom, KartaDesign.space.filterFooterPadding)
             .shadow(

@@ -238,9 +238,14 @@ private struct FeedSurface: View {
                             LeftoversPlaceholder()
                         }
                     }
-                    // A Mundo switch rebuilds the surface; the anchor stored
-                    // for the Mundo settles the deck back on its Card.
-                    .id(world)
+                    // A Mundo switch or any change to the effective filters
+                    // (applied draft or Intolerancias) rebuilds the surface;
+                    // the reducer discarded the anchors in the same action,
+                    // so the rebuilt deck starts at the top.
+                    .id(FeedDeckIdentity.key(
+                        world: world,
+                        filters: store.state.effectiveFeedFilters
+                    ))
                 }
 
                 if mundoMenuOpen || filterPanelOpen {
@@ -659,7 +664,7 @@ private struct FeedDeck: View {
 
         Group {
             if visible.relativeIndex == 0 {
-                if let presentation = store.state.onboarding.cardPresentation(
+                if let presentation = store.state.cardPresentation(
                     for: visible.card.recipe
                 ) {
                     RecipeCardView(

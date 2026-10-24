@@ -169,8 +169,8 @@ private struct FilterButton: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            // The boards show no badge over the pressed button.
-            if appliedCount > 0, !pressed {
+            // The badge counts applied filters and stays on while pressed.
+            if appliedCount > 0 {
                 Text("\(appliedCount)")
                     .font(KartaDesign.FontToken.filterBadge())
                     .foregroundStyle(KartaDesign.ColorToken.card)

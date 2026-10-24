@@ -172,6 +172,82 @@ struct FeedFilterPanelTests {
         #expect(allergens == "dairy, egg, fish, gluten and nuts")
     }
 
+    @Test("The deck identity changes with the Mundo and the effective filters")
+    func deckIdentityFollowsFilters() {
+        let unfiltered = FeedFilters()
+        #expect(
+            FeedDeckIdentity.key(world: .forYou, filters: unfiltered)
+                == FeedDeckIdentity.key(world: .forYou, filters: FeedFilters())
+        )
+        // Applying a draft or declaring an Intolerancia rebuilds the deck:
+        // a new identity makes it read the anchor the reducer discarded.
+        for changed in [
+            FeedFilters(maxMinutes: 30),
+            FeedFilters(maxDifficulty: .easy),
+            FeedFilters(practicalTags: [.onePan]),
+            FeedFilters(intolerances: [.gluten])
+        ] {
+            #expect(
+                FeedDeckIdentity.key(world: .forYou, filters: unfiltered)
+                    != FeedDeckIdentity.key(world: .forYou, filters: changed)
+            )
+        }
+        #expect(
+            FeedDeckIdentity.key(world: .forYou, filters: unfiltered)
+                != FeedDeckIdentity.key(world: .leftovers, filters: unfiltered)
+        )
+    }
+
+    @MainActor
+    @Test("Applying filters or an intolerance drops the anchor, so the rebuilt deck starts at the top")
+    func filterChangeDropsAnchor() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let store = makeStore()
+        let cards = FeedDeckCard.cards(in: try #require(store.feed(recipes: recipes, clock: clock)))
+
+        // The user swiped deep into the deck: the anchor holds the position.
+        store.send(.setFeedAnchor(
+            ScrollAnchor(recipeID: cards[2].id, relativeOffset: 0),
+            world: .forYou
+        ))
+        #expect(FeedDeckAnchor.initialIndex(
+            cards: cards,
+            navigation: store.state.navigation
+        ) == 2)
+
+        store.send(.filter(.apply(FilterDraft(maxMinutes: 30))))
+        #expect(FeedDeckAnchor.initialIndex(
+            cards: cards,
+            navigation: store.state.navigation
+        ) == 0)
+
+        store.send(.setFeedAnchor(
+            ScrollAnchor(recipeID: cards[2].id, relativeOffset: 0),
+            world: .forYou
+        ))
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.gluten]))))
+        #expect(FeedDeckAnchor.initialIndex(
+            cards: cards,
+            navigation: store.state.navigation
+        ) == 0)
+    }
+
+    @MainActor
+    @Test("The Card face comes from the safety profile, not the onboarding answer")
+    func cardFaceGuardedBySafetyProfile() throws {
+        let recipes = try SeedResourceAdapter().loadRecipes()
+        let pesto = try #require(recipes.first { $0.id == "pesto-pasta" })
+        let store = makeStore()
+        #expect(store.state.cardPresentation(for: pesto) != nil)
+
+        // Declaring Gluten in the panel updates the safety profile: the
+        // store projection refuses the violating card while the onboarding
+        // projection would still draw it.
+        store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.gluten]))))
+        #expect(store.state.cardPresentation(for: pesto) == nil)
+        #expect(store.state.onboarding.cardPresentation(for: pesto) != nil)
+    }
+
     @MainActor
     @Test("A live draft count reads from the store, not from the view")
     func draftCountFromStore() throws {

@@ -67,6 +67,15 @@ enum DebugSeeds {
             : nil
     }
 
+    /// The draft the panel opens with when the seed draws one (`filters-open`,
+    /// board `feed-filters.png`): 30 min + one-pan edited but not yet applied,
+    /// so the badge stays off and the feed below is unfiltered.
+    static var panelInitialDraft: FilterDraft? {
+        ProcessInfo.processInfo.environment["KARTA_SEED"] == "filters-open"
+            ? FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
+            : nil
+    }
+
     /// Cooking-session states (#101): enter the session and walk to the
     /// Paso (or the Cierre) that shows the signed-off board.
     @MainActor
@@ -201,13 +210,13 @@ enum DebugSeeds {
                 filterDraft: FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
             )
         case "filters-open":
-            // The panel editing 30 min + One pan with dairy already declared
-            // (board `feed-filters.png`): the applied draft is what the panel
-            // opens with, so it doubles as the in-panel draft.
+            // The panel editing an unapplied 30 min + one-pan draft over the
+            // unfiltered feed, dairy already declared (board
+            // `feed-filters.png`): nothing is applied, so the badge stays
+            // off; the draft itself comes from `panelInitialDraft`.
             return KartaState(
                 onboarding: Self.onboarded(intolerances: [.dairy]),
-                safetyProfile: SafetyProfile(intolerances: [.dairy]),
-                filterDraft: FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
+                safetyProfile: SafetyProfile(intolerances: [.dairy])
             )
         case "filters-intolerance":
             // Right after adding Gluten as an Intolerancia (board
@@ -224,6 +233,13 @@ enum DebugSeeds {
                 onboarding: Self.onboarded(intolerances: [.dairy]),
                 safetyProfile: SafetyProfile(intolerances: [.dairy]),
                 filterDraft: FilterDraft(maxMinutes: 20, practicalTags: [.onePan])
+            )
+        case "intolerance-applied":
+            // Gluten declared: the deck's top Cards are the recipes the
+            // profile still allows; nothing containing gluten remains.
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.gluten]),
+                safetyProfile: SafetyProfile(intolerances: [.gluten])
             )
         case "empty-profile":
             // Every Intolerancia declared: no catalog recipe survives, with

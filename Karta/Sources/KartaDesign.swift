@@ -422,6 +422,8 @@ enum KartaDesign {
         static let filterBlockGap: CGFloat = 14
         static let filterHeadingGap: CGFloat = 8
         static let filterResetHeight: CGFloat = 34
+        /// Footer: 14 pt above the button, 16 pt to the sides and below.
+        static let filterFooterTopPadding: CGFloat = 14
         static let filterFooterPadding: CGFloat = 16
         static let filterScrollFade: CGFloat = 32
         static let neverShowRadius: CGFloat = 16
