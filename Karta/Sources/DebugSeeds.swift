@@ -50,6 +50,32 @@ enum DebugSeeds {
         ProcessInfo.processInfo.environment["KARTA_SEED"] == "world-menu"
     }
 
+    /// Whether the seed asks the feed to open with the filter panel already
+    /// down (#6's `feed-filters*.png` boards): panel openness is shell state,
+    /// like the Mundo menu's.
+    static var opensFilterPanel: Bool {
+        ["filters-open", "filters-intolerance"]
+            .contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
+    }
+
+    /// The allergen the panel reports as just saved (`filters-intolerance`,
+    /// board `feed-filters-intolerance.png`): the confirmation line is view
+    /// state, so the seed supplies it directly.
+    static var panelIntoleranceNote: Allergen? {
+        ProcessInfo.processInfo.environment["KARTA_SEED"] == "filters-intolerance"
+            ? .gluten
+            : nil
+    }
+
+    /// The draft the panel opens with when the seed draws one (`filters-open`,
+    /// board `feed-filters.png`): 30 min + one-pan edited but not yet applied,
+    /// so the badge stays off and the feed below is unfiltered.
+    static var panelInitialDraft: FilterDraft? {
+        ProcessInfo.processInfo.environment["KARTA_SEED"] == "filters-open"
+            ? FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
+            : nil
+    }
+
     /// Cooking-session states (#101): enter the session and walk to the
     /// Paso (or the Cierre) that shows the signed-off board.
     @MainActor
@@ -183,6 +209,45 @@ enum DebugSeeds {
                 safetyProfile: SafetyProfile(intolerances: []),
                 filterDraft: FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
             )
+        case "filters-open":
+            // The panel editing an unapplied 30 min + one-pan draft over the
+            // unfiltered feed, dairy already declared (board
+            // `feed-filters.png`): nothing is applied, so the badge stays
+            // off; the draft itself comes from `panelInitialDraft`.
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.dairy]),
+                safetyProfile: SafetyProfile(intolerances: [.dairy])
+            )
+        case "filters-intolerance":
+            // Right after adding Gluten as an Intolerancia (board
+            // `feed-filters-intolerance.png`): all-Any draft, the confirmation
+            // line comes from `panelIntoleranceNote`.
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.dairy, .gluten]),
+                safetyProfile: SafetyProfile(intolerances: [.dairy, .gluten])
+            )
+        case "empty-filters":
+            // 20 min + one-pan leaves nothing, but the dairy Intolerancia
+            // alone would leave some (board `feed-empty-filters.png`).
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.dairy]),
+                safetyProfile: SafetyProfile(intolerances: [.dairy]),
+                filterDraft: FilterDraft(maxMinutes: 20, practicalTags: [.onePan])
+            )
+        case "intolerance-applied":
+            // Gluten declared: the deck's top Cards are the recipes the
+            // profile still allows; nothing containing gluten remains.
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.gluten]),
+                safetyProfile: SafetyProfile(intolerances: [.gluten])
+            )
+        case "empty-profile":
+            // Every Intolerancia declared: no catalog recipe survives, with
+            // or without filters (board `feed-empty-profile.png`).
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: Set(Allergen.allCases)),
+                safetyProfile: SafetyProfile(intolerances: Set(Allergen.allCases))
+            )
         case "leftovers":
             // The Leftovers Mundo open on its placeholder until #9 lands.
             return KartaState(
@@ -205,6 +270,19 @@ enum DebugSeeds {
             )
         default:
             return KartaState(safetyProfile: SafetyProfile(intolerances: []))
+        }
+    }
+
+    /// Seed ids a debug seed removes from the loaded catalog: the
+    /// `feed-empty-profile` board only shows when nothing reviewed is free of
+    /// the declared Intolerancias, and the bundled catalog always keeps two
+    /// allergen-free recipes.
+    static var droppedRecipeIDs: Set<String> {
+        switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
+        case "empty-profile":
+            return ["quick-chicken-curry", "lentil-stew"]
+        default:
+            return []
         }
     }
 

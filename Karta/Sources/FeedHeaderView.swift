@@ -2,6 +2,13 @@ import SwiftUI
 import KartaCore
 import KartaPresentation
 
+/// Named coordinate space of the feed surface, for locating the filter
+/// button so the panel's pointer can sit centred under it.
+enum FeedLayout {
+    static let coordinateSpace = "feedSurface"
+}
+
+
 /// One row of the Mundo menu: the Mundo plus the screen copy fixed by the
 /// signed-off boards (`docs/design/karta-v1.md` → *The Mundo menu*).
 struct MundoRow: Identifiable, Equatable {
@@ -51,10 +58,15 @@ enum MundoMenu {
 struct FeedHeader: View {
     let store: KartaStore
     let mundoMenuOpen: Bool
+    /// `ink` fill and border on the filter button while its panel is open.
+    var filterPressed: Bool = false
     let onToggleMundoMenu: () -> Void
     let onOpenCookbook: () -> Void
-    /// Opens the filter panel (issue #6). A no-op until the panel exists.
+    /// Toggles the filter panel (issue #6).
     var onFilter: () -> Void = {}
+    /// Reports the filter button's horizontal centre in
+    /// `FeedLayout.coordinateSpace` so the panel can aim its pointer (#6).
+    var onFilterButtonCenter: ((CGFloat) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 0) {
@@ -69,8 +81,9 @@ struct FeedHeader: View {
             HStack(spacing: KartaDesign.space.headerButtonGap) {
                 FilterButton(
                     appliedCount: store.state.appliedFilterCount,
-                    pressed: false,
-                    action: onFilter
+                    pressed: filterPressed,
+                    action: onFilter,
+                    onCenter: onFilterButtonCenter
                 )
 
                 MundoPill(
@@ -115,6 +128,8 @@ private struct FilterButton: View {
     /// `ink` fill and border while the panel is open (issue #6).
     let pressed: Bool
     let action: () -> Void
+    /// Reports the button's horizontal centre in `FeedLayout`'s space.
+    var onCenter: ((CGFloat) -> Void)? = nil
 
     var body: some View {
         Button(action: action) {
@@ -153,6 +168,7 @@ private struct FilterButton: View {
             }
         }
         .overlay(alignment: .topTrailing) {
+            // The badge counts applied filters and stays on while pressed.
             if appliedCount > 0 {
                 Text("\(appliedCount)")
                     .font(KartaDesign.FontToken.filterBadge())
@@ -179,6 +195,11 @@ private struct FilterButton: View {
                 ? "Filters, \(appliedCount) applied"
                 : "Filters"
         )
+        .onGeometryChange(for: CGFloat.self) { geometry in
+            geometry.frame(in: .named(FeedLayout.coordinateSpace)).midX
+        } action: { center in
+            onCenter?(center)
+        }
     }
 }
 
@@ -426,7 +447,8 @@ private struct BowlShape: Shape {
 }
 
 /// The two-lines-with-knobs icon of the filter button (18 pt, stroke 1.7).
-private struct FilterSlidersGlyph: View {
+/// Shared with the "Nothing fits these filters" empty-state icon.
+struct FilterSlidersGlyph: View {
     var ink: Color = KartaDesign.ColorToken.ink
     /// Fill behind each knob so the track line does not show through.
     var field: Color = KartaDesign.ColorToken.card
