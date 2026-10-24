@@ -71,7 +71,7 @@ struct FeedScreen: View {
                     )
                     .transition(.opacity)
                 } else {
-                    FeedDeck(
+                    FeedSurface(
                         cards: FeedDeckCard.cards(in: feed),
                         manifest: manifest,
                         store: store,
@@ -166,11 +166,138 @@ private struct SystemClock: KartaClock {
     var now: Date { Date() }
 }
 
+/// The feed surface shared by both Mundos: the header row (wordmark, filter
+/// button, Mundo pill, cookbook door) over the active Mundo's content, plus
+/// the Mundo menu and its scrim. The deck keeps each Mundo's position through
+/// the session anchors (ADR 0009); switching Mundos never touches the filters.
+private struct FeedSurface: View {
+    let cards: [FeedDeckCard]
+    let manifest: MediaAssetManifest
+    let store: KartaStore
+    let onOpenCookbook: () -> Void
+    let onOpenCard: () -> Void
+
+    @State private var mundoMenuOpen = DebugSeeds.opensMundoMenu
+
+    private var world: World {
+        store.state.navigation.world
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
+                    FeedHeader(
+                        store: store,
+                        mundoMenuOpen: mundoMenuOpen,
+                        onToggleMundoMenu: {
+                            withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
+                                mundoMenuOpen.toggle()
+                            }
+                        },
+                        onOpenCookbook: {
+                            mundoMenuOpen = false
+                            onOpenCookbook()
+                        }
+                    )
+                    .padding(.top, KartaDesign.space.headerTopGap)
+
+                    Group {
+                        switch world {
+                        case .forYou:
+                            FeedDeck(
+                                cards: cards,
+                                manifest: manifest,
+                                store: store,
+                                onOpenCard: onOpenCard
+                            )
+                        case .leftovers:
+                            LeftoversPlaceholder()
+                        }
+                    }
+                    // A Mundo switch rebuilds the surface; the anchor stored
+                    // for the Mundo settles the deck back on its Card.
+                    .id(world)
+                }
+
+                if mundoMenuOpen {
+                    ZStack(alignment: .top) {
+                        // Everything below the header row is dimmed; tapping
+                        // the scrim closes the menu.
+                        VStack(spacing: 0) {
+                            Color.clear.frame(height: headerClearance(in: geometry))
+                            KartaDesign.ColorToken.scrim
+                                .onTapGesture { closeMenu() }
+                        }
+                        .accessibilityHidden(true)
+
+                        HStack {
+                            Spacer(minLength: 0)
+                            MundoMenuView(
+                                store: store,
+                                onSelect: { store.send(.selectWorld($0)) },
+                                onDismiss: { closeMenu() }
+                            )
+                            .padding(.top, headerClearance(in: geometry)
+                                     + KartaDesign.space.mundoMenuTopGap)
+                            .padding(.trailing, menuTrailingInset)
+                        }
+                    }
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                }
+            }
+        }
+    }
+
+    /// Clear zone above the scrim: status-bar area, the 6 pt header gap and
+    /// the header row itself stay undimmed.
+    private func headerClearance(in geometry: GeometryProxy) -> CGFloat {
+        geometry.safeAreaInsets.top
+            + KartaDesign.space.headerTopGap
+            + KartaDesign.space.headerRowHeight
+    }
+
+    /// The menu's right edge sits on the pill's right edge: side margin plus
+    /// the door and the 10 pt between pill and door.
+    private var menuTrailingInset: CGFloat {
+        KartaDesign.space.screenX
+            + KartaDesign.space.doorButton
+            + KartaDesign.space.headerButtonGap
+    }
+
+    private func closeMenu() {
+        withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
+            mundoMenuOpen = false
+        }
+    }
+}
+
+/// Leftovers is reachable from the Mundo menu but its feed is issue #9: the
+/// store has no Leftovers seam yet, so the Mundo shows a placeholder in the
+/// established empty-state style.
+private struct LeftoversPlaceholder: View {
+    var body: some View {
+        VStack(spacing: KartaDesign.space.chipGap) {
+            BowlGlyph(ink: KartaDesign.ColorToken.mutedStroke)
+                .frame(
+                    width: KartaDesign.space.emptyIcon,
+                    height: KartaDesign.space.emptyIcon
+                )
+            Text("Leftovers")
+                .font(KartaDesign.FontToken.emptyTitle())
+                .foregroundStyle(KartaDesign.ColorToken.ink)
+            Text("Reuse what you cooked")
+                .font(KartaDesign.FontToken.emptyBody())
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 private struct FeedDeck: View {
     let manifest: MediaAssetManifest
     let store: KartaStore
-    /// The cookbook's own door: a box button right of the For You pill.
-    let onOpenCookbook: () -> Void
     /// Called when the front Card is tapped open.
     let onOpenCard: () -> Void
 
@@ -188,12 +315,10 @@ private struct FeedDeck: View {
         cards: [FeedDeckCard],
         manifest: MediaAssetManifest,
         store: KartaStore,
-        onOpenCookbook: @escaping () -> Void,
         onOpenCard: @escaping () -> Void
     ) {
         self.manifest = manifest
         self.store = store
-        self.onOpenCookbook = onOpenCookbook
         self.onOpenCard = onOpenCard
         _cards = State(initialValue: cards)
         _currentIndex = State(initialValue: FeedDeckAnchor.initialIndex(
@@ -204,66 +329,6 @@ private struct FeedDeck: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Text("karta")
-                    .font(KartaDesign.FontToken.wordmark())
-                    .tracking(KartaDesign.type.wordmarkTracking)
-                    .foregroundStyle(KartaDesign.ColorToken.brand)
-                    .accessibilityAddTraits(.isHeader)
-
-                Spacer()
-
-                // The Mundo pill (the dropdown itself is issue #8) and, 10 pt
-                // to its right, the cookbook's door (board *P1*).
-                HStack(spacing: KartaDesign.space.rankGap) {
-                    Text("For You")
-                        .font(KartaDesign.FontToken.switchActive())
-                        .foregroundStyle(KartaDesign.ColorToken.ink)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(KartaDesign.ColorToken.ink)
-                }
-                .padding(.horizontal, KartaDesign.space.saveButtonX)
-                .frame(height: KartaDesign.space.doorButton)
-                .background {
-                    Capsule()
-                        .fill(KartaDesign.ColorToken.buttonEdge)
-                        .offset(y: KartaDesign.space.reverseButtonEdge)
-                    Capsule().fill(KartaDesign.ColorToken.card)
-                    Capsule().strokeBorder(
-                        KartaDesign.ColorToken.line,
-                        lineWidth: KartaDesign.elevation.backFrameLineWidth
-                    )
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("For You")
-
-                Button(action: onOpenCookbook) {
-                    CookbookBoxGlyph(ink: KartaDesign.ColorToken.ink)
-                        .frame(
-                            width: KartaDesign.space.doorGlyph,
-                            height: KartaDesign.space.doorGlyph
-                        )
-                        .frame(
-                            width: KartaDesign.space.doorButton,
-                            height: KartaDesign.space.doorButton
-                        )
-                        .background {
-                            Circle()
-                                .fill(KartaDesign.ColorToken.buttonEdge)
-                                .offset(y: KartaDesign.space.reverseButtonEdge)
-                            Circle().fill(KartaDesign.ColorToken.card)
-                            Circle().strokeBorder(
-                                KartaDesign.ColorToken.line,
-                                lineWidth: KartaDesign.elevation.backFrameLineWidth
-                            )
-                        }
-                }
-                .padding(.leading, KartaDesign.space.doorGap)
-                .accessibilityLabel("Open your cookbook")
-            }
-            .padding(.horizontal, KartaDesign.space.screenX)
-
             GeometryReader { geometry in
                 ZStack {
                     ForEach(visibleCards.reversed()) { visible in

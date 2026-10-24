@@ -43,6 +43,13 @@ enum DebugSeeds {
         return store
     }
 
+    /// Whether the seed asks the feed to open with the Mundo menu already
+    /// down (#8's `feed-world-menu.png` board): menu openness is shell state,
+    /// not store state, so it cannot ride `KartaState`.
+    static var opensMundoMenu: Bool {
+        ProcessInfo.processInfo.environment["KARTA_SEED"] == "world-menu"
+    }
+
     /// Cooking-session states (#101): enter the session and walk to the
     /// Paso (or the Cierre) that shows the signed-off board.
     @MainActor
@@ -164,6 +171,27 @@ enum DebugSeeds {
                     ],
                     saveCap: nil
                 ),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "filters-applied":
+            // Two applied filters, for the badge on the filter button
+            // (board `feed-filters-applied.png`): the badge counts the time
+            // cap and the one Practical tag, never an Intolerancia.
+            return KartaState(
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: []),
+                filterDraft: FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
+            )
+        case "leftovers":
+            // The Leftovers Mundo open on its placeholder until #9 lands.
+            return KartaState(
+                onboarding: Self.onboarded(),
+                navigation: AppNavigationState(world: .leftovers),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "world-menu":
+            return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
             )
