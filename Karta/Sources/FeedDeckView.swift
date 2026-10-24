@@ -405,7 +405,7 @@ private struct FeedEmptyStateView: View {
         switch state {
         case .noMatchForFilters(let summary, let keptIntolerances):
             VStack(spacing: 0) {
-                FilterSlidersGlyph(ink: KartaDesign.ColorToken.mutedStroke, field: .clear)
+                FilterSlidersGlyph(ink: KartaDesign.ColorToken.mutedStroke, field: KartaDesign.ColorToken.paper)
                     .frame(
                         width: KartaDesign.space.emptyIcon,
                         height: KartaDesign.space.emptyIcon
@@ -440,6 +440,7 @@ private struct FeedEmptyStateView: View {
                             .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, KartaDesign.space.onboardingGap)
                 }
             }

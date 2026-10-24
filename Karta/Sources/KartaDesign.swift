@@ -202,6 +202,18 @@ enum KartaDesign {
                 .weight(.bold)
         }
 
+        /// Multi-choice filter track segment, on (Figtree 800, 13 → body).
+        static func trackOn() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// Multi-choice filter track segment, off (Figtree 700, 13 → body).
+        static func trackOff() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .body)
+                .weight(.bold)
+        }
+
         /// Mundo menu row name (Figtree 800, 16).
         static func mundoName() -> Font {
             .custom("Figtree", size: 16, relativeTo: .body)

@@ -421,8 +421,8 @@ private struct FilterTrack: View {
     private func labelFont(on: Bool) -> Font {
         if multiChoice {
             return on
-                ? KartaDesign.FontToken.sheetCount()
-                : KartaDesign.FontToken.cupoCount()
+                ? KartaDesign.FontToken.trackOn()
+                : KartaDesign.FontToken.trackOff()
         }
         return on
             ? KartaDesign.FontToken.switchActive()
@@ -520,7 +520,9 @@ private struct FilterTrack: View {
 
 /// The thin-outline shield of the NEVER SHOW ME heading, the kept-intolerance
 /// note under the empty-filter buttons and the "no recipes fit your
-/// intolerances" board.
+/// intolerances" board. Taller than it is wide (about 42 × 52 pt inside the
+/// 64 pt icon box) with a thin stroke: ~1.8 pt at the 64 pt empty-state size,
+/// never under 1 pt at the 14 pt heading size.
 struct ShieldGlyph: View {
     var ink: Color = KartaDesign.ColorToken.ink
 
@@ -529,7 +531,7 @@ struct ShieldGlyph: View {
             let side = min(geometry.size.width, geometry.size.height)
             ShieldShape()
                 .stroke(ink, style: StrokeStyle(
-                    lineWidth: side * 0.07,
+                    lineWidth: max(1, side * 0.028),
                     lineCap: .round,
                     lineJoin: .round
                 ))
@@ -542,6 +544,9 @@ struct ShieldGlyph: View {
 
 private struct ShieldShape: Shape {
     func path(in rect: CGRect) -> Path {
+        // The board's shield is taller than wide: ~42 × 52 inside the 64 pt
+        // box, centred.
+        let rect = rect.insetBy(dx: rect.width * 0.17, dy: rect.height * 0.09)
         var path = Path()
         path.move(to: CGPoint(x: rect.minX + rect.width * 0.5, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.16))
