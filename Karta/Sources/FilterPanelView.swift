@@ -42,11 +42,15 @@ struct FilterPanelView: View {
         self.clock = clock
         self.maxHeight = maxHeight
         self.onApply = onApply
-        // The draft starts from the applied filters; the store is untouched
-        // until "Show N recipes" sends `.filter(.apply(_))`. A debug seed can
-        // hand the panel an unapplied draft instead (board `feed-filters.png`).
-        _draft = State(initialValue: DebugSeeds.panelInitialDraft ?? store.state.filterDraft)
+        _draft = State(initialValue: Self.openingDraft(store: store))
         _lastIntolerance = State(initialValue: DebugSeeds.panelIntoleranceNote)
+    }
+
+    /// The draft the panel opens with: the applied filters — edits that were
+    /// closed without "Show N recipes" are already gone — unless a debug seed
+    /// hands the panel an unapplied draft (board `feed-filters.png`).
+    static func openingDraft(store: KartaStore) -> FilterDraft {
+        DebugSeeds.panelInitialDraft ?? store.state.filterDraft
     }
 
     private var presentation: FilterPanelPresentation {
@@ -103,7 +107,6 @@ struct FilterPanelView: View {
                 }
                 .padding(.top, KartaDesign.space.filterBodyPaddingY)
                 .padding(.horizontal, KartaDesign.space.filterPanelPadding)
-                .padding(.bottom, KartaDesign.space.filterBodyPaddingY)
                 .onGeometryChange(for: CGFloat.self) { proxy in
                     proxy.size.height
                 } action: { height in

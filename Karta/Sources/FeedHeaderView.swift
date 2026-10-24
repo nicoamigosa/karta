@@ -8,13 +8,6 @@ enum FeedLayout {
     static let coordinateSpace = "feedSurface"
 }
 
-/// Reports the filter button's horizontal centre in `FeedLayout`'s space.
-struct FilterButtonCenterKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
 
 /// One row of the Mundo menu: the Mundo plus the screen copy fixed by the
 /// signed-off boards (`docs/design/karta-v1.md` → *The Mundo menu*).
@@ -71,6 +64,9 @@ struct FeedHeader: View {
     let onOpenCookbook: () -> Void
     /// Toggles the filter panel (issue #6).
     var onFilter: () -> Void = {}
+    /// Reports the filter button's horizontal centre in
+    /// `FeedLayout.coordinateSpace` so the panel can aim its pointer (#6).
+    var onFilterButtonCenter: ((CGFloat) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 0) {
@@ -86,7 +82,8 @@ struct FeedHeader: View {
                 FilterButton(
                     appliedCount: store.state.appliedFilterCount,
                     pressed: filterPressed,
-                    action: onFilter
+                    action: onFilter,
+                    onCenter: onFilterButtonCenter
                 )
 
                 MundoPill(
@@ -131,6 +128,8 @@ private struct FilterButton: View {
     /// `ink` fill and border while the panel is open (issue #6).
     let pressed: Bool
     let action: () -> Void
+    /// Reports the button's horizontal centre in `FeedLayout`'s space.
+    var onCenter: ((CGFloat) -> Void)? = nil
 
     var body: some View {
         Button(action: action) {
@@ -196,13 +195,10 @@ private struct FilterButton: View {
                 ? "Filters, \(appliedCount) applied"
                 : "Filters"
         )
-        .background {
-            GeometryReader { geometry in
-                Color.clear.preference(
-                    key: FilterButtonCenterKey.self,
-                    value: geometry.frame(in: .named(FeedLayout.coordinateSpace)).midX
-                )
-            }
+        .onGeometryChange(for: CGFloat.self) { geometry in
+            geometry.frame(in: .named(FeedLayout.coordinateSpace)).midX
+        } action: { center in
+            onCenter?(center)
         }
     }
 }

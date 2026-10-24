@@ -210,7 +210,8 @@ private struct FeedSurface: View {
                         onFilter: {
                             // Tapping the button again discards the draft.
                             if filterPanelOpen { closePanel() } else { openPanel() }
-                        }
+                        },
+                        onFilterButtonCenter: { filterButtonCenter = $0 }
                     )
                     .padding(.top, KartaDesign.space.headerTopGap)
 
@@ -285,15 +286,6 @@ private struct FeedSurface: View {
                                     maxHeight: panelMaxHeight(in: geometry),
                                     onApply: { closePanel() }
                                 )
-                                .overlay(alignment: .top) {
-                                    PanelPointer()
-                                        .offset(
-                                            x: filterButtonCenter
-                                                - KartaDesign.space.filterPanelInset
-                                                - KartaDesign.space.panelPointer / 2,
-                                            y: -KartaDesign.space.panelPointer / 2
-                                        )
-                                }
                                 .background {
                                     RoundedRectangle(
                                         cornerRadius: KartaDesign.space.filterPanelRadius,
@@ -325,6 +317,18 @@ private struct FeedSurface: View {
                                     radius: KartaDesign.elevation.menuShadowRadius,
                                     y: KartaDesign.elevation.menuShadowY
                                 )
+                                // The pointer is outside the clip: its top
+                                // half sticks out of the panel's top edge and
+                                // its centre sits on the filter button.
+                                .overlay(alignment: .topLeading) {
+                                    PanelPointer()
+                                        .offset(
+                                            x: filterButtonCenter
+                                                - KartaDesign.space.filterPanelInset
+                                                - KartaDesign.space.panelPointer / 2,
+                                            y: -KartaDesign.space.panelPointer / 2
+                                        )
+                                }
                                 .padding(.top, headerClearance(in: geometry)
                                          + KartaDesign.space.filterPanelTopGap)
                                 .padding(.horizontal, KartaDesign.space.filterPanelInset)
@@ -338,9 +342,6 @@ private struct FeedSurface: View {
                 }
             }
             .coordinateSpace(name: FeedLayout.coordinateSpace)
-            .onPreferenceChange(FilterButtonCenterKey.self) { center in
-                filterButtonCenter = center
-            }
         }
     }
 

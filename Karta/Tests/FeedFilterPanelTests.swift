@@ -64,13 +64,26 @@ struct FeedFilterPanelTests {
     }
 
     @MainActor
-    @Test("Closing the panel without applying throws the draft away")
+    @Test("Reopening the panel after a close-without-apply reseeds from the applied draft")
     func cancelDiscardsDraft() {
-        let store = makeStore(
-            draft: FilterDraft(maxMinutes: 45)
-        )
+        // Applied draft: 45 min. The user opens the panel, edits the local
+        // draft to 20 min + one-pan and closes without "Show N recipes"
+        // (closePanel sends `.filter(.cancel)`; the local @State draft is
+        // destroyed with the view).
+        let store = makeStore(draft: FilterDraft(maxMinutes: 45))
+        let edited = FilterPanelPresentation(
+            draft: FilterPanelView.openingDraft(store: store),
+            safetyProfile: store.state.safetyProfile
+        ).nextDraft(after: .readyIn(20))
+        #expect(edited.maxMinutes == 20)
         store.send(.filter(.cancel))
-        #expect(store.state.filterDraft.maxMinutes == 45)
+
+        // Reopening seeds from the store's applied draft, so the cancelled
+        // edits cannot reappear — this fails if the shell kept the local
+        // draft across opens or let cancel leak it into the store.
+        let reopened = FilterPanelView.openingDraft(store: store)
+        #expect(reopened == FilterDraft(maxMinutes: 45))
+        #expect(store.state.filterDraft == FilterDraft(maxMinutes: 45))
     }
 
     @MainActor
@@ -97,7 +110,6 @@ struct FeedFilterPanelTests {
         store.send(.filter(.apply(FilterDraft(maxMinutes: 20))))
         store.send(.filter(.reset))
         #expect(store.state.safetyProfile.intolerances == [.gluten])
-        #expect(store.state.appliedFilterCount == 0)
         // Intolerancias never count toward the badge.
         #expect(store.state.appliedFilterCount == 0)
     }
