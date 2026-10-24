@@ -565,25 +565,36 @@ private struct ShieldShape: Shape {
 /// shows inside the panel (board `feed-filters.png`).
 struct PanelPointer: View {
     var body: some View {
-        Rectangle()
-            .fill(KartaDesign.ColorToken.card)
-            .overlay {
-                Rectangle().strokeBorder(
-                    KartaDesign.ColorToken.line,
-                    lineWidth: KartaDesign.elevation.backFrameLineWidth
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(KartaDesign.ColorToken.card)
+                .overlay {
+                    Rectangle().strokeBorder(
+                        KartaDesign.ColorToken.line,
+                        lineWidth: KartaDesign.elevation.backFrameLineWidth
+                    )
+                }
+                .frame(
+                    width: KartaDesign.space.panelPointer,
+                    height: KartaDesign.space.panelPointer
                 )
-            }
-            .frame(
-                width: KartaDesign.space.panelPointer,
-                height: KartaDesign.space.panelPointer
-            )
-            .rotationEffect(.degrees(45))
-            .frame(
-                width: KartaDesign.space.panelPeak,
-                height: KartaDesign.space.panelPeak
-            )
-            .mask(alignment: .top) {
-                Color.white.frame(height: KartaDesign.space.panelPeak / 2)
-            }
+                .rotationEffect(.degrees(45))
+                .frame(
+                    width: KartaDesign.space.panelPeak,
+                    height: KartaDesign.space.panelPeak
+                )
+                .mask(alignment: .top) {
+                    Color.white.frame(height: KartaDesign.space.panelPeak / 2)
+                }
+                .frame(height: KartaDesign.space.panelPeak / 2, alignment: .top)
+            // The board's peak opens into the panel: cover the strip of the
+            // panel's border under the base with the same fill (fill only —
+            // no stroke of the pointer is ever drawn inside the panel).
+            KartaDesign.ColorToken.card
+                .frame(
+                    width: KartaDesign.space.panelPeak,
+                    height: KartaDesign.elevation.backFrameLineWidth
+                )
+        }
     }
 }
