@@ -31,13 +31,7 @@ struct FeedScreen: View {
                     .font(KartaDesign.FontToken.body())
                     .tint(KartaDesign.ColorToken.brand)
             } else if let feed = store.feed(recipes: recipes, clock: SystemClock()) {
-                if feed.isEmpty {
-                    ContentUnavailableView(
-                        "No compatible recipes",
-                        systemImage: "fork.knife",
-                        description: Text("There are no recipes compatible with your intolerances.")
-                    )
-                } else if cookbookOpen {
+                if cookbookOpen {
                     // The cookbook is not a Mundo: its own door opens and
                     // closes it, in place of the deck.
                     CookbookScreen(
@@ -72,7 +66,8 @@ struct FeedScreen: View {
                     .transition(.opacity)
                 } else {
                     FeedSurface(
-                        cards: FeedDeckCard.cards(in: feed),
+                        feed: feed,
+                        recipes: recipes,
                         manifest: manifest,
                         store: store,
                         onOpenCookbook: {
@@ -143,7 +138,8 @@ struct FeedScreen: View {
         .task {
             do {
                 let seed = SeedResourceAdapter()
-                recipes = try seed.loadRecipes() + DebugSeeds.extraRecipes()
+                recipes = (try seed.loadRecipes() + DebugSeeds.extraRecipes())
+                    .filter { !DebugSeeds.droppedRecipeIDs.contains($0.id) }
                 clips = try seed.loadTechniqueClips()
                 manifest = try seed.loadMediaManifest()
                 isLoaded = true
@@ -167,20 +163,29 @@ private struct SystemClock: KartaClock {
 }
 
 /// The feed surface shared by both Mundos: the header row (wordmark, filter
-/// button, Mundo pill, cookbook door) over the active Mundo's content, plus
-/// the Mundo menu and its scrim. The deck keeps each Mundo's position through
-/// the session anchors (ADR 0009); switching Mundos never touches the filters.
+/// button, Mundo pill, cookbook door) over the active Mundo's content — the
+/// deck or, when the For You feed runs out, its empty state — plus the Mundo
+/// menu, the filter panel and their scrims. The deck keeps each Mundo's
+/// position through the session anchors (ADR 0009); switching Mundos never
+/// touches the filters.
 private struct FeedSurface: View {
-    let cards: [FeedDeckCard]
+    let feed: Feed
+    let recipes: [Recipe]
     let manifest: MediaAssetManifest
     let store: KartaStore
     let onOpenCookbook: () -> Void
     let onOpenCard: () -> Void
 
     @State private var mundoMenuOpen = DebugSeeds.opensMundoMenu
+    @State private var filterPanelOpen = DebugSeeds.opensFilterPanel
+    @State private var filterButtonCenter: CGFloat = 0
 
     private var world: World {
         store.state.navigation.world
+    }
+
+    private var cards: [FeedDeckCard] {
+        FeedDeckCard.cards(in: feed)
     }
 
     var body: some View {
@@ -190,14 +195,21 @@ private struct FeedSurface: View {
                     FeedHeader(
                         store: store,
                         mundoMenuOpen: mundoMenuOpen,
+                        filterPressed: filterPanelOpen,
                         onToggleMundoMenu: {
+                            closePanel()
                             withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
                                 mundoMenuOpen.toggle()
                             }
                         },
                         onOpenCookbook: {
                             mundoMenuOpen = false
+                            filterPanelOpen = false
                             onOpenCookbook()
+                        },
+                        onFilter: {
+                            // Tapping the button again discards the draft.
+                            if filterPanelOpen { closePanel() } else { openPanel() }
                         }
                     )
                     .padding(.top, KartaDesign.space.headerTopGap)
@@ -205,12 +217,23 @@ private struct FeedSurface: View {
                     Group {
                         switch world {
                         case .forYou:
-                            FeedDeck(
-                                cards: cards,
-                                manifest: manifest,
-                                store: store,
-                                onOpenCard: onOpenCard
-                            )
+                            if cards.isEmpty {
+                                FeedEmptyStateView(
+                                    state: store.feedEmptyState(
+                                        recipes: recipes,
+                                        clock: SystemClock()
+                                    ),
+                                    onChangeFilters: { openPanel() },
+                                    onClearFilters: { store.send(.filter(.reset)) }
+                                )
+                            } else {
+                                FeedDeck(
+                                    cards: cards,
+                                    manifest: manifest,
+                                    store: store,
+                                    onOpenCard: onOpenCard
+                                )
+                            }
                         case .leftovers:
                             LeftoversPlaceholder()
                         }
@@ -220,32 +243,98 @@ private struct FeedSurface: View {
                     .id(world)
                 }
 
-                if mundoMenuOpen {
+                if mundoMenuOpen || filterPanelOpen {
                     ZStack(alignment: .top) {
                         // Everything below the header row is dimmed; tapping
-                        // the scrim closes the menu.
+                        // the scrim closes what is open.
                         VStack(spacing: 0) {
                             Color.clear.frame(height: headerClearance(in: geometry))
                             KartaDesign.ColorToken.scrim
-                                .onTapGesture { closeMenu() }
+                                .onTapGesture {
+                                    closeMenu()
+                                    closePanel()
+                                }
                         }
                         .accessibilityHidden(true)
 
-                        HStack {
-                            Spacer(minLength: 0)
-                            MundoMenuView(
-                                store: store,
-                                onSelect: { store.send(.selectWorld($0)) },
-                                onDismiss: { closeMenu() }
-                            )
-                            .padding(.top, headerClearance(in: geometry)
-                                     + KartaDesign.space.mundoMenuTopGap)
-                            .padding(.trailing, menuTrailingInset)
+                        if mundoMenuOpen {
+                            HStack {
+                                Spacer(minLength: 0)
+                                MundoMenuView(
+                                    store: store,
+                                    onSelect: { store.send(.selectWorld($0)) },
+                                    onDismiss: { closeMenu() }
+                                )
+                                .padding(.top, headerClearance(in: geometry)
+                                         + KartaDesign.space.mundoMenuTopGap)
+                                .padding(.trailing, menuTrailingInset)
+                            }
+                        }
+
+                        if filterPanelOpen {
+                            VStack {
+                                FilterPanelView(
+                                    store: store,
+                                    recipes: recipes,
+                                    clock: SystemClock(),
+                                    maxHeight: panelMaxHeight(in: geometry),
+                                    onApply: { closePanel() }
+                                )
+                                .overlay(alignment: .top) {
+                                    PanelPointer()
+                                        .offset(
+                                            x: filterButtonCenter
+                                                - KartaDesign.space.filterPanelInset
+                                                - KartaDesign.space.panelPointer / 2,
+                                            y: -KartaDesign.space.panelPointer / 2
+                                        )
+                                }
+                                .background {
+                                    RoundedRectangle(
+                                        cornerRadius: KartaDesign.space.filterPanelRadius,
+                                        style: .continuous
+                                    )
+                                    .fill(KartaDesign.ColorToken.buttonEdge)
+                                    .offset(y: KartaDesign.space.menuEdge)
+                                    RoundedRectangle(
+                                        cornerRadius: KartaDesign.space.filterPanelRadius,
+                                        style: .continuous
+                                    )
+                                    .fill(KartaDesign.ColorToken.card)
+                                    RoundedRectangle(
+                                        cornerRadius: KartaDesign.space.filterPanelRadius,
+                                        style: .continuous
+                                    )
+                                    .strokeBorder(
+                                        KartaDesign.ColorToken.line,
+                                        lineWidth: KartaDesign.elevation.backFrameLineWidth
+                                    )
+                                }
+                                .clipShape(RoundedRectangle(
+                                    cornerRadius: KartaDesign.space.filterPanelRadius,
+                                    style: .continuous
+                                ))
+                                .compositingGroup()
+                                .shadow(
+                                    color: KartaDesign.ColorToken.frontShadow,
+                                    radius: KartaDesign.elevation.menuShadowRadius,
+                                    y: KartaDesign.elevation.menuShadowY
+                                )
+                                .padding(.top, headerClearance(in: geometry)
+                                         + KartaDesign.space.filterPanelTopGap)
+                                .padding(.horizontal, KartaDesign.space.filterPanelInset)
+
+                                Spacer(minLength: 0)
+                            }
                         }
                     }
                     .ignoresSafeArea()
                     .transition(.opacity)
                 }
+            }
+            .coordinateSpace(name: FeedLayout.coordinateSpace)
+            .onPreferenceChange(FilterButtonCenterKey.self) { center in
+                filterButtonCenter = center
             }
         }
     }
@@ -266,10 +355,196 @@ private struct FeedSurface: View {
             + KartaDesign.space.headerButtonGap
     }
 
+    /// The panel hugs its content up to the top of the bottom safe area.
+    private func panelMaxHeight(in geometry: GeometryProxy) -> CGFloat {
+        geometry.size.height
+            + geometry.safeAreaInsets.top
+            - headerClearance(in: geometry)
+            - KartaDesign.space.filterPanelTopGap
+    }
+
+    private func openPanel() {
+        closeMenu()
+        withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
+            filterPanelOpen = true
+        }
+    }
+
+    /// Closing the panel without applying throws the draft away; the panel's
+    /// draft dies with it and any saved Intolerancias stay saved.
+    private func closePanel() {
+        store.send(.filter(.cancel))
+        withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
+            filterPanelOpen = false
+        }
+    }
+
     private func closeMenu() {
         withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
             mundoMenuOpen = false
         }
+    }
+}
+
+/// The two empty states of the For You feed (`docs/design/karta-v1.md` →
+/// *Empty states*): centred where the deck would be, on `paper`, with the
+/// header (badge included) still on top. The copy and the reason come from
+/// `FeedEmptyState` (#127); the view only draws and sends the two actions.
+private struct FeedEmptyStateView: View {
+    let state: FeedEmptyState?
+    let onChangeFilters: () -> Void
+    let onClearFilters: () -> Void
+
+    var body: some View {
+        switch state {
+        case .noMatchForFilters(let summary, let keptIntolerances):
+            VStack(spacing: 0) {
+                FilterSlidersGlyph(ink: KartaDesign.ColorToken.mutedStroke, field: .clear)
+                    .frame(
+                        width: KartaDesign.space.emptyIcon,
+                        height: KartaDesign.space.emptyIcon
+                    )
+                    .padding(.bottom, KartaDesign.space.onboardingGap)
+                Text("Nothing fits these filters")
+                    .font(KartaDesign.FontToken.emptyTitle())
+                    .foregroundStyle(KartaDesign.ColorToken.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, KartaDesign.space.chipGap)
+                Text(summary)
+                    .font(KartaDesign.FontToken.emptyBody())
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, KartaDesign.space.onboardingGap)
+
+                VStack(spacing: KartaDesign.space.ctaGap) {
+                    BrandCTAButton("Change filters", action: onChangeFilters)
+                    TactileCardButton("Clear all filters", action: onClearFilters)
+                }
+
+                if let keptIntolerances {
+                    HStack(alignment: .top, spacing: KartaDesign.space.chipGap) {
+                        ShieldGlyph(ink: KartaDesign.ColorToken.inkMuted)
+                            .frame(
+                                width: KartaDesign.space.shieldHeading,
+                                height: KartaDesign.space.shieldHeading
+                            )
+                            .alignmentGuide(.top) { $0[.top] + 3 }
+                        Text("Clearing keeps your intolerances: \(keptIntolerances).")
+                            .font(KartaDesign.FontToken.cupoCount())
+                            .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, KartaDesign.space.onboardingGap)
+                }
+            }
+            .padding(.horizontal, KartaDesign.space.emptyStateX)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityElement(children: .contain)
+        case .noMatchForProfile(let allergens):
+            VStack(spacing: 0) {
+                ShieldGlyph(ink: KartaDesign.ColorToken.mutedStroke)
+                    .frame(
+                        width: KartaDesign.space.emptyIcon,
+                        height: KartaDesign.space.emptyIcon
+                    )
+                    .padding(.bottom, KartaDesign.space.onboardingGap)
+                Text("No recipes fit your\nintolerances yet")
+                    .font(KartaDesign.FontToken.emptyTitle())
+                    .foregroundStyle(KartaDesign.ColorToken.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, KartaDesign.space.chipGap)
+                Text("None of our recipes is free of \(allergens). That gap is ours to fill, not yours.")
+                    .font(KartaDesign.FontToken.emptyBody())
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, KartaDesign.space.onboardingGap)
+
+                TactileCardButton("Check my intolerances", action: onChangeFilters)
+            }
+            .padding(.horizontal, KartaDesign.space.emptyStateX)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .some(.none), nil:
+            EmptyView()
+        }
+    }
+}
+
+/// The primary action: `brand` fill, 54 pt, radius 18, Figtree 800 17 `card`,
+/// 3 pt `brandEdge` plus the soft shadow.
+struct BrandCTAButton: View {
+    let label: String
+    let action: () -> Void
+
+    init(_ label: String, action: @escaping () -> Void) {
+        self.label = label
+        self.action = action
+    }
+
+    var body: some View {
+        Button(label, action: action)
+            .font(KartaDesign.FontToken.cookFinishLabel())
+            .foregroundStyle(KartaDesign.ColorToken.card)
+            .frame(maxWidth: .infinity)
+            .frame(height: KartaDesign.space.ctaHeight)
+            .background {
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.cta,
+                    style: .continuous
+                )
+                .fill(KartaDesign.ColorToken.brandEdge)
+                .offset(y: KartaDesign.space.ctaEdge)
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.cta,
+                    style: .continuous
+                )
+                .fill(KartaDesign.ColorToken.brand)
+            }
+            .shadow(
+                color: KartaDesign.ColorToken.buttonShadow,
+                radius: KartaDesign.elevation.buttonShadowRadius,
+                y: KartaDesign.elevation.buttonShadowY
+            )
+    }
+}
+
+/// The tactile secondary action: `card` fill, 1 pt `line`, 2 pt `buttonEdge`,
+/// 54 pt, Figtree 800 17 `ink`.
+struct TactileCardButton: View {
+    let label: String
+    let action: () -> Void
+
+    init(_ label: String, action: @escaping () -> Void) {
+        self.label = label
+        self.action = action
+    }
+
+    var body: some View {
+        Button(label, action: action)
+            .font(KartaDesign.FontToken.cookFinishLabel())
+            .foregroundStyle(KartaDesign.ColorToken.ink)
+            .frame(maxWidth: .infinity)
+            .frame(height: KartaDesign.space.ctaHeight)
+            .background {
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.cta,
+                    style: .continuous
+                )
+                .fill(KartaDesign.ColorToken.buttonEdge)
+                .offset(y: KartaDesign.space.reverseButtonEdge)
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.cta,
+                    style: .continuous
+                )
+                .fill(KartaDesign.ColorToken.card)
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.cta,
+                    style: .continuous
+                )
+                .strokeBorder(
+                    KartaDesign.ColorToken.line,
+                    lineWidth: KartaDesign.elevation.backFrameLineWidth
+                )
+            }
     }
 }
 

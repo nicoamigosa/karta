@@ -46,6 +46,9 @@ enum KartaDesign {
         static let mutedStroke = Color(hex: 0xC9B79C)
         /// The pressed cookbook door's darker 2 pt edge.
         static let inkEdge = Color(hex: 0x2E0F0A)
+        /// The filter tracks' inset background (`#EADDC7`, same as the
+        /// cookbook switch's `creamLine`; `track` in tokens.json).
+        static let track = Color(hex: 0xEADDC7)
         /// Scrim under the cookbook-full sheet.
         static let scrim = Color(
             red: 46 / 255,
@@ -217,6 +220,23 @@ enum KartaDesign {
                 .weight(.heavy)
         }
 
+        /// The filter panel's "Filters" title (Fraunces 700, 24 → title2).
+        static func filterPanelTitle() -> Font {
+            display(size: 24, relativeTo: .title2, weight: 700)
+        }
+
+        /// Track section headings and their right-hand note (Figtree 800, 12).
+        static func filterHeading() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .footnote)
+                .weight(.heavy)
+        }
+
+        /// The "Always free" note next to NEVER SHOW ME (Figtree 700, 12).
+        static func filterMeta() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
         /// Empty-state heading (Fraunces 700, 22).
         static func emptyTitle() -> Font {
             display(size: 22, relativeTo: .title2, weight: 700)
@@ -303,6 +323,8 @@ enum KartaDesign {
         static let displayWeightAxis: UInt32 = 0x77676874
         static let displaySoft: CGFloat = 100
         static let wordmarkTracking: CGFloat = -0.8
+        /// Tracking of the filter panel's section headings (1.2 per spec).
+        static let filterHeadingTracking: CGFloat = 1.2
         static let rankUnitTracking: CGFloat = 1.2
         static let cardTitleTracking: CGFloat = -0.6
         static let rankMinimumScale: CGFloat = 0.68
@@ -390,6 +412,30 @@ enum KartaDesign {
         static let mundoRowIcon: CGFloat = 26
         static let mundoRowCheck: CGFloat = 18
         static let menuEdge: CGFloat = 2
+        /// The filter panel (#6): radius 24, 10 pt from the sides and 10 pt
+        /// below the header row, 16 pt inner padding, 14 pt between blocks.
+        static let filterPanelRadius: CGFloat = 24
+        static let filterPanelInset: CGFloat = 10
+        static let filterPanelTopGap: CGFloat = 10
+        static let filterPanelPadding: CGFloat = 16
+        static let filterBodyPaddingY: CGFloat = 14
+        static let filterBlockGap: CGFloat = 14
+        static let filterHeadingGap: CGFloat = 8
+        static let filterResetHeight: CGFloat = 34
+        static let filterFooterPadding: CGFloat = 16
+        static let filterScrollFade: CGFloat = 32
+        static let neverShowRadius: CGFloat = 16
+        static let neverShowPadding: CGFloat = 12
+        static let neverShowGap: CGFloat = 9
+        static let trackSegmentHeight: CGFloat = 40
+        /// Horizontal breathing room a stacked-form label is granted before
+        /// the fit check decides it does not fit its equal share.
+        static let trackLabelSlack: CGFloat = 4
+        static let trackRowHeight: CGFloat = 48
+        static let shieldHeading: CGFloat = 14
+        static let panelPointer: CGFloat = 12
+        /// Empty-state side margin (36 pt per *Empty states*).
+        static let emptyStateX: CGFloat = 36
         static let sheetTopRadius: CGFloat = 26
         static let sheetHandleWidth: CGFloat = 36
         static let sheetHandleHeight: CGFloat = 5
