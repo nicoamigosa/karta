@@ -436,6 +436,9 @@ enum KartaDesign {
         static let trackRowHeight: CGFloat = 48
         static let shieldHeading: CGFloat = 14
         static let panelPointer: CGFloat = 12
+        /// Diagonal of the 12 pt pointer square: the peak's base width and
+        /// twice its height (~17 pt).
+        static let panelPeak: CGFloat = panelPointer * CGFloat(2).squareRoot()
         /// Empty-state side margin (36 pt per *Empty states*).
         static let emptyStateX: CGFloat = 36
         static let sheetTopRadius: CGFloat = 26

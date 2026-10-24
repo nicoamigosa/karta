@@ -325,8 +325,8 @@ private struct FeedSurface: View {
                                         .offset(
                                             x: filterButtonCenter
                                                 - KartaDesign.space.filterPanelInset
-                                                - KartaDesign.space.panelPointer / 2,
-                                            y: -KartaDesign.space.panelPointer / 2
+                                                - KartaDesign.space.panelPeak / 2,
+                                            y: -KartaDesign.space.panelPeak / 2
                                         )
                                 }
                                 .padding(.top, headerClearance(in: geometry)

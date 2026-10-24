@@ -560,8 +560,9 @@ private struct ShieldShape: Shape {
     }
 }
 
-/// The pointer on the panel's top edge: a 12 pt square turned 45°, same fill
-/// and border as the panel.
+/// The pointer on the panel's top edge: the top half of a 12 pt square
+/// turned 45° — only the peak above the edge is drawn, so nothing of it
+/// shows inside the panel (board `feed-filters.png`).
 struct PanelPointer: View {
     var body: some View {
         Rectangle()
@@ -577,5 +578,12 @@ struct PanelPointer: View {
                 height: KartaDesign.space.panelPointer
             )
             .rotationEffect(.degrees(45))
+            .frame(
+                width: KartaDesign.space.panelPeak,
+                height: KartaDesign.space.panelPeak
+            )
+            .mask(alignment: .top) {
+                Color.white.frame(height: KartaDesign.space.panelPeak / 2)
+            }
     }
 }
