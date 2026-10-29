@@ -94,6 +94,8 @@ _Avoid_: ingrediente sugerido, extra, "al gusto" como opcional
 **Clip de técnica**:
 Un vídeo corto y reutilizable que muestra una técnica concreta (picar cebolla, comprobar
 el punto del pollo). Se comparte entre muchas recetas y sólo aparece en pasos no obvios.
+Se ve sin sonido, en la ventana del Paso o a pantalla completa; si no carga, el Paso sigue con
+su foto.
 _Avoid_: vídeo, tutorial
 
 **MediaReference**:
@@ -247,6 +249,10 @@ _Avoid_: carta, tarjeta, Paso final como nombre del Cierre
 La cuenta atrás que declara un Paso y que la usuaria arranca a propósito. Sigue corriendo
 aunque cambie de Paso, salga de la app o bloquee el móvil, y avisa al terminar aunque el móvil
 esté en silencio. Arrancarlo es una de las señales de que se está cocinando de verdad.
+Está listo, corriendo, en pausa o terminado (*Time's up*). En pausa conserva el tiempo que
+queda hasta que se reanuda, o vuelve a listo si se reinicia. **Stop** apaga el aviso de un
+temporizador terminado y lo devuelve a listo, así que se puede arrancar otra vez. Salir de la
+Sesión de cocina para todos sus temporizadores y cancela sus alarmas: nada suena después.
 _Avoid_: alarma, cronómetro, timer
 
 **Cocinado**:

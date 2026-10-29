@@ -130,7 +130,14 @@ Layout rules (reference: canvas board *Reverse A centered · course on top*):
 Signed off on 2026-10-19 by the founder. On 2026-10-22 (#101) the founder also signed off how a
 Paso fits on a real phone, the finish card and what gives way when a Paso does not fit. That
 round replaces the Up next row and the outcome on the last Paso of *Cooking · round 3*.
-Reference: the design canvas *Karta · Cooking fit (#101)*
+On 2026-10-29 (#5, #12) the founder signed off the Temporizador bottom zone **T1 · Line** in all
+its states (ready, running, paused, *Time's up*), pause and Stop, the *Leave cooking?* sheet,
+the one-time alarm permission sheet and the technique clip states (loading, paused, full screen,
+unavailable). That round replaces the filled bottom zone of *Cooking · round 2*, board D2.
+Its reference is the artifact *Karta · Cooking timer and clip*
+(<https://claude.ai/artifact/KZiYnZdk5sqrNrAn2LDDbQ>, tab *Para firmar · T1*, marked *Signed off
+2026-10-29*; rounds 1 and 2 are kept in their own tabs).
+Earlier reference: the design canvas *Karta · Cooking fit (#101)*
 (<https://claude.ai/artifact/UHnP8RdK9jP9a1fkDeLUm5>; rounds D and E side by side, the signed
 boards are the `Signed*` artboards), plus *Cooking · round 3* in the canvas linked from #15 for
 everything this section does not change. PNGs in `docs/design/screens/`, all drawn on an iPhone
@@ -139,17 +146,23 @@ everything this section does not change. PNGs in `docs/design/screens/`, all dra
 | PNG | Board |
 |---|---|
 | `cooking-step-first.png` | Paso 1 with the swipe hint |
-| `cooking-step-timer.png` | Paso 2, Temporizador ready |
+| `cooking-step-timer.png` | Paso 2, Temporizador ready (T1) |
+| `cooking-timer-running.png`, `cooking-timer-paused.png`, `cooking-timer-done.png` | Paso 2, Temporizador running, paused and *Time's up* (T1) |
 | `cooking-step.png` | Paso 3 |
 | `cooking-last-step.png` | last Paso with the technique clip; the finish card peeks behind |
 | `cooking-finish.png`, `cooking-finish-answered.png` | the finish card, before and after the outcome |
-| `cooking-timer-elsewhere-{running,done}.png` | a running Temporizador seen from another Paso (#5) |
+| `cooking-timer-elsewhere-{running,paused,done}.png` | a Temporizador seen from another Paso: running, paused, *Time's up* |
+| `cooking-leave.png` | the *Leave cooking?* sheet, here over Paso 2 with its Temporizador running |
+| `cooking-alarm-permission.png` | the one-time sheet after the alarm permission is denied |
+| `cooking-clip-loading.png`, `cooking-clip-paused.png`, `cooking-clip-unavailable.png` | the technique clip loading, paused (with the full-screen button) and unavailable |
+| `cooking-clip-fullscreen.png` | the technique clip full screen, paused |
 | `cooking-step-shrunk.png` | a long Paso: the media window gives way (see *When a Paso does not fit*) |
 | `cooking-step-ax.png` | Paso 2 at Dynamic Type AX1: the card scrolls with the signal |
 
 On the boards of Pasos 1–3 the Foto del paso is a placeholder because no step photos exist yet
-(#104); build the window as on the last Paso. The *Leave cooking?* sheet has no board yet; only
-its text below is signed off. Product terms: `CONTEXT.md` → **Paso**, **Resumen**,
+(#104); build the window as on the last Paso. The clip boards show the name *Flip the tortilla*
+as a stand-in: the seed's clip titles are still in Spanish and the editor replaces them (#12).
+Product terms: `CONTEXT.md` → **Paso**, **Resumen**,
 **Detalle**, **Foto del paso**, **Cantidad**, **Temporizador**, **Cocinado**; ADR 0008 and 0014.
 
 Each Paso is a card the same size as the reverse, on the same suit-coloured frame. The cook
@@ -171,7 +184,8 @@ passes them sideways like a deck. After the last Paso comes one more card, the *
 │ 4 medium Yukon Gold potatoes  │  Cantidad first, then the name
 │ 1 medium Yellow onion         │
 │                               │  ≥ 20 pt, grows with free space
-│ [ 12:00 TIMER            (▶) ]│  only on a Paso with a Temporizador  (pinned)
+│ ───────────────────────────── │  1 pt line; the progress line runs along it
+│ 12:00 TIMER               (▶) │  only on a Paso with a Temporizador  (pinned)
 └───────────────────────────────┘
 ```
 
@@ -201,18 +215,38 @@ Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
   suit `chipInk`, radius 8) reads *When it looks like this, move on*. If the Paso has a
   technique clip, the chip shows the clip's name and length instead, and a 60 pt `card` circle
   with a play glyph sits in the centre: tapping it plays the clip **in the same window**; when
-  it ends, the photo returns.
+  it ends, the photo returns. Its other states are in *The technique clip*.
 - **FOR THIS STEP**: 16 pt below; eyebrow as *YOU'LL NEED* on the reverse. One row per
   ingredient, 5 pt apart: the Cantidad in Figtree 800 17 / 23, then the name in Figtree 500.
   No boxes, no leaders, no wrapping tricks: a long row simply wraps.
 - **Free space**: at least 20 pt, and it absorbs whatever is left, so the bottom zone is
   always pinned to the bottom of the card.
-- **Bottom zone**, pinned, only on a Paso that declares a **Temporizador**: 20 pt from the
-  sides, 14 pt from the bottom edge; suit `chip` fill, radius 18; the time in Fraunces 900
-  36 pt, suit `chipInk`, tabular figures, plus *TIMER* (Figtree 800 12, tracking 1.2); a 52 pt
-  `brand` circle with a play glyph on the right. Running: the remaining time, a pause button
-  and a thin progress line. Done: `brand` fill, *Time's up* and a *Stop* pill (canvas page
-  *Cooking · round 2*, board D2). A Paso without a Temporizador has no bottom zone.
+- **Bottom zone**, pinned, only on a Paso that declares a **Temporizador** (T1 · Line, signed
+  off 2026-10-29). It has no fill and no box: it is one row under a 1 pt `line` rule, 20 pt from
+  the sides of the card and 14 pt from its bottom edge, with 12 pt between the rule and the row.
+  It is 71 pt tall with its margin whatever the state, so the card never jumps when the state
+  changes. The row holds, left to right: the time in Fraunces 900 28 pt, suit `chipInk`, tabular
+  figures; a label 8 pt after it (Figtree 800 11 pt, tracking 1.2, suit `chipInk`); and the
+  buttons on the right, 44 pt circles 8 pt apart. A Paso without a Temporizador has no bottom
+  zone.
+  - **Ready** (`cooking-step-timer.png`): the declared time (*12:00*) and *TIMER*; a `brand`
+    circle with a play glyph in `card`, edge `brandEdge`. Tapping it starts the Temporizador,
+    never on arrival at the Paso.
+  - **Running** (`cooking-timer-running.png`): the remaining time and *LEFT*; a `card` circle
+    with a pause glyph in suit `chipInk` (1 pt `line` border, `buttonEdge` edge). The rule
+    becomes the progress line: a 2 pt `brand` bar over it, from the left edge, as long as the
+    fraction elapsed.
+  - **Paused** (`cooking-timer-paused.png`): the time stays still and the label reads *PAUSED*;
+    the progress bar stays where it was, in suit `chipInk` at 45 % opacity. Two buttons: a
+    `card` circle with a reset glyph (↺), which takes the Temporizador back to ready, and the
+    `brand` play circle, which resumes it.
+  - **Time's up** (`cooking-timer-done.png`): the rule becomes a 2 pt `brand` line along the
+    whole width; the row reads *Time's up* in Fraunces 900 26 pt `brand`, with a *Stop* pill
+    on the right (44 pt high, 20 pt padding, `brand` fill, `brandEdge` edge, Figtree 800 15 pt
+    `card`). In the app it plays a sound and haptics once at zero.
+  - **Stop** takes the Temporizador back to ready: the zone shows the declared time and the
+    play circle again, and the cook can start it again. Its pill leaves the progress bar.
+    Stopping the alarm from the Lock Screen does the same as Stop in the app.
 - **No Up next.** The next Paso is one swipe away and already peeks behind the card. On the
   first Paso only, a hint floats 20 pt above the bottom edge, centred, and takes no space: a
   left arrow and *Swipe left for step 2* (Figtree 700 13, `inkMuted`). It fades out after 3 s
@@ -233,6 +267,40 @@ Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
   **Finish** (the primary button, 56 pt), which ends the session without asking.
 - The answer is the only explicit Cocinado (ADR 0008); a session that ends without it is left
   to the inferred one.
+
+### The technique clip
+
+The clip always plays **without sound**: there is no sound control, in the window or full
+screen, and it never interrupts the cook's music. It plays once; when it ends, the photo, the
+chip and the play circle come back.
+
+- **Loading** (`cooking-clip-loading.png`): the play glyph in the 60 pt circle gives way to an
+  activity indicator (suit `chip` track, suit `chipInk` arc). It shows only if loading takes
+  longer than 0.3 s.
+- **Playing**: the clip fills the window (`cover`, same radius). The play circle goes; the chip
+  with the clip's name stays; a 5 pt progress line runs along the bottom edge of the window,
+  `card` over a `videoTrack` track.
+- **Paused** (`cooking-clip-paused.png`): a tap anywhere on the playing window pauses it. The
+  play circle comes back in the centre, and a 36 pt `card` circle with an expand glyph (suit
+  `chipInk`) sits 10 pt from the top right corner. The progress line stays where it stopped.
+  Another tap on the window, or the play circle, resumes; the expand button opens the clip
+  full screen.
+- **While the clip plays or is paused the window keeps its taps**: a tap on it never changes
+  Paso. Outside the window the halves of the card work as always. Changing Paso, or leaving the
+  session, stops the clip and the photo returns.
+- **Full screen** (`cooking-clip-fullscreen.png`): a near-black screen (`videoGround`) with the clip
+  fitted to the width and centred. At the top, 8 pt below the top safe area: a 44 pt collapse
+  button (`card` at 16 % on the dark ground) and the clip's name (Figtree 800 15 pt `card`) over
+  the Resumen of its Paso and the step number (Figtree 600 13 pt, `card` at 65 %). At the bottom,
+  24 pt above the bottom safe area: a scrubber with the elapsed and total time (Figtree 700
+  13 pt, tabular) and a 64 pt `card` play/pause circle. No sound or volume control. While it
+  plays, the controls hide after 2 s and a tap shows them. The collapse button or a swipe down
+  closes it and returns to the Paso with the clip paused at the same point. Turning the phone
+  shows the clip landscape, full screen; the cooking session itself stays portrait.
+- **Unavailable** (`cooking-clip-unavailable.png`): if the clip cannot load, the photo stays,
+  the chip reads *Clip unavailable* after a small warning glyph, and the play circle goes.
+  There is no retry: clips are bundled with the app, so retrying would not help. The Paso works
+  as usual.
 
 ### When a Paso does not fit
 
@@ -260,15 +328,16 @@ set smaller, never in columns), the 20 pt of free space when scrolled to the end
 type sizes. Nothing is ever clipped without the signal.
 
 With the seed at the default text size on an iPhone 17 every Paso fits with the window at
-220 pt (Paso 2: about 90 pt free; last Paso: about 85 pt free). A Paso with a two-line
+220 pt (Paso 2: about 105 pt free with the T1 bottom zone; last Paso: about 85 pt free). A Paso with a two-line
 Resumen, a three-line Detalle, six ingredients and a Temporizador fits with the window at
-166 pt (`cooking-step-shrunk.png`). The canvas measures every case live under each board.
+182 pt (`cooking-step-shrunk.png`; it was 166 pt with the filled bottom zone). The canvas measures every case live under each board.
 
 ### Text size
 
-Text follows Dynamic Type, scaled relative to: Resumen, the finish-card title and the timer
-digits → `.largeTitle`; Detalle, ingredient rows and **Finish** → `.body`; *FOR THIS STEP*,
-*TIMER* and the media chip → `.caption1`; the outcome labels, the swipe hint and the signal chip
+Text follows Dynamic Type, scaled relative to: Resumen and the finish-card title →
+`.largeTitle`; the timer digits and *Time's up* → `.title1`; Detalle, ingredient rows and
+**Finish** → `.body`; *FOR THIS STEP* and the media chip → `.caption1`; the timer label
+(*TIMER*, *LEFT*, *PAUSED*) → `.caption2`; the outcome labels, the swipe hint and the signal chip
 → `.footnote`. Buttons and circles keep their size and grow only if their label needs it.
 
 - **Up to xxxL** the rules above apply as they are.
@@ -286,14 +355,31 @@ digits → `.largeTitle`; Detalle, ingredient rows and **Finish** → `.body`; *
   the card also advances and the left half goes back; buttons (play, timer, outcome, signal
   chip, ✕) never move between Pasos. The only vertical gesture is scrolling a card whose
   content does not fit.
-- **Leaving**: only the ✕, and it always asks first: a sheet *Leave cooking? You're on step
-  3 of 4.* with *Keep cooking* and *Leave*. Leaving ends the session for good (#34).
+- **Leaving**: only the ✕, and it always asks first (`cooking-leave.png`): a sheet titled
+  *Leave cooking?* (Resumen style, 28 pt) with the step position (*You're on step 2 of 4.*, Detalle style) below
+  it, the primary *Keep cooking* button (56 pt, `brand`) and the secondary *Leave* button
+  (56 pt, `card` with the tactile edge) under it. The sheet rises from the bottom over a
+  `scrim`, radius 26 at the top, 20 pt side padding and a grabber; its buttons end 16 pt above
+  the bottom safe area. The text does not change when a Temporizador is running. Leaving ends
+  the session for good (#34) and **stops every Temporizador**: running or paused ones are
+  cancelled with their AlarmKit alarms, so nothing rings after the session is over.
 - **A running Temporizador seen from another Paso**: its Paso's segment in the progress bar
   becomes an outlined pill, 26 pt high, radius 13, 1.5 pt suit `chipInk` border, `card` fill,
   Figtree 800 13 pt suit `chipInk`, tabular: *11:42*. At zero it fills with `brand` and reads
-  *Time's up* in `card`, with haptics and sound. Tapping it goes to that Paso. Several
-  running timers each take their own segment. Outside the app, AlarmKit shows the countdown
-  on the Lock Screen and Dynamic Island and rings even in silent mode (ADR 0014).
+  *Time's up* in `card`, with haptics and sound. A paused one keeps the pill, with a
+  pause glyph before the still time and a dashed border (`cooking-timer-elsewhere-paused.png`).
+  *Time's up* stays until Stop. Tapping the pill goes to that Paso. Several running timers each
+  take their own segment. Outside the app, AlarmKit shows the countdown
+  on the Lock Screen and Dynamic Island and rings even in silent mode (ADR 0014). Pausing or
+  resuming in the app pauses or resumes the AlarmKit countdown, and AlarmKit's own pause and
+  resume buttons do the same as the app's.
+- **Alarm permission**: Karta asks for it the first time the cook starts a Temporizador, never
+  before (ADR 0014). If the cook denies it, the Temporizador starts anyway and a sheet explains
+  it, once (`cooking-alarm-permission.png`): *Alarms are off* (Resumen style, 28 pt), *The timer
+  runs, but it can only ring while Karta is open. To hear it with the phone locked, allow alarms
+  in Settings.*, then *OK* (primary) and *Open Settings* (secondary), laid out as *Leave
+  cooking?*. After that the bottom zone is the usual one and the sheet never comes back. With the
+  permission denied, the Temporizador rings only while Karta is open.
 - The screen stays awake for the whole session. Colours come from the suit of the recipe's
   primary Course even though the Course is not named.
 
