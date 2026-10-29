@@ -640,8 +640,6 @@ struct CookingSessionView: View {
         switch segment.timer {
         case let .running(remaining):
             timerPill(label: remaining, fired: false, stepIndex: segment.stepIndex)
-        case let .paused(remaining):
-            timerPill(label: remaining, fired: false, stepIndex: segment.stepIndex, paused: true)
         case .finished:
             timerPill(label: "Time's up", fired: true, stepIndex: segment.stepIndex)
         case nil:
@@ -657,19 +655,13 @@ struct CookingSessionView: View {
         }
     }
 
-    /// The running/paused/finished Temporizador pill in the progress bar. Tapping it
+    /// The running/finished Temporizador pill in the progress bar. Tapping it
     /// goes to that Paso through the existing next/previous seam.
-    private func timerPill(label: String, fired: Bool, stepIndex: Int, paused: Bool = false) -> some View {
+    private func timerPill(label: String, fired: Bool, stepIndex: Int) -> some View {
         Button {
             jump(to: stepIndex)
         } label: {
-            HStack(spacing: 6) {
-                if paused {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                Text(label)
-            }
+            Text(label)
                 .font(.custom("Figtree", size: 13).weight(.heavy).monospacedDigit())
                 .foregroundStyle(fired ? KartaDesign.ColorToken.card : suit.chipInk)
                 .padding(.horizontal, KartaDesign.cooking.timerPillHGap)
@@ -679,15 +671,12 @@ struct CookingSessionView: View {
                     if !fired {
                         Capsule().strokeBorder(
                             suit.chipInk,
-                            style: StrokeStyle(
-                                lineWidth: KartaDesign.cooking.timerPillBorder,
-                                dash: paused ? [3, 3] : []
-                            )
+                            lineWidth: KartaDesign.cooking.timerPillBorder
                         )
                     }
                 }
         }
-        .accessibilityLabel(fired ? "Timer finished on step \(stepIndex + 1)" : "Timer \(paused ? "paused" : "running") on step \(stepIndex + 1), \(label) left")
+        .accessibilityLabel(fired ? "Timer finished on step \(stepIndex + 1)" : "Timer running on step \(stepIndex + 1), \(label) left")
     }
 
     // MARK: - Media window
