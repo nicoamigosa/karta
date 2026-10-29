@@ -22,10 +22,8 @@ public struct CookingFinishPresentation: Equatable, Sendable {
             outcome = .asking
         }
         progress = session.steps.indices.map { index in
-            let timer = session.timers[index].map { startedTimer in
-                startedTimer.hasFired(at: now)
-                    ? CookingStepPresentation.ProgressSegment.TimerState.finished
-                    : .running(remainingLabel: countdownLabel(startedTimer.remaining(at: now)))
+            let timer = session.timers[index].map {
+                CookingStepPresentation.ProgressSegment.TimerState($0, now: now)
             }
             return CookingStepPresentation.ProgressSegment(stepIndex: index, state: .done, timer: timer)
         }

@@ -43,6 +43,17 @@ public struct CookingStepPresentation: Equatable, Sendable {
             case running(remainingLabel: String)
             case paused(remainingLabel: String)
             case finished
+
+            /// The one rule every progress bar uses to show a started Temporizador.
+            init(_ timer: StepTimer, now: TimeInterval) {
+                if timer.isPaused {
+                    self = .paused(remainingLabel: countdownLabel(timer.remaining(at: now)))
+                } else if timer.hasFired(at: now) {
+                    self = .finished
+                } else {
+                    self = .running(remainingLabel: countdownLabel(timer.remaining(at: now)))
+                }
+            }
         }
     }
 
@@ -74,18 +85,9 @@ public struct CookingStepPresentation: Equatable, Sendable {
         now: TimeInterval
     ) {
         progress = session.steps.indices.map { index in
-            let timer: ProgressSegment.TimerState?
-            if index != session.currentIndex, let startedTimer = session.timers[index] {
-                if startedTimer.isPaused {
-                    timer = .paused(remainingLabel: countdownLabel(startedTimer.remaining(at: now)))
-                } else {
-                    timer = startedTimer.hasFired(at: now)
-                        ? .finished
-                        : .running(remainingLabel: countdownLabel(startedTimer.remaining(at: now)))
-                }
-            } else {
-                timer = nil
-            }
+            let timer = index == session.currentIndex
+                ? nil
+                : session.timers[index].map { ProgressSegment.TimerState($0, now: now) }
             return ProgressSegment(
                 stepIndex: index,
                 state: index == session.currentIndex ? .current : (index < session.currentIndex ? .done : .upcoming),

@@ -68,6 +68,21 @@ struct CookingFinishPresentationTests {
         #expect(finished.progress.map(\.state) == [.done, .done, .done])
     }
 
+    @Test("A Temporizador paused on a Paso stays paused at Cierre")
+    @MainActor
+    func finishPausedTimer() throws {
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        store.send(.startCooking(recipe, startedAt: 100))
+        store.send(.startTimer(now: 100))
+        store.send(.pauseTimer(now: 280))
+        store.send(.nextStep(now: 290))
+        store.send(.nextStep(now: 300))
+        store.send(.nextStep(now: 310))
+        let finish = try #require(store.cookingFinishPresentation(for: recipe, now: 5000))
+        #expect(finish.progress.map(\.timer) == [.paused(remainingLabel: "9:00"), nil, nil])
+    }
+
     @Test("Arriving at Cierre infers one Cocinado at arrival without a shell inference action")
     @MainActor
     func finishInfersCook() throws {
