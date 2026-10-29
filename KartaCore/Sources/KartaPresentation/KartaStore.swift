@@ -18,6 +18,10 @@ public struct KartaState: Equatable, Sendable {
     /// All Cocinados, independent of whether their recipes are currently saved.
     public var cookHistory: [CookEntry]
     public var session: CookingSession?
+    /// Transient sheet visibility. Both OK and Open Settings dismiss it.
+    public fileprivate(set) var showsAlarmPermissionSheet = false
+    /// Persist this fact in UserSnapshot, independently of the cooking session.
+    public fileprivate(set) var hasShownAlarmPermissionSheet: Bool
     /// The history slot emitted by this session, independent of older cooks.
     fileprivate var sessionCookHistoryIndex: Int?
     public var navigation: AppNavigationState
@@ -141,13 +145,15 @@ public struct KartaState: Equatable, Sendable {
         session: CookingSession? = nil,
         navigation: AppNavigationState = AppNavigationState(),
         safetyProfile: SafetyProfile,
-        filterDraft: FilterDraft = FilterDraft()
+        filterDraft: FilterDraft = FilterDraft(),
+        hasShownAlarmPermissionSheet: Bool = false
     ) {
         self.cookbook = cookbook
         self.onboarding = onboarding
         self.viewHistory = viewHistory
         self.cookHistory = cookHistory
         self.session = session
+        self.hasShownAlarmPermissionSheet = hasShownAlarmPermissionSheet
         // Automatic Cierre inference has a persisted date: its first arrival.
         // Reconnect that history entry so a resumed answer enriches it in place.
         if let session, session.cookedEvent?.wasInferred == true,
@@ -188,6 +194,9 @@ public enum KartaAction: Sendable {
     case resumeTimer(now: TimeInterval)
     case resetTimer
     case stopTimer(now: TimeInterval)
+    /// The shell reports denial after requesting AlarmKit permission on start.
+    case alarmPermissionDenied
+    case dismissAlarmPermissionSheet
     case selectWorld(World)
     case setFeedAnchor(ScrollAnchor?, world: World)
     case filter(FilterAction)
@@ -286,6 +295,12 @@ public enum KartaReducer {
             state.session?.resetTimer()
         case let .stopTimer(now):
             state.session?.stopTimer(now: now)
+        case .alarmPermissionDenied:
+            guard !state.hasShownAlarmPermissionSheet else { return }
+            state.hasShownAlarmPermissionSheet = true
+            state.showsAlarmPermissionSheet = true
+        case .dismissAlarmPermissionSheet:
+            state.showsAlarmPermissionSheet = false
         case let .selectWorld(world):
             state.navigation.selectWorld(world)
         case let .setFeedAnchor(anchor, world):

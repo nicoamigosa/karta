@@ -14,6 +14,7 @@ public struct UserSnapshot: Equatable, Sendable {
     public let cookHistory: [CookEntry]
     public let tasteCalibration: TasteCalibration
     public let cookingSession: CookingSession?
+    public let hasShownAlarmPermissionSheet: Bool
 
     public init(
         profile: OnboardingProfile,
@@ -21,7 +22,8 @@ public struct UserSnapshot: Equatable, Sendable {
         viewHistory: ViewHistory = ViewHistory(),
         cookHistory: [CookEntry] = [],
         tasteCalibration: TasteCalibration = TasteCalibration(),
-        cookingSession: CookingSession? = nil
+        cookingSession: CookingSession? = nil,
+        hasShownAlarmPermissionSheet: Bool = false
     ) {
         self.profile = profile
         self.cookbook = cookbook
@@ -29,6 +31,7 @@ public struct UserSnapshot: Equatable, Sendable {
         self.cookHistory = cookHistory
         self.tasteCalibration = tasteCalibration
         self.cookingSession = cookingSession
+        self.hasShownAlarmPermissionSheet = hasShownAlarmPermissionSheet
     }
 
     /// Encode the snapshot without performing any storage I/O.
@@ -51,7 +54,8 @@ public struct UserSnapshot: Equatable, Sendable {
             tasteCalibration: TasteCalibrationDTO(
                 likedIDs: tasteCalibration.likedIDs
             ),
-            cookingSession: cookingSession.map(CookingSessionDTO.init)
+            cookingSession: cookingSession.map(CookingSessionDTO.init),
+            hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet
         )
 
         let encoder = JSONEncoder()
@@ -160,6 +164,8 @@ private struct UserSnapshotDTO: Codable {
     let cookHistory: [CookEntryDTO]?
     let tasteCalibration: TasteCalibrationDTO?
     let cookingSession: CookingSessionDTO?
+    // Optional so synthesized Codable uses decodeIfPresent for older snapshots.
+    let hasShownAlarmPermissionSheet: Bool?
 
     func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
         // Intolerances are safety-critical: a snapshot that does not state them
@@ -210,7 +216,8 @@ private struct UserSnapshotDTO: Codable {
             tasteCalibration: TasteCalibration(
                 likedIDs: tasteCalibration?.likedIDs ?? []
             ),
-            cookingSession: retainedSession
+            cookingSession: retainedSession,
+            hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet ?? false
         )
     }
 }
@@ -362,6 +369,7 @@ private struct TasteCalibrationDTO: Codable {
 
 private struct CookingSessionDTO: Codable {
     let recipeID: String
+    let recipeName: String
     let steps: [CookingStepDTO]
     let declaredDuration: TimeInterval
     let startedAt: TimeInterval
@@ -377,6 +385,7 @@ private struct CookingSessionDTO: Codable {
 
     init(_ session: CookingSession) {
         recipeID = session.recipeID
+        recipeName = session.recipeName
         steps = session.steps.map(CookingStepDTO.init)
         declaredDuration = session.declaredDuration
         startedAt = session.startedAt
@@ -396,6 +405,7 @@ private struct CookingSessionDTO: Codable {
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         recipeID = try container.decode(String.self, forKey: .recipeID)
+        recipeName = try container.decodeIfPresent(String.self, forKey: .recipeName) ?? recipeID
         steps = try container.decode([CookingStepDTO].self, forKey: .steps)
         // A session without timing evidence can never be inferred as cooked:
         // inference requires a positive declared duration.
@@ -466,6 +476,7 @@ private struct CookingSessionDTO: Codable {
 
             return CookingSession(
                 recipeID: recipeID,
+                recipeName: recipeName,
                 steps: steps.map(\.domainValue),
                 declaredDuration: declaredDuration,
                 startedAt: startedAt,
@@ -484,6 +495,7 @@ private struct CookingSessionDTO: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case recipeID
+        case recipeName
         case steps
         case declaredDuration
         case startedAt

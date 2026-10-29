@@ -118,6 +118,7 @@ extension Recipe {
     ) -> CookingSession {
         CookingSession(
             recipeID: id,
+            recipeName: name,
             steps: visibleSteps(for: intolerances),
             declaredDuration: TimeInterval(totalMinutes) * 60,
             startedAt: startedAt
@@ -154,6 +155,8 @@ public struct CookedEvent: Equatable, Sendable {
 /// success signal (`cooked`), which may be explicit or inferred from the complete journey.
 public struct CookingSession: Equatable, Sendable {
     public let recipeID: String
+    /// Recipe name retained for alarms when the session is restored.
+    public let recipeName: String
     public let steps: [CookingStep]
     /// The recipe's declared preparation time, in seconds.
     public let declaredDuration: TimeInterval
@@ -182,6 +185,7 @@ public struct CookingSession: Equatable, Sendable {
 
     init(
         recipeID: String,
+        recipeName: String? = nil,
         steps: [CookingStep],
         declaredDuration: TimeInterval,
         startedAt: TimeInterval,
@@ -196,13 +200,14 @@ public struct CookingSession: Equatable, Sendable {
         startedTimerSteps: Set<Int>? = nil
     ) {
         self.recipeID = recipeID
+        self.recipeName = recipeName ?? recipeID
         self.steps = steps
         self.declaredDuration = declaredDuration
         self.startedAt = startedAt
         self.currentIndex = currentIndex
         self.isExited = isExited
         self.cookedEvent = cookedEvent
-        self.timers = timers
+        self.timers = isExited ? [:] : timers
         self.startedTimerSteps = (startedTimerSteps ?? []).union(timers.keys)
         self.furthestIndex = furthestIndex
         self.lastStepReachedAt = lastStepReachedAt
@@ -212,12 +217,14 @@ public struct CookingSession: Equatable, Sendable {
 
     public init(
         recipeID: String,
+        recipeName: String? = nil,
         steps: [CookingStep],
         declaredDuration: TimeInterval = 0,
         startedAt: TimeInterval = 0
     ) {
         self.init(
             recipeID: recipeID,
+            recipeName: recipeName,
             steps: steps,
             declaredDuration: declaredDuration,
             startedAt: startedAt,
@@ -348,8 +355,7 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Start the current step's timer at `now`, if that step declares one.
     /// A running timer keeps its original start; a finished timer can start again.
-    /// Starting a timer after exit is ignored; timers already running continue
-    /// to be readable.
+    /// Starting a timer after exit is ignored.
     public mutating func startTimer(now: TimeInterval) {
         guard !isExited, let seconds = currentStep?.timerSeconds else { return }
         if let timer = timers[currentIndex], !timer.hasFired(at: now) { return }
@@ -398,8 +404,9 @@ public struct CookingSession: Equatable, Sendable {
         timers[currentIndex]?.hasFired(at: now) ?? false
     }
 
-    /// Leave cooking mode (swipe-down). Terminal: further navigation is ignored.
+    /// Leave the Sesión de cocina, cancelling every Temporizador. Terminal.
     public mutating func exit() {
         isExited = true
+        timers.removeAll()
     }
 }
