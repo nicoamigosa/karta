@@ -26,3 +26,18 @@ y en modo Concentración.
   primera vez que la usuaria arranca un temporizador, no antes.
 - El estado del temporizador sigue viviendo en `CookingSession` (`KartaCore`); AlarmKit sólo lo
   refleja fuera de la app y nunca decide nada.
+
+## Ampliación del 2026-10-29 (#5)
+
+- **Pausa.** Un temporizador puede pausarse y reanudarse. La pausa vive en `CookingSession` (el
+  tiempo que queda) y se guarda en la sesión (ADR 0010). AlarmKit pausa y reanuda su cuenta
+  atrás para reflejarla, y sus propios botones de pausa y reanudación son acciones de la app
+  como las de la pantalla: nunca deciden por su cuenta.
+- **Stop** devuelve el temporizador a listo y para la alarma de AlarmKit si estaba sonando.
+  Para la inferencia del Cocinado (ADR 0008) cuenta que se arrancó, aunque luego se pare.
+- **Salir de la sesión cancela los temporizadores.** Salir termina la sesión para siempre, así
+  que una alarma que sonara después no tendría a qué Paso volver. Al salir, los temporizadores
+  corriendo o en pausa se cancelan con sus alarmas de AlarmKit. Hasta ahora `KartaCore` los
+  dejaba correr tras salir.
+- **Sin permiso de alarmas** el temporizador corre igual y sólo suena con Karta abierta. Una
+  hoja lo explica una sola vez, cuando se deniega el permiso.
