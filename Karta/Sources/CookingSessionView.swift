@@ -625,7 +625,8 @@ struct CookingSessionView: View {
 
     /// One segment per Paso: suit `back` for done and current, `chip` for the
     /// rest. A Temporizador running on another Paso turns its segment into an
-    /// outlined pill; at zero it fills `brand` and reads "Time's up". The
+    /// outlined pill; paused keeps the pill with a pause glyph and a dashed
+    /// border; at zero it fills `brand` and reads "Time's up". The
     /// finish card has no segment of its own — every Paso shows done.
     private func progressBar(_ segments: [CookingStepPresentation.ProgressSegment]) -> some View {
         HStack(spacing: KartaDesign.cooking.segmentGap) {
@@ -639,9 +640,11 @@ struct CookingSessionView: View {
     private func segmentView(_ segment: CookingStepPresentation.ProgressSegment) -> some View {
         switch segment.timer {
         case let .running(remaining):
-            timerPill(label: remaining, fired: false, stepIndex: segment.stepIndex)
+            timerPill(label: remaining, fired: false, paused: false, stepIndex: segment.stepIndex)
+        case let .paused(remaining):
+            timerPill(label: remaining, fired: false, paused: true, stepIndex: segment.stepIndex)
         case .finished:
-            timerPill(label: "Time's up", fired: true, stepIndex: segment.stepIndex)
+            timerPill(label: "Time's up", fired: true, paused: false, stepIndex: segment.stepIndex)
         case nil:
             RoundedRectangle(
                 cornerRadius: KartaDesign.cooking.segmentRadius,
@@ -655,14 +658,22 @@ struct CookingSessionView: View {
         }
     }
 
-    /// The running/finished Temporizador pill in the progress bar. Tapping it
-    /// goes to that Paso through the existing next/previous seam.
-    private func timerPill(label: String, fired: Bool, stepIndex: Int) -> some View {
+    /// The Temporizador pill in the progress bar (running, paused or
+    /// finished). A paused one keeps the pill, with a pause glyph before the
+    /// still time and a dashed border. Tapping it goes to that Paso through
+    /// the existing next/previous seam.
+    private func timerPill(label: String, fired: Bool, paused: Bool, stepIndex: Int) -> some View {
         Button {
             jump(to: stepIndex)
         } label: {
-            Text(label)
-                .font(.custom("Figtree", size: 13).weight(.heavy).monospacedDigit())
+            HStack(spacing: 4) {
+                if paused {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 8, weight: .heavy))
+                }
+                Text(label)
+                    .font(.custom("Figtree", size: 13).weight(.heavy).monospacedDigit())
+            }
                 .foregroundStyle(fired ? KartaDesign.ColorToken.card : suit.chipInk)
                 .padding(.horizontal, KartaDesign.cooking.timerPillHGap)
                 .frame(minHeight: KartaDesign.cooking.timerPillHeight)
@@ -671,12 +682,15 @@ struct CookingSessionView: View {
                     if !fired {
                         Capsule().strokeBorder(
                             suit.chipInk,
-                            lineWidth: KartaDesign.cooking.timerPillBorder
+                            style: StrokeStyle(
+                                lineWidth: KartaDesign.cooking.timerPillBorder,
+                                dash: paused ? [4, 3] : []
+                            )
                         )
                     }
                 }
         }
-        .accessibilityLabel(fired ? "Timer finished on step \(stepIndex + 1)" : "Timer running on step \(stepIndex + 1), \(label) left")
+        .accessibilityLabel(fired ? "Timer finished on step \(stepIndex + 1)" : paused ? "Timer paused on step \(stepIndex + 1), \(label) left" : "Timer running on step \(stepIndex + 1), \(label) left")
     }
 
     // MARK: - Media window

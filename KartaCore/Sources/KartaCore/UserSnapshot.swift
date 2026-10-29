@@ -373,6 +373,7 @@ private struct CookingSessionDTO: Codable {
     let isExited: Bool
     let cookedEvent: CookedEventDTO?
     let timers: [StepTimerDTO]
+    let startedTimerSteps: [Int]
 
     init(_ session: CookingSession) {
         recipeID = session.recipeID
@@ -386,6 +387,7 @@ private struct CookingSessionDTO: Codable {
         lastStepReachedAt = session.lastStepReachedAt
         isExited = session.isExited
         cookedEvent = session.cookedEvent.map(CookedEventDTO.init)
+        startedTimerSteps = session.startedTimerSteps.sorted()
         timers = session.timers
             .map { StepTimerDTO(stepIndex: $0.key, timer: $0.value) }
             .sorted { $0.stepIndex < $1.stepIndex }
@@ -414,6 +416,8 @@ private struct CookingSessionDTO: Codable {
         isExited = try container.decodeIfPresent(Bool.self, forKey: .isExited) ?? false
         cookedEvent = try container.decodeIfPresent(CookedEventDTO.self, forKey: .cookedEvent)
         timers = try container.decodeIfPresent([StepTimerDTO].self, forKey: .timers) ?? []
+        startedTimerSteps = try container.decodeIfPresent([Int].self, forKey: .startedTimerSteps)
+            ?? timers.map(\.stepIndex)
     }
 
     var domainValue: CookingSession {
@@ -436,18 +440,27 @@ private struct CookingSessionDTO: Codable {
                 throw SnapshotDecodingError.invalidValue
             }
 
+            guard startedTimerSteps.allSatisfy({ steps.indices.contains($0) }) else {
+                throw SnapshotDecodingError.invalidValue
+            }
             var timersByStep: [Int: StepTimer] = [:]
             for timer in timers {
                 guard steps.indices.contains(timer.stepIndex), timer.startedAt.isFinite,
                       timer.duration.isFinite, timer.duration >= 0 else {
                     throw SnapshotDecodingError.invalidValue
                 }
+                if let remaining = timer.pausedRemaining {
+                    guard remaining.isFinite, remaining > 0, timer.duration > 0 else {
+                        throw SnapshotDecodingError.invalidValue
+                    }
+                }
                 guard timersByStep[timer.stepIndex] == nil else {
                     throw SnapshotDecodingError.invalidValue
                 }
                 timersByStep[timer.stepIndex] = StepTimer(
                     startedAt: timer.startedAt,
-                    duration: timer.duration
+                    duration: timer.duration,
+                    pausedRemaining: timer.pausedRemaining
                 )
             }
 
@@ -463,7 +476,8 @@ private struct CookingSessionDTO: Codable {
                 furthestIndex: furthestIndex,
                 lastStepReachedAt: lastStepReachedAt,
                 isOnFinish: isOnFinish,
-                finishReachedAt: finishReachedAt
+                finishReachedAt: finishReachedAt,
+                startedTimerSteps: Set(startedTimerSteps)
             )
         }
     }
@@ -481,6 +495,7 @@ private struct CookingSessionDTO: Codable {
         case isExited
         case cookedEvent
         case timers
+        case startedTimerSteps
     }
 }
 
@@ -615,10 +630,24 @@ private struct StepTimerDTO: Codable {
     let stepIndex: Int
     let startedAt: TimeInterval
     let duration: TimeInterval
+    let pausedRemaining: TimeInterval?
 
     init(stepIndex: Int, timer: StepTimer) {
         self.stepIndex = stepIndex
         startedAt = timer.startedAt
         duration = timer.duration
+        pausedRemaining = timer.pausedRemaining
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        stepIndex = try container.decode(Int.self, forKey: .stepIndex)
+        startedAt = try container.decode(TimeInterval.self, forKey: .startedAt)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        pausedRemaining = try container.decodeIfPresent(TimeInterval.self, forKey: .pausedRemaining)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case stepIndex, startedAt, duration, pausedRemaining
     }
 }
