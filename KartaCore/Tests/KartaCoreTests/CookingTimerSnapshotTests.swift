@@ -28,6 +28,20 @@ struct CookingTimerSnapshotTests {
         reset.next(at: 1000)
         #expect(reset.inferProbablyCooked(at: 1000)?.wasInferred == true)
     }
+    @Test("An old exited session restores without its alarms")
+    func legacyExitedSession() throws {
+        let data = Data(#"""
+        {"version":1,"profile":{"intolerances":[],"householdSize":2},
+         "cookingSession":{"recipeID":"sauce","isExited":true,
+         "steps":[{"text":"Simmer","timerSeconds":720}],
+         "timers":[{"stepIndex":0,"startedAt":100,"duration":720,"pausedRemaining":540}]}}
+        """#.utf8)
+        let restored = try #require(UserSnapshot.restore(from: data).snapshot?.cookingSession)
+        #expect(restored.isExited)
+        #expect(restored.timers.isEmpty)
+        #expect(restored.startedTimerSteps == [0])
+    }
+
     @Test("The old timer fixture remains running and supplies its original cooking signal")
     func legacyTimerFixture() throws {
         let data = Data(#"""

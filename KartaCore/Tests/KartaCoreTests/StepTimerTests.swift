@@ -67,14 +67,16 @@ struct StepTimerTests {
         #expect(session.currentStepTimerRemaining(at: 1_100) == 500) // kept counting
     }
 
-    @Test("A timer that was running at exit keeps counting")
-    func timerSurvivesExit() {
+    @Test("Leaving clears a running Temporizador")
+    func timerStopsOnExit() {
         var session = CookingSession(recipeID: "r1", steps: steps)
         session.next()
         session.startTimer(now: 1_000)
         session.exit()
 
-        #expect(session.currentStepTimerRemaining(at: 1_100) == 500)
-        #expect(session.currentStepTimerHasFired(at: 1_600))
+        #expect(session.currentStepTimerRemaining(at: 1_100) == nil)
+        #expect(!session.currentStepTimerHasFired(at: 1_600))
+        #expect(session.timers.isEmpty)
+        #expect(session.startedTimerSteps == [1])
     }
 }
