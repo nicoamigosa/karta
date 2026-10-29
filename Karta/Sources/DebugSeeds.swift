@@ -34,6 +34,7 @@ enum DebugSeeds {
             store.send(.unsaveRecipe("caesar-salad"))
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
+             "cooking-timer-paused",
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
              "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins":
             seedCooking(name, into: store)
@@ -100,7 +101,8 @@ enum DebugSeeds {
         ))
         let target: Int
         switch name {
-        case "cooking-timer", "cooking-timer-running", "cooking-timer-done": target = 1
+        case "cooking-timer", "cooking-timer-running", "cooking-timer-paused",
+             "cooking-timer-done": target = 1
         case "cooking-timer-twins", "cooking-overflow-twins": target = 1
         case "cooking-step": target = 2
         case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk",
@@ -122,6 +124,14 @@ enum DebugSeeds {
             // Timer running on another Paso: start it on the timer step,
             // then view the step after it.
             store.send(.startTimer(now: Date().timeIntervalSince1970))
+            store.send(.nextStep(now: Date().timeIntervalSince1970))
+        }
+        if name == "cooking-timer-paused" {
+            // Timer paused on another Paso: start it, pause it, then view
+            // the step after it so its segment shows the paused pill.
+            let now = Date().timeIntervalSince1970
+            store.send(.startTimer(now: now))
+            store.send(.pauseTimer(now: now + 225))
             store.send(.nextStep(now: Date().timeIntervalSince1970))
         }
         if name == "cooking-timer-done" {
@@ -262,6 +272,7 @@ enum DebugSeeds {
             )
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
+             "cooking-timer-paused",
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
              "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins":
             return KartaState(
