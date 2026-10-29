@@ -81,25 +81,30 @@ public struct CookingStep: Codable, Equatable, Sendable, ExpressibleByStringLite
     }
 }
 
-/// A running (or finished) in-step timer: when it was started and for how long.
+/// A running, paused or finished in-step timer with its original duration.
 /// Pure data — elapsed/remaining are computed against an injected clock.
 public struct StepTimer: Equatable, Sendable {
     public let startedAt: TimeInterval
     public let duration: TimeInterval
 
-    public init(startedAt: TimeInterval, duration: TimeInterval) {
+    /// Frozen time left, or nil while running/finished.
+    public let pausedRemaining: TimeInterval?
+    public var isPaused: Bool { pausedRemaining != nil }
+
+    public init(startedAt: TimeInterval, duration: TimeInterval, pausedRemaining: TimeInterval? = nil) {
         self.startedAt = startedAt
         self.duration = duration
+        self.pausedRemaining = pausedRemaining
     }
 
     /// Seconds left at `now`, floored at zero.
     public func remaining(at now: TimeInterval) -> TimeInterval {
-        max(duration - (now - startedAt), 0)
+        pausedRemaining ?? max(duration - (now - startedAt), 0)
     }
 
     /// Whether the countdown has reached zero by `now`.
     public func hasFired(at now: TimeInterval) -> Bool {
-        now - startedAt >= duration
+        !isPaused && now - startedAt >= duration
     }
 }
 
@@ -164,9 +169,11 @@ public struct CookingSession: Equatable, Sendable {
     public private(set) var isExited: Bool
     /// The emitted success signal once the cook responds (or is inferred), else `nil`.
     public private(set) var cookedEvent: CookedEvent?
-    /// Running timers keyed by step index, so a timer survives navigating away
+    /// Started timers keyed by step index, so a timer survives navigating away
     /// from and back to its step.
     public private(set) var timers: [Int: StepTimer]
+    /// ADR 0008 evidence survives Reset and Stop.
+    public private(set) var startedTimerSteps: Set<Int>
     /// The furthest step reached during the session. Going back does not erase
     /// evidence of the journey.
     private(set) var furthestIndex: Int
@@ -185,7 +192,8 @@ public struct CookingSession: Equatable, Sendable {
         furthestIndex: Int,
         lastStepReachedAt: TimeInterval?,
         isOnFinish: Bool = false,
-        finishReachedAt: TimeInterval? = nil
+        finishReachedAt: TimeInterval? = nil,
+        startedTimerSteps: Set<Int>? = nil
     ) {
         self.recipeID = recipeID
         self.steps = steps
@@ -195,6 +203,7 @@ public struct CookingSession: Equatable, Sendable {
         self.isExited = isExited
         self.cookedEvent = cookedEvent
         self.timers = timers
+        self.startedTimerSteps = (startedTimerSteps ?? []).union(timers.keys)
         self.furthestIndex = furthestIndex
         self.lastStepReachedAt = lastStepReachedAt
         self.isOnFinish = isOnFinish
@@ -312,7 +321,7 @@ public struct CookingSession: Equatable, Sendable {
     @discardableResult
     public mutating func inferProbablyCooked(at now: TimeInterval) -> CookedEvent? {
         let declaredTimerSteps = steps.indices.filter { steps[$0].timerSeconds != nil }
-        let startedDeclaredTimer = declaredTimerSteps.isEmpty || declaredTimerSteps.contains { timers[$0] != nil }
+        let startedDeclaredTimer = declaredTimerSteps.isEmpty || declaredTimerSteps.contains { startedTimerSteps.contains($0) }
         // Variant E measures the journey at first arrival at Cierre. Legacy
         // callers on a Paso retain the first-last-Paso timing rule.
         let arrival = isOnFinish ? finishReachedAt : lastStepReachedAt
@@ -345,6 +354,38 @@ public struct CookingSession: Equatable, Sendable {
         guard !isExited, let seconds = currentStep?.timerSeconds else { return }
         if let timer = timers[currentIndex], !timer.hasFired(at: now) { return }
         timers[currentIndex] = StepTimer(startedAt: now, duration: TimeInterval(seconds))
+        startedTimerSteps.insert(currentIndex)
+    }
+
+    /// Freeze only a running Temporizador on the current Paso.
+    public mutating func pauseTimer(now: TimeInterval) {
+        guard !isExited, !isOnFinish, let timer = timers[currentIndex],
+              !timer.isPaused, !timer.hasFired(at: now) else { return }
+        timers[currentIndex] = StepTimer(
+            startedAt: timer.startedAt, duration: timer.duration,
+            pausedRemaining: timer.remaining(at: now)
+        )
+    }
+
+    /// Resume from the frozen time left, keeping the original duration for progress.
+    public mutating func resumeTimer(now: TimeInterval) {
+        guard !isExited, !isOnFinish, let timer = timers[currentIndex],
+              let remaining = timer.pausedRemaining else { return }
+        timers[currentIndex] = StepTimer(
+            startedAt: now - (timer.duration - remaining), duration: timer.duration
+        )
+    }
+
+    /// Reset only a paused Temporizador to the declared ready duration.
+    public mutating func resetTimer() {
+        guard !isExited, !isOnFinish, timers[currentIndex]?.isPaused == true else { return }
+        timers.removeValue(forKey: currentIndex)
+    }
+
+    /// Stop only a finished Temporizador. The shell supplies time, as for start/pause.
+    public mutating func stopTimer(now: TimeInterval) {
+        guard !isExited, !isOnFinish, timers[currentIndex]?.hasFired(at: now) == true else { return }
+        timers.removeValue(forKey: currentIndex)
     }
 
     /// Seconds left on the current step's running timer at `now`, or `nil` if none.

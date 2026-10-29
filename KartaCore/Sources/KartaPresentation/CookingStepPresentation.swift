@@ -18,12 +18,13 @@ public struct CookingStepPresentation: Equatable, Sendable {
 
     public struct Timer: Equatable, Sendable {
         public let state: State
-        /// Absolute end time for the shell to mirror in AlarmKit; nil until started.
+        /// Absolute end time for the shell to mirror in AlarmKit; nil until started or while paused.
         public let endsAt: TimeInterval?
 
         public enum State: Equatable, Sendable {
             case ready(label: String)
             case running(remainingLabel: String, fractionElapsed: Double)
+            case paused(remainingLabel: String, fractionElapsed: Double)
             case finished
         }
     }
@@ -40,6 +41,7 @@ public struct CookingStepPresentation: Equatable, Sendable {
 
         public enum TimerState: Equatable, Sendable {
             case running(remainingLabel: String)
+            case paused(remainingLabel: String)
             case finished
         }
     }
@@ -74,9 +76,13 @@ public struct CookingStepPresentation: Equatable, Sendable {
         progress = session.steps.indices.map { index in
             let timer: ProgressSegment.TimerState?
             if index != session.currentIndex, let startedTimer = session.timers[index] {
-                timer = startedTimer.hasFired(at: now)
-                    ? .finished
-                    : .running(remainingLabel: countdownLabel(startedTimer.remaining(at: now)))
+                if startedTimer.isPaused {
+                    timer = .paused(remainingLabel: countdownLabel(startedTimer.remaining(at: now)))
+                } else {
+                    timer = startedTimer.hasFired(at: now)
+                        ? .finished
+                        : .running(remainingLabel: countdownLabel(startedTimer.remaining(at: now)))
+                }
             } else {
                 timer = nil
             }
@@ -102,6 +108,13 @@ public struct CookingStepPresentation: Equatable, Sendable {
         timer = step.timerSeconds.map { seconds in
             guard let started = session.timers[session.currentIndex] else {
                 return Timer(state: .ready(label: countdownLabel(TimeInterval(seconds))), endsAt: nil)
+            }
+            if let remaining = started.pausedRemaining {
+                let fraction = min(max(1 - remaining / started.duration, 0), 1)
+                return Timer(
+                    state: .paused(remainingLabel: countdownLabel(remaining), fractionElapsed: fraction),
+                    endsAt: nil
+                )
             }
             let endsAt = started.startedAt + started.duration
             if started.hasFired(at: now) {

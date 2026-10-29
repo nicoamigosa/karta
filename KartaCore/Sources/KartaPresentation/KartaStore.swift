@@ -184,6 +184,10 @@ public enum KartaAction: Sendable {
     case respond(CookOutcome)
     case inferProbablyCooked(now: TimeInterval)
     case startTimer(now: TimeInterval)
+    case pauseTimer(now: TimeInterval)
+    case resumeTimer(now: TimeInterval)
+    case resetTimer
+    case stopTimer(now: TimeInterval)
     case selectWorld(World)
     case setFeedAnchor(ScrollAnchor?, world: World)
     case filter(FilterAction)
@@ -274,6 +278,14 @@ public enum KartaReducer {
             }
         case let .startTimer(now):
             state.session?.startTimer(now: now)
+        case let .pauseTimer(now):
+            state.session?.pauseTimer(now: now)
+        case let .resumeTimer(now):
+            state.session?.resumeTimer(now: now)
+        case .resetTimer:
+            state.session?.resetTimer()
+        case let .stopTimer(now):
+            state.session?.stopTimer(now: now)
         case let .selectWorld(world):
             state.navigation.selectWorld(world)
         case let .setFeedAnchor(anchor, world):
