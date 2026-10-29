@@ -30,9 +30,12 @@ reglas de validación, sin `Bundle` ni acceso a archivos.
 
 ## Mínimos de plataforma
 
-El paquete declara iOS 17 y macOS 14. Son los mínimos del estado observable que vive en
-`KartaPresentation` y que consume el shell SwiftUI; Linux sigue siendo una plataforma de
-compilación y pruebas para ambos targets, pero no cambia esos mínimos del producto Apple.
+El paquete declara iOS 18 y macOS 15. Observation fija el mínimo del estado observable que
+vive en `KartaPresentation` en iOS 17 y macOS 14, pero `Synchronization` (`Mutex`) en los
+tests lo eleva a iOS 18 y macOS 15 para que la suite compile sin omitir pruebas. Ambos
+quedan por debajo del objetivo de la app, iOS 26 (ADR 0014). Linux sigue siendo una
+plataforma de compilación y pruebas para ambos targets, pero no cambia esos mínimos del
+producto Apple.
 
 ## Consequences
 
