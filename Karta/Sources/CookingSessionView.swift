@@ -104,6 +104,9 @@ struct CookingSessionView: View {
                     onSecondary: {
                         withAnimation { confirmLeave = false }
                         store.send(.exitCooking)
+                        // `timerAlarms` is empty now: cancel every alarm
+                        // before the card transition unmounts the view.
+                        alarmController?.reconcile()
                     },
                     onDismiss: {
                         withAnimation { confirmLeave = false }
@@ -138,6 +141,10 @@ struct CookingSessionView: View {
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            // Covers every exit path (Leave, Finish, back): with the
+            // session gone `timerAlarms` is empty and reconcile cancels
+            // whatever AlarmKit still holds.
+            alarmController?.reconcile()
         }
         .onChange(of: session.currentIndex) { _, _ in
             resetMeasuredBody()
@@ -1047,7 +1054,7 @@ struct CookingSessionView: View {
     }
 
     /// The tactile card circle of the pause and reset buttons: `card` fill,
-    /// 1 pt `line`, the `buttonEdge` under-edge.
+    /// 1 pt `line`, the `buttonEdge` under-edge and a `chipInk` glyph.
     private func timerTactileButton(
         icon: String,
         label: String,
@@ -1056,7 +1063,7 @@ struct CookingSessionView: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(KartaDesign.ColorToken.ink)
+                .foregroundStyle(suit.chipInk)
                 .frame(
                     width: KartaDesign.cooking.timerButton,
                     height: KartaDesign.cooking.timerButton

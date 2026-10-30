@@ -287,4 +287,19 @@ struct CookingAlarmPlanTests {
         #expect(CookingAlarmID.id(recipeID: "r1", stepIndex: 0)
             != CookingAlarmID.id(recipeID: "r2", stepIndex: 0))
     }
+
+    @Test("System transitions map to the equivalent Temporizador action")
+    func systemEffects() {
+        // Pause pressed on the Lock Screen.
+        #expect(CookingAlarmPlan.systemEffect(old: .countdown, new: .paused) == .pause)
+        // Resume pressed on the Lock Screen.
+        #expect(CookingAlarmPlan.systemEffect(old: .paused, new: .countdown) == .resume)
+        // An alert stopped from the Lock Screen disappears.
+        #expect(CookingAlarmPlan.systemEffect(old: .alerting, new: nil) == .stop)
+        // Everything else is noise: schedule, fire, transient states.
+        #expect(CookingAlarmPlan.systemEffect(old: nil, new: .countdown) == nil)
+        #expect(CookingAlarmPlan.systemEffect(old: .countdown, new: .alerting) == nil)
+        #expect(CookingAlarmPlan.systemEffect(old: .countdown, new: .countdown) == nil)
+        #expect(CookingAlarmPlan.systemEffect(old: .paused, new: nil) == nil)
+    }
 }

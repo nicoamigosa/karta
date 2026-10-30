@@ -31,13 +31,18 @@ enum CookingAlarmID {
 /// The shell's AlarmKit mirror (ADR 0014): it reconciles
 /// `KartaState.timerAlarms` into `AlarmManager` — schedule, pause, resume and
 /// cancel — and reflects AlarmKit's own buttons back into the same store
-/// actions. It owns no countdown of its own.
+/// actions when they hit the current Paso's alarm. It owns no countdown of
+/// its own.
 @MainActor
 final class CookingAlarmController {
     private let store: KartaStore
     private var updatesTask: Task<Void, Never>?
     /// Last observed AlarmKit states, used to detect a Lock Screen Stop.
     private var observed: [UUID: Alarm.State] = [:]
+    /// Ids seen reaching `.paused` through a live `alarmUpdates` transition.
+    /// A `.paused` snapshot could be a stale alarm from a previous run, and
+    /// stale-paused → fresh-countdown must not read as a Lock Screen resume.
+    private var systemPaused: Set<UUID> = []
     private var permissionAsked = false
 
     init(store: KartaStore) {
@@ -48,12 +53,6 @@ final class CookingAlarmController {
     /// resume and Stop buttons produce the same store actions as the app's.
     func start() {
         guard updatesTask == nil else { return }
-        // Alarms survive an app reinstall/upgrade, and scheduling a known id
-        // is rejected as a duplicate: drop every stale alarm — the store
-        // re-adds what it wants below.
-        for alarm in (try? AlarmManager.shared.alarms) ?? [] {
-            try? AlarmManager.shared.cancel(id: alarm.id)
-        }
         refreshObserved()
         updatesTask = Task { [weak self] in
             for await alarms in AlarmManager.shared.alarmUpdates {
@@ -106,8 +105,9 @@ final class CookingAlarmController {
     }
 
     /// Reflect AlarmKit-side transitions into the same store actions the
-    /// view would send: pause, resume and Stop mirror the app, and an alert
-    /// stopped from the Lock Screen behaves as Stop in the app.
+    /// view would send. The actions are current-Paso-only, so only the
+    /// alarm of the Paso on screen can be mirrored; a press on another
+    /// Paso's alarm has no store action to send (see Open decisions).
     private func applySystemUpdate(_ alarms: [Alarm]) {
         let now = Date().timeIntervalSince1970
         let current = Dictionary(uniqueKeysWithValues: alarms.map { ($0.id, $0.state) })
@@ -115,46 +115,31 @@ final class CookingAlarmController {
             observed = current
             reconcile()
         }
-        for (id, newState) in current {
-            let old = observed[id]
-            guard newState != old else { continue }
-            switch (old, newState) {
-            case (.countdown, .paused):
-                sendToAlarmStep(id) { store.send(.pauseTimer(now: now)) }
-            case (.paused, .countdown):
-                sendToAlarmStep(id) { store.send(.resumeTimer(now: now)) }
-            default:
-                break
-            }
+        guard let session = store.session, !session.isOnFinish else { return }
+        let currentID = CookingAlarmID.id(
+            recipeID: session.recipeID,
+            stepIndex: session.currentIndex
+        )
+        // Track genuine countdown→paused transitions seen in-stream.
+        if current[currentID] == .paused, observed[currentID] != .paused {
+            systemPaused.insert(currentID)
         }
-        // An alerting alarm that disappeared was stopped by the user
-        // (Lock Screen / full-screen alert) → Stop in the app.
-        for (id, old) in observed where current[id] == nil && old == .alerting {
-            sendToAlarmStep(id) { store.send(.stopTimer(now: now)) }
+        if current[currentID] == nil {
+            systemPaused.remove(currentID)
         }
-    }
-
-    /// Timer store actions act on the current Paso: move there through the
-    /// same next/previous actions the pill uses, then send the action.
-    private func sendToAlarmStep(_ id: UUID, action: () -> Void) {
-        guard let session = store.session else { return }
-        for index in session.steps.indices {
-            if CookingAlarmID.id(recipeID: session.recipeID, stepIndex: index) == id {
-                jump(to: index)
-                action()
-                return
-            }
-        }
-    }
-
-    private func jump(to stepIndex: Int) {
-        let now = Date().timeIntervalSince1970
-        while let session = store.session, session.currentIndex != stepIndex {
-            if session.currentIndex < stepIndex {
-                store.send(.nextStep(now: now))
-            } else {
-                store.send(.previousStep)
-            }
+        guard observed[currentID] != current[currentID] else { return }
+        switch CookingAlarmPlan.systemEffect(
+            old: observed[currentID].map(CookingAlarmPlan.Observed.init),
+            new: current[currentID].map(CookingAlarmPlan.Observed.init)
+        ) {
+        case .pause:
+            store.send(.pauseTimer(now: now))
+        case .resume where systemPaused.contains(currentID):
+            store.send(.resumeTimer(now: now))
+        case .stop:
+            store.send(.stopTimer(now: now))
+        default:
+            break
         }
     }
 
@@ -201,6 +186,10 @@ final class CookingAlarmController {
                 let configuration = AlarmManager.AlarmConfiguration<KartaAlarmMetadata>
                     .timer(duration: max(seconds, 0.1), attributes: attributes)
                 do {
+                    // A stale alarm under the same deterministic id (previous
+                    // run, reinstall) makes schedule fail as a duplicate:
+                    // cancel first so the fresh countdown always lands.
+                    try? AlarmManager.shared.cancel(id: id)
                     _ = try await AlarmManager.shared.schedule(id: id, configuration: configuration)
                     if !running {
                         try AlarmManager.shared.pause(id: id)
@@ -249,6 +238,7 @@ final class CookingAlarmController {
         observed = Dictionary(
             uniqueKeysWithValues: (try? AlarmManager.shared.alarms)?.map { ($0.id, $0.state) } ?? []
         )
+        systemPaused.formIntersection(observed.keys)
     }
 }
 

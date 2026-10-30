@@ -178,4 +178,24 @@ enum CookingAlarmPlan {
         }
         return ops
     }
+
+    /// What an AlarmKit-side button asks the store to do. AlarmKit's own
+    /// pause, resume and Stop buttons carry no intents: they produce state
+    /// transitions the shell observes, and this maps one transition (or an
+    /// alerting alarm's removal) to the equivalent Temporizador action.
+    /// `nil` means nothing to send.
+    enum SystemEffect: Equatable {
+        case pause
+        case resume
+        case stop
+    }
+
+    static func systemEffect(old: Observed?, new: Observed?) -> SystemEffect? {
+        switch (old, new) {
+        case (.countdown, .paused): return .pause
+        case (.paused, .countdown): return .resume
+        case (.alerting, nil): return .stop
+        default: return nil
+        }
+    }
 }

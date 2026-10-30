@@ -1,0 +1,712 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		02FD5E56303A82869DFCA731 /* CookbookShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3459A3AE7FE34D223A002965 /* CookbookShellTests.swift */; };
+		068DC314C82518E47234862E /* RecipeReverseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1C2047A6AA6D056724E0EE /* RecipeReverseView.swift */; };
+		0A925B5A0D8A92B07189E866 /* KartaAlarmMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB7C8136D5108C3D18B13F8 /* KartaAlarmMetadata.swift */; };
+		1B88EE71D93E90587184314E /* CookingSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F218A6305238072853C77666 /* CookingSessionView.swift */; };
+		2D6BA1AC715CB0C21EA3FFE4 /* KartaAlarmWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FB720734D6B19BC871FDD9A /* KartaAlarmWidgetBundle.swift */; };
+		3054D240A69FD3EE9F3A0FC4 /* KartaAlarmMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB7C8136D5108C3D18B13F8 /* KartaAlarmMetadata.swift */; };
+		34A2BC032F2443991CD14395 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7E4663DB7C24C496C6E07E38 /* Assets.xcassets */; };
+		39258CB0B4216AE023E8D783 /* KartaPresentation in Frameworks */ = {isa = PBXBuildFile; productRef = E4A7B3314DED343541D89CE6 /* KartaPresentation */; };
+		423501D078F8D9FA76E11C08 /* DebugSeeds.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECD9D6A1440DC1BFC52C048 /* DebugSeeds.swift */; };
+		46CE35137421ECABECE53297 /* Fraunces-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CD977C09D0B23B36C58F2E1 /* Fraunces-OFL.txt */; };
+		4883ADBE1C8F04C679C10809 /* Figtree.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 92DA697B6080C33BCD0A1083 /* Figtree.ttf */; };
+		588057B565306E6597720DE9 /* CookingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1F4215D37D5949BC874B41 /* CookingSheet.swift */; };
+		5D8081157A6774F571E124CE /* KartaAlarmWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9F045AB5BDEEC5777DB89EBF /* KartaAlarmWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5F68568296B8450AF5004DD9 /* FeedHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4816A818785A60CAA6B17D /* FeedHeaderView.swift */; };
+		6579F8AABB47211BEF0E24BE /* FeedMundoMenuTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647B7C8C86F04066E78930F5 /* FeedMundoMenuTests.swift */; };
+		7BEFD547E7DF9F3BA75631FC /* KartaDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD50BD36EF728725DD3919F2 /* KartaDesign.swift */; };
+		8CF578738692FF31A38B9EF8 /* Fraunces.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 50FA6203086BBDFF208822A6 /* Fraunces.ttf */; };
+		92F5EF0DEF24F86C3FF7D0DD /* CookingSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43E29A6C699EAD08D4AE3560 /* CookingSessionModel.swift */; };
+		9AEF5D02D9B9926DF5069957 /* CookbookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6103959A48DA3DB180B7E604 /* CookbookView.swift */; };
+		A9A3415286C8964B5019A557 /* FeedFilterPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A48C2C09A2BE5CE75FADD60 /* FeedFilterPanelTests.swift */; };
+		AA561036DB77302701B37A3D /* FeedDeckModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F62D36BB530DC2D2B07E1B /* FeedDeckModel.swift */; };
+		AD10B3826D30F58B9036C8DE /* CookbookShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA06CBF7CFDE1012D248BB73 /* CookbookShell.swift */; };
+		B057197279DD050823D06E99 /* Figtree-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F7C295B369D3EF67F92C6676 /* Figtree-OFL.txt */; };
+		B47630A4006E320A9F988212 /* FeedDeckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1803B834F4E0F3F65CD7A4C /* FeedDeckView.swift */; };
+		B7525AB023D0D5AC0C471434 /* FilterPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7AF008087E8921F00F6856 /* FilterPanelView.swift */; };
+		BAD20F5D590C616F898FCEBF /* KartaPresentation in Frameworks */ = {isa = PBXBuildFile; productRef = 2A17D1EAF556EE1FAFB28F90 /* KartaPresentation */; };
+		BD4F7E9D2202601D6C5D562E /* KartaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98F9B980625C0336C2B646 /* KartaApp.swift */; };
+		D21BD48B12D4EF64D9A80E5E /* FeedDeckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 336FDE797E3ED1265BDEF665 /* FeedDeckTests.swift */; };
+		D64C3ABCDEEB7BEE4E9E3823 /* CookbookFullSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CC3A39E97D2B296453F12F /* CookbookFullSheet.swift */; };
+		D9ABE7A8ED196835EB6539A7 /* KartaCore in Frameworks */ = {isa = PBXBuildFile; productRef = 201F1CD6BFACB900AF4D08D6 /* KartaCore */; };
+		DB2D41D536D91C9F504726A8 /* Fraunces-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9269E91B5785373BAD7EA63A /* Fraunces-Italic.ttf */; };
+		E82D19AFD61ABD11464B0FBB /* SeedCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8241FC74D84727C7BFE7433B /* SeedCatalogTests.swift */; };
+		E90FBF4F0D9A0D786CF0741B /* CookingAlarmController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC5EBAE5172335A6F5E1616 /* CookingAlarmController.swift */; };
+		F433B54436AA0B625FE4F36E /* KartaAlarmActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C3F8C4C9160C1EF4A1AA7A /* KartaAlarmActivity.swift */; };
+		FE34E77EBAAAB810370F90AC /* CookingSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9255A83AF083E83469B1FE3D /* CookingSessionTests.swift */; };
+		FF938CADA0A6CEC9B7520871 /* SavePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8022368F37DB323D443CBD /* SavePill.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3FEFFD24EA9DD19FC8013F3F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F3F5C365FD0ACB7739F7204A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3E996BDD537E341AAD02F297;
+			remoteInfo = KartaAlarmWidget;
+		};
+		A4DC12EA02A14C0A7D1AE772 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F3F5C365FD0ACB7739F7204A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C851352CE2D1FB7773C4EDC0;
+			remoteInfo = Karta;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		66364A53AF979122955D8287 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5D8081157A6774F571E124CE /* KartaAlarmWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		10FDB7463C822A8DE594C370 /* KartaCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = KartaCore; path = ../KartaCore; sourceTree = SOURCE_ROOT; };
+		16F62D36BB530DC2D2B07E1B /* FeedDeckModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDeckModel.swift; sourceTree = "<group>"; };
+		1D1F4215D37D5949BC874B41 /* CookingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingSheet.swift; sourceTree = "<group>"; };
+		336FDE797E3ED1265BDEF665 /* FeedDeckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDeckTests.swift; sourceTree = "<group>"; };
+		3459A3AE7FE34D223A002965 /* CookbookShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookbookShellTests.swift; sourceTree = "<group>"; };
+		37C04359F8A0CDD7DA41A3D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		43E29A6C699EAD08D4AE3560 /* CookingSessionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingSessionModel.swift; sourceTree = "<group>"; };
+		4A48C2C09A2BE5CE75FADD60 /* FeedFilterPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedFilterPanelTests.swift; sourceTree = "<group>"; };
+		50FA6203086BBDFF208822A6 /* Fraunces.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fraunces.ttf; sourceTree = "<group>"; };
+		511D81A53303F00F78817C76 /* KartaTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KartaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A7AF008087E8921F00F6856 /* FilterPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterPanelView.swift; sourceTree = "<group>"; };
+		5DB7C8136D5108C3D18B13F8 /* KartaAlarmMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KartaAlarmMetadata.swift; sourceTree = "<group>"; };
+		6103959A48DA3DB180B7E604 /* CookbookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookbookView.swift; sourceTree = "<group>"; };
+		647B7C8C86F04066E78930F5 /* FeedMundoMenuTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedMundoMenuTests.swift; sourceTree = "<group>"; };
+		6AC5EBAE5172335A6F5E1616 /* CookingAlarmController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingAlarmController.swift; sourceTree = "<group>"; };
+		6F1C2047A6AA6D056724E0EE /* RecipeReverseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeReverseView.swift; sourceTree = "<group>"; };
+		7E4663DB7C24C496C6E07E38 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8241FC74D84727C7BFE7433B /* SeedCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedCatalogTests.swift; sourceTree = "<group>"; };
+		8E4816A818785A60CAA6B17D /* FeedHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedHeaderView.swift; sourceTree = "<group>"; };
+		8FB720734D6B19BC871FDD9A /* KartaAlarmWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KartaAlarmWidgetBundle.swift; sourceTree = "<group>"; };
+		9255A83AF083E83469B1FE3D /* CookingSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingSessionTests.swift; sourceTree = "<group>"; };
+		9269E91B5785373BAD7EA63A /* Fraunces-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fraunces-Italic.ttf"; sourceTree = "<group>"; };
+		92DA697B6080C33BCD0A1083 /* Figtree.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Figtree.ttf; sourceTree = "<group>"; };
+		9CD977C09D0B23B36C58F2E1 /* Fraunces-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Fraunces-OFL.txt"; sourceTree = "<group>"; };
+		9F045AB5BDEEC5777DB89EBF /* KartaAlarmWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KartaAlarmWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1803B834F4E0F3F65CD7A4C /* FeedDeckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDeckView.swift; sourceTree = "<group>"; };
+		A9CC3A39E97D2B296453F12F /* CookbookFullSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookbookFullSheet.swift; sourceTree = "<group>"; };
+		BD50BD36EF728725DD3919F2 /* KartaDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KartaDesign.swift; sourceTree = "<group>"; };
+		CA8022368F37DB323D443CBD /* SavePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavePill.swift; sourceTree = "<group>"; };
+		EA06CBF7CFDE1012D248BB73 /* CookbookShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookbookShell.swift; sourceTree = "<group>"; };
+		EA98F9B980625C0336C2B646 /* KartaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KartaApp.swift; sourceTree = "<group>"; };
+		ED387D587AC8665B29D21FD0 /* Karta.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Karta.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F218A6305238072853C77666 /* CookingSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingSessionView.swift; sourceTree = "<group>"; };
+		F6C3F8C4C9160C1EF4A1AA7A /* KartaAlarmActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KartaAlarmActivity.swift; sourceTree = "<group>"; };
+		F7C295B369D3EF67F92C6676 /* Figtree-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Figtree-OFL.txt"; sourceTree = "<group>"; };
+		FECD9D6A1440DC1BFC52C048 /* DebugSeeds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSeeds.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4B9550C6D865FD8FE7313DB5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D9ABE7A8ED196835EB6539A7 /* KartaCore in Frameworks */,
+				39258CB0B4216AE023E8D783 /* KartaPresentation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		94B3C007AE94B2E4E9F0C348 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BAD20F5D590C616F898FCEBF /* KartaPresentation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		276085724B279EC2E5E92534 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				F7C295B369D3EF67F92C6676 /* Figtree-OFL.txt */,
+				92DA697B6080C33BCD0A1083 /* Figtree.ttf */,
+				9269E91B5785373BAD7EA63A /* Fraunces-Italic.ttf */,
+				9CD977C09D0B23B36C58F2E1 /* Fraunces-OFL.txt */,
+				50FA6203086BBDFF208822A6 /* Fraunces.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		38C4FC9644E5E167ADE87BDC /* AlarmWidget */ = {
+			isa = PBXGroup;
+			children = (
+				37C04359F8A0CDD7DA41A3D8 /* Info.plist */,
+				F6C3F8C4C9160C1EF4A1AA7A /* KartaAlarmActivity.swift */,
+				8FB720734D6B19BC871FDD9A /* KartaAlarmWidgetBundle.swift */,
+			);
+			path = AlarmWidget;
+			sourceTree = "<group>";
+		};
+		5D669F7C077E6BE1C05994F0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				276085724B279EC2E5E92534 /* Fonts */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		6D298C9118C2991099F34E82 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ED387D587AC8665B29D21FD0 /* Karta.app */,
+				9F045AB5BDEEC5777DB89EBF /* KartaAlarmWidget.appex */,
+				511D81A53303F00F78817C76 /* KartaTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7DA9BB09A41EF770A9914BA2 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5DB7C8136D5108C3D18B13F8 /* KartaAlarmMetadata.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A4E3FFCFFDE67C393DEB9835 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				3459A3AE7FE34D223A002965 /* CookbookShellTests.swift */,
+				9255A83AF083E83469B1FE3D /* CookingSessionTests.swift */,
+				336FDE797E3ED1265BDEF665 /* FeedDeckTests.swift */,
+				4A48C2C09A2BE5CE75FADD60 /* FeedFilterPanelTests.swift */,
+				647B7C8C86F04066E78930F5 /* FeedMundoMenuTests.swift */,
+				8241FC74D84727C7BFE7433B /* SeedCatalogTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		AC378F7BFE06AA559DB4119E = {
+			isa = PBXGroup;
+			children = (
+				7E4663DB7C24C496C6E07E38 /* Assets.xcassets */,
+				38C4FC9644E5E167ADE87BDC /* AlarmWidget */,
+				CAEDA8D151C8DFFBA44F744B /* Packages */,
+				5D669F7C077E6BE1C05994F0 /* Resources */,
+				7DA9BB09A41EF770A9914BA2 /* Shared */,
+				D713552BC66BD6BD022FEF6F /* Sources */,
+				A4E3FFCFFDE67C393DEB9835 /* Tests */,
+				6D298C9118C2991099F34E82 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CAEDA8D151C8DFFBA44F744B /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				10FDB7463C822A8DE594C370 /* KartaCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		D713552BC66BD6BD022FEF6F /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A9CC3A39E97D2B296453F12F /* CookbookFullSheet.swift */,
+				EA06CBF7CFDE1012D248BB73 /* CookbookShell.swift */,
+				6103959A48DA3DB180B7E604 /* CookbookView.swift */,
+				6AC5EBAE5172335A6F5E1616 /* CookingAlarmController.swift */,
+				43E29A6C699EAD08D4AE3560 /* CookingSessionModel.swift */,
+				F218A6305238072853C77666 /* CookingSessionView.swift */,
+				1D1F4215D37D5949BC874B41 /* CookingSheet.swift */,
+				FECD9D6A1440DC1BFC52C048 /* DebugSeeds.swift */,
+				16F62D36BB530DC2D2B07E1B /* FeedDeckModel.swift */,
+				A1803B834F4E0F3F65CD7A4C /* FeedDeckView.swift */,
+				8E4816A818785A60CAA6B17D /* FeedHeaderView.swift */,
+				5A7AF008087E8921F00F6856 /* FilterPanelView.swift */,
+				EA98F9B980625C0336C2B646 /* KartaApp.swift */,
+				BD50BD36EF728725DD3919F2 /* KartaDesign.swift */,
+				6F1C2047A6AA6D056724E0EE /* RecipeReverseView.swift */,
+				CA8022368F37DB323D443CBD /* SavePill.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3E996BDD537E341AAD02F297 /* KartaAlarmWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8296C7AEA75335326429D9CB /* Build configuration list for PBXNativeTarget "KartaAlarmWidget" */;
+			buildPhases = (
+				901D5BC6B5EA8727ED437A64 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KartaAlarmWidget;
+			packageProductDependencies = (
+			);
+			productName = KartaAlarmWidget;
+			productReference = 9F045AB5BDEEC5777DB89EBF /* KartaAlarmWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		C851352CE2D1FB7773C4EDC0 /* Karta */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FDFBF4F6C08E665124EE71BF /* Build configuration list for PBXNativeTarget "Karta" */;
+			buildPhases = (
+				E294B7CD605B95AE54B533B3 /* Sources */,
+				D61C4D7BC3C89948B5A3A893 /* Resources */,
+				4B9550C6D865FD8FE7313DB5 /* Frameworks */,
+				66364A53AF979122955D8287 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3FBCE386DD5AA4A17E838F64 /* PBXTargetDependency */,
+			);
+			name = Karta;
+			packageProductDependencies = (
+				201F1CD6BFACB900AF4D08D6 /* KartaCore */,
+				E4A7B3314DED343541D89CE6 /* KartaPresentation */,
+			);
+			productName = Karta;
+			productReference = ED387D587AC8665B29D21FD0 /* Karta.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FA08803D75E56D843A6D35BF /* KartaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21BCE25D4BE485A72EE8D53F /* Build configuration list for PBXNativeTarget "KartaTests" */;
+			buildPhases = (
+				3792B0301A0195EFA12C0E70 /* Sources */,
+				94B3C007AE94B2E4E9F0C348 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C3623BE1FA9C01E97F155013 /* PBXTargetDependency */,
+			);
+			name = KartaTests;
+			packageProductDependencies = (
+				2A17D1EAF556EE1FAFB28F90 /* KartaPresentation */,
+			);
+			productName = KartaTests;
+			productReference = 511D81A53303F00F78817C76 /* KartaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F3F5C365FD0ACB7739F7204A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 9D3C32C983F61A64F3F502FD /* Build configuration list for PBXProject "Karta" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = AC378F7BFE06AA559DB4119E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				83E6F6F6F9EA6FCF837A0969 /* XCLocalSwiftPackageReference "../KartaCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6D298C9118C2991099F34E82 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C851352CE2D1FB7773C4EDC0 /* Karta */,
+				3E996BDD537E341AAD02F297 /* KartaAlarmWidget */,
+				FA08803D75E56D843A6D35BF /* KartaTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D61C4D7BC3C89948B5A3A893 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34A2BC032F2443991CD14395 /* Assets.xcassets in Resources */,
+				B057197279DD050823D06E99 /* Figtree-OFL.txt in Resources */,
+				4883ADBE1C8F04C679C10809 /* Figtree.ttf in Resources */,
+				DB2D41D536D91C9F504726A8 /* Fraunces-Italic.ttf in Resources */,
+				46CE35137421ECABECE53297 /* Fraunces-OFL.txt in Resources */,
+				8CF578738692FF31A38B9EF8 /* Fraunces.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3792B0301A0195EFA12C0E70 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				02FD5E56303A82869DFCA731 /* CookbookShellTests.swift in Sources */,
+				FE34E77EBAAAB810370F90AC /* CookingSessionTests.swift in Sources */,
+				D21BD48B12D4EF64D9A80E5E /* FeedDeckTests.swift in Sources */,
+				A9A3415286C8964B5019A557 /* FeedFilterPanelTests.swift in Sources */,
+				6579F8AABB47211BEF0E24BE /* FeedMundoMenuTests.swift in Sources */,
+				E82D19AFD61ABD11464B0FBB /* SeedCatalogTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		901D5BC6B5EA8727ED437A64 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F433B54436AA0B625FE4F36E /* KartaAlarmActivity.swift in Sources */,
+				0A925B5A0D8A92B07189E866 /* KartaAlarmMetadata.swift in Sources */,
+				2D6BA1AC715CB0C21EA3FFE4 /* KartaAlarmWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E294B7CD605B95AE54B533B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D64C3ABCDEEB7BEE4E9E3823 /* CookbookFullSheet.swift in Sources */,
+				AD10B3826D30F58B9036C8DE /* CookbookShell.swift in Sources */,
+				9AEF5D02D9B9926DF5069957 /* CookbookView.swift in Sources */,
+				E90FBF4F0D9A0D786CF0741B /* CookingAlarmController.swift in Sources */,
+				92F5EF0DEF24F86C3FF7D0DD /* CookingSessionModel.swift in Sources */,
+				1B88EE71D93E90587184314E /* CookingSessionView.swift in Sources */,
+				588057B565306E6597720DE9 /* CookingSheet.swift in Sources */,
+				423501D078F8D9FA76E11C08 /* DebugSeeds.swift in Sources */,
+				AA561036DB77302701B37A3D /* FeedDeckModel.swift in Sources */,
+				B47630A4006E320A9F988212 /* FeedDeckView.swift in Sources */,
+				5F68568296B8450AF5004DD9 /* FeedHeaderView.swift in Sources */,
+				B7525AB023D0D5AC0C471434 /* FilterPanelView.swift in Sources */,
+				3054D240A69FD3EE9F3A0FC4 /* KartaAlarmMetadata.swift in Sources */,
+				BD4F7E9D2202601D6C5D562E /* KartaApp.swift in Sources */,
+				7BEFD547E7DF9F3BA75631FC /* KartaDesign.swift in Sources */,
+				068DC314C82518E47234862E /* RecipeReverseView.swift in Sources */,
+				FF938CADA0A6CEC9B7520871 /* SavePill.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3FBCE386DD5AA4A17E838F64 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3E996BDD537E341AAD02F297 /* KartaAlarmWidget */;
+			targetProxy = 3FEFFD24EA9DD19FC8013F3F /* PBXContainerItemProxy */;
+		};
+		C3623BE1FA9C01E97F155013 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C851352CE2D1FB7773C4EDC0 /* Karta */;
+			targetProxy = A4DC12EA02A14C0A7D1AE772 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0ABBC5BDBCCC9CFA890AFFCA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.karta.KartaTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Karta.app/Karta";
+			};
+			name = Release;
+		};
+		1C00FD47D28B1C2940F0B579 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		2AC9F0F799AA4EBB6CD40EAA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.karta.KartaTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Karta.app/Karta";
+			};
+			name = Debug;
+		};
+		53C7346A117FE072CAF128EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		73459760AA1F6412552B031A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = AlarmWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.karta.Karta.AlarmWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		994247D1FB97DA9DCFF99FF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Karta.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.karta.Karta;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9E1F681161E8667659DE32C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = AlarmWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.karta.Karta.AlarmWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BA5A082C262EC15B8F51AC91 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Karta.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.karta.Karta;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		21BCE25D4BE485A72EE8D53F /* Build configuration list for PBXNativeTarget "KartaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AC9F0F799AA4EBB6CD40EAA /* Debug */,
+				0ABBC5BDBCCC9CFA890AFFCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8296C7AEA75335326429D9CB /* Build configuration list for PBXNativeTarget "KartaAlarmWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73459760AA1F6412552B031A /* Debug */,
+				9E1F681161E8667659DE32C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9D3C32C983F61A64F3F502FD /* Build configuration list for PBXProject "Karta" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C00FD47D28B1C2940F0B579 /* Debug */,
+				53C7346A117FE072CAF128EE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FDFBF4F6C08E665124EE71BF /* Build configuration list for PBXNativeTarget "Karta" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				994247D1FB97DA9DCFF99FF1 /* Debug */,
+				BA5A082C262EC15B8F51AC91 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		83E6F6F6F9EA6FCF837A0969 /* XCLocalSwiftPackageReference "../KartaCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../KartaCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		201F1CD6BFACB900AF4D08D6 /* KartaCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KartaCore;
+		};
+		2A17D1EAF556EE1FAFB28F90 /* KartaPresentation */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KartaPresentation;
+		};
+		E4A7B3314DED343541D89CE6 /* KartaPresentation */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KartaPresentation;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = F3F5C365FD0ACB7739F7204A /* Project object */;
+}
