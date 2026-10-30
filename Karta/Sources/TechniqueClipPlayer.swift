@@ -144,20 +144,23 @@ final class ClipPlaybackController {
     }
 
     /// The expand button on the paused window: keep the frame and open the
-    /// clip full screen at the same point.
+    /// clip full screen at the same point. From here turning the phone
+    /// shows the clip landscape; the session stays portrait.
     func expand() {
         guard phase == .paused || phase == .playing else { return }
         pause()
         isFullScreen = true
         controlsVisible = true
+        ClipOrientationLock.allowLandscape()
     }
 
     /// Collapse button or swipe down on the full screen: back to the Paso,
-    /// paused at the same point.
+    /// paused at the same point and locked to portrait again.
     func collapseFullScreen() {
         guard isFullScreen else { return }
         pause()
         isFullScreen = false
+        ClipOrientationLock.lockPortrait()
     }
 
     /// A tap on the full-screen surface toggles the chrome; it never pauses
@@ -203,6 +206,7 @@ final class ClipPlaybackController {
         elapsedSeconds = 0
         durationSeconds = 0
         showsSpinner = false
+        if isFullScreen { ClipOrientationLock.lockPortrait() }
         isFullScreen = false
         controlsVisible = true
     }

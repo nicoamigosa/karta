@@ -1,6 +1,36 @@
 import SwiftUI
+import UIKit
 import KartaCore
 import KartaPresentation
+
+/// The orientations the app may take: portrait always, landscape only
+/// while the full-screen clip is up — "turning the phone shows the clip
+/// landscape, full screen; the cooking session itself stays portrait".
+@MainActor
+enum ClipOrientationLock {
+    private(set) static var mask: UIInterfaceOrientationMask = .portrait
+
+    /// The full-screen clip opened: the phone may now turn to landscape.
+    static func allowLandscape() {
+        mask = .allButUpsideDown
+        refreshScenes()
+    }
+
+    /// Back on the Paso (or the clip stopped): the session is portrait.
+    static func lockPortrait() {
+        mask = .portrait
+        refreshScenes()
+    }
+
+    private static func refreshScenes() {
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            windowScene.requestGeometryUpdate(
+                .iOS(interfaceOrientations: mask)
+            ) { _ in }
+        }
+    }
+}
 
 /// The technique clip full screen (`cooking-clip-fullscreen.png`): a
 /// near-black `videoGround`, the clip fitted to the width and centred, the
