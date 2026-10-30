@@ -424,6 +424,28 @@ struct CookingAlarmPlanTests {
         #expect(classified.sends.isEmpty)
     }
 
+    @Test("A press on alarm B inside A's own-op refresh is sent for B; A's echo is consumed")
+    func systemClassifyPressAlongsideEcho() {
+        typealias Echo = CookingAlarmPlan.ExpectedEcho
+        let a = UUID(), b = UUID()
+        let ids = [(id: a, stepIndex: 0), (id: b, stepIndex: 1)]
+
+        // The mirror pauses A; the refresh it triggers reads A already
+        // paused — and also sees a Lock Screen resume that landed on B.
+        // A's landing is its echo (consumed), B's transition is a press
+        // sent to B's own Paso.
+        let classified = CookingAlarmPlan.classify(
+            expected: [a: [.arrives(.paused)]],
+            old: [a: .countdown, b: .paused],
+            new: [a: .paused, b: .countdown],
+            ids: ids
+        )
+        #expect(classified.sends == [
+            .init(id: b, effect: .resume, stepIndex: 1)
+        ])
+        #expect(classified.expected[a] == nil)
+    }
+
     @Test("Every session alarm resolves back to its own Paso, wherever the cook is")
     func systemPressStepIndex() {
         // A press on another Paso's alarm reaches that Paso, not the one on
