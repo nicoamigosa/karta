@@ -191,9 +191,13 @@ public enum KartaAction: Sendable {
     case inferProbablyCooked(now: TimeInterval)
     case startTimer(now: TimeInterval)
     case pauseTimer(now: TimeInterval)
+    /// AlarmKit presses target a session Paso by its zero-based index.
+    case pauseTimerAtStep(stepIndex: Int, now: TimeInterval)
     case resumeTimer(now: TimeInterval)
+    case resumeTimerAtStep(stepIndex: Int, now: TimeInterval)
     case resetTimer
     case stopTimer(now: TimeInterval)
+    case stopTimerAtStep(stepIndex: Int, now: TimeInterval)
     /// The shell reports denial after requesting AlarmKit permission on start.
     case alarmPermissionDenied
     case dismissAlarmPermissionSheet
@@ -202,6 +206,20 @@ public enum KartaAction: Sendable {
     case filter(FilterAction)
     case pushRoute(Route)
     case popRoute
+
+    /// Keep the current-Paso case while allowing an explicitly named Paso.
+    /// Distinct indexed case names keep Swift's reducer patterns unambiguous.
+    public static func pauseTimer(stepIndex: Int, now: TimeInterval) -> Self {
+        .pauseTimerAtStep(stepIndex: stepIndex, now: now)
+    }
+
+    public static func resumeTimer(stepIndex: Int, now: TimeInterval) -> Self {
+        .resumeTimerAtStep(stepIndex: stepIndex, now: now)
+    }
+
+    public static func stopTimer(stepIndex: Int, now: TimeInterval) -> Self {
+        .stopTimerAtStep(stepIndex: stepIndex, now: now)
+    }
 }
 
 /// Pure state transitions for the presentation layer.
@@ -289,12 +307,18 @@ public enum KartaReducer {
             state.session?.startTimer(now: now)
         case let .pauseTimer(now):
             state.session?.pauseTimer(now: now)
+        case let .pauseTimerAtStep(stepIndex, now):
+            state.session?.pauseTimer(stepIndex: stepIndex, now: now)
         case let .resumeTimer(now):
             state.session?.resumeTimer(now: now)
+        case let .resumeTimerAtStep(stepIndex, now):
+            state.session?.resumeTimer(stepIndex: stepIndex, now: now)
         case .resetTimer:
             state.session?.resetTimer()
         case let .stopTimer(now):
             state.session?.stopTimer(now: now)
+        case let .stopTimerAtStep(stepIndex, now):
+            state.session?.stopTimer(stepIndex: stepIndex, now: now)
         case .alarmPermissionDenied:
             guard !state.hasShownAlarmPermissionSheet else { return }
             state.hasShownAlarmPermissionSheet = true
