@@ -199,6 +199,17 @@ enum CookingAlarmPlan {
         }
     }
 
+    /// Which Paso an alarm belongs to. Ids are deterministic per
+    /// `(recipeID, stepIndex)`, so the Paso is recovered by trying them all —
+    /// bounded by the session's step count. This is what lets a Lock Screen
+    /// press reach its own Paso (including one that is not on screen and one
+    /// seen from the Cierre) without the cook ever moving.
+    static func stepIndex(of alarmID: UUID, recipeID: String, stepCount: Int) -> Int? {
+        (0..<stepCount).first {
+            CookingAlarmID.id(recipeID: recipeID, stepIndex: $0) == alarmID
+        }
+    }
+
     /// What AlarmKit itself recorded for a button press: the remaining it
     /// froze on pause, or the fire date it computed on resume. The press's
     /// instant in AlarmKit's own words — immune to how long the app was

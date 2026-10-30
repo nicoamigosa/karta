@@ -44,9 +44,9 @@ final class CookingAlarmController {
     /// A `.paused` snapshot could be a stale alarm from a previous run, and
     /// stale-paused → fresh-countdown must not read as a Lock Screen resume.
     private var systemPaused: Set<UUID> = []
-    /// A Lock Screen press is being mirrored to the store on its own
+    /// Lock Screen presses being mirrored to the store on their own
     /// instant; reconcile must wait or it would revert the press first.
-    private var pendingSystemSend = false
+    private var pendingSystemSends = 0
     private var permissionAsked = false
 
     init(store: KartaStore) {
@@ -70,6 +70,7 @@ final class CookingAlarmController {
     /// Reconcile the store's `timerAlarms` into AlarmKit. Called on every
     /// store-driven timer change, on the one-second tick and on appear.
     func reconcile() {
+        guard pendingSystemSends == 0 else { return }
         let now = Date().timeIntervalSince1970
         let desired = store.state.timerAlarms(now: now).map {
             (
@@ -109,58 +110,65 @@ final class CookingAlarmController {
     }
 
     /// Reflect AlarmKit-side transitions into the same store actions the
-    /// view would send. The actions are current-Paso-only, so only the
-    /// alarm of the Paso on screen can be mirrored; a press on another
-    /// Paso's alarm has no store action to send (see Open decisions).
+    /// view would send — for every Paso of the session, including from the
+    /// Cierre: each alarm maps back to its own `stepIndex` (the ids are
+    /// deterministic) and the press goes to the Paso-indexed
+    /// `.pauseTimer/.resumeTimer/.stopTimer(stepIndex:now:)`.
     private func applySystemUpdate(_ alarms: [Alarm]) {
         let now = Date().timeIntervalSince1970
         let current = Dictionary(uniqueKeysWithValues: alarms.map { ($0.id, $0.state) })
         defer {
             observed = current
-            if !pendingSystemSend {
+            if pendingSystemSends == 0 {
                 reconcile()
             }
         }
-        guard let session = store.session, !session.isOnFinish else { return }
-        let currentID = CookingAlarmID.id(
-            recipeID: session.recipeID,
-            stepIndex: session.currentIndex
-        )
+        guard let session = store.session, !session.isExited else { return }
         // Track genuine countdown→paused transitions seen in-stream.
-        if current[currentID] == .paused, observed[currentID] != .paused {
-            systemPaused.insert(currentID)
+        for index in session.steps.indices {
+            let id = CookingAlarmID.id(recipeID: session.recipeID, stepIndex: index)
+            if current[id] == .paused, observed[id] != .paused {
+                systemPaused.insert(id)
+            }
+            if current[id] == nil {
+                systemPaused.remove(id)
+            }
         }
-        if current[currentID] == nil {
-            systemPaused.remove(currentID)
+        // One deferred send per affected alarm, stamped with AlarmKit's own
+        // instant (`systemInstant`), not the observe time.
+        var sends: [(effect: CookingAlarmPlan.SystemEffect, alarmID: UUID, stepIndex: Int)] = []
+        for index in session.steps.indices {
+            let alarmID = CookingAlarmID.id(recipeID: session.recipeID, stepIndex: index)
+            guard observed[alarmID] != current[alarmID],
+                  let effect = CookingAlarmPlan.systemEffect(
+                      old: observed[alarmID].map(CookingAlarmPlan.Observed.init),
+                      new: current[alarmID].map(CookingAlarmPlan.Observed.init)
+                  ),
+                  effect != .resume || systemPaused.contains(alarmID)
+            else { continue }
+            sends.append((effect, alarmID, index))
         }
-        guard observed[currentID] != current[currentID] else { return }
-        guard let effect = CookingAlarmPlan.systemEffect(
-            old: observed[currentID].map(CookingAlarmPlan.Observed.init),
-            new: current[currentID].map(CookingAlarmPlan.Observed.init)
-        ) else { return }
-        guard effect != .resume || systemPaused.contains(currentID) else { return }
-        // The press's instant comes from AlarmKit's own record of it — the
-        // app may have been suspended for minutes before observing it — read
-        // off the Live Activity content state (`systemInstant`).
-        pendingSystemSend = true
-        let stepIndex = session.currentIndex
+        guard !sends.isEmpty else { return }
+        pendingSystemSends += 1
         Task { [weak self] in
             guard let self else { return }
-            let instant = await self.systemInstant(
-                for: effect,
-                alarmID: currentID,
-                stepIndex: stepIndex,
-                observedAt: now
-            )
-            self.pendingSystemSend = false
-            switch effect {
-            case .pause:
-                self.store.send(.pauseTimer(now: instant))
-            case .resume:
-                self.store.send(.resumeTimer(now: instant))
-            case .stop:
-                self.store.send(.stopTimer(now: instant))
+            for send in sends {
+                let instant = await self.systemInstant(
+                    for: send.effect,
+                    alarmID: send.alarmID,
+                    stepIndex: send.stepIndex,
+                    observedAt: now
+                )
+                switch send.effect {
+                case .pause:
+                    self.store.send(.pauseTimer(stepIndex: send.stepIndex, now: instant))
+                case .resume:
+                    self.store.send(.resumeTimer(stepIndex: send.stepIndex, now: instant))
+                case .stop:
+                    self.store.send(.stopTimer(stepIndex: send.stepIndex, now: instant))
+                }
             }
+            self.pendingSystemSends -= 1
             self.reconcile()
         }
     }
@@ -175,7 +183,11 @@ final class CookingAlarmController {
         stepIndex: Int,
         observedAt: TimeInterval
     ) async -> TimeInterval {
-        for attempt in 0..<10 {
+        // AlarmKit publishes the press's payload to the Live Activity
+        // content state a beat after `alarmUpdates`, so a foreground press
+        // can need a retry — bounded to ~1 s; a press observed after the
+        // app was suspended is already complete on the first read.
+        for attempt in 0...4 {
             let press = systemPresses()[alarmID] ?? .init()
             let missing: Bool
             switch effect {
@@ -183,7 +195,7 @@ final class CookingAlarmController {
             case .resume: missing = press.resumedFireDate == nil
             case .stop: missing = false
             }
-            if !missing || attempt == 9 {
+            if !missing || attempt == 4 {
                 let timer = store.session?.timers[stepIndex]
                 return CookingAlarmPlan.systemInstant(
                     effect,
@@ -193,7 +205,7 @@ final class CookingAlarmController {
                     observedAt: observedAt
                 )
             }
-            try? await Task.sleep(nanoseconds: 150_000_000)
+            try? await Task.sleep(nanoseconds: 250_000_000)
         }
         return observedAt
     }

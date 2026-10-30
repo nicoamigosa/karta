@@ -303,6 +303,23 @@ struct CookingAlarmPlanTests {
         #expect(CookingAlarmPlan.systemEffect(old: .paused, new: nil) == nil)
     }
 
+    @Test("Every session alarm resolves back to its own Paso, wherever the cook is")
+    func systemPressStepIndex() {
+        // A press on another Paso's alarm reaches that Paso, not the one on
+        // screen — and the same mapping works while on the Cierre, where no
+        // Paso is current at all.
+        for index in 0..<4 {
+            let alarmID = CookingAlarmID.id(recipeID: "spanish-tortilla", stepIndex: index)
+            #expect(CookingAlarmPlan.stepIndex(
+                of: alarmID, recipeID: "spanish-tortilla", stepCount: 4
+            ) == index)
+        }
+        // An alarm the session does not manage resolves to nothing.
+        #expect(CookingAlarmPlan.stepIndex(
+            of: UUID(), recipeID: "spanish-tortilla", stepCount: 4
+        ) == nil)
+    }
+
     @Test("A mirrored press is stamped with AlarmKit's instant, not the observe time")
     func systemInstant() {
         // Lock Screen pause 3 minutes before the app woke up: the frozen
