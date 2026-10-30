@@ -483,11 +483,18 @@ probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
   unlimited to keep every recipe you like."), the filled **Unlock unlimited
   cookbook** button (opens the paywall, #14) and a tactile **Not now**. This
   is the upgrade invitation of PRD story 22, not the paywall itself.
+  **After a downgrade** (ADR 0007) the sheet keeps its shape but states the
+  ceiling instead of seven: the count reads `23 OF 23 SAVED` and the line
+  "Your cookbook keeps all 23 recipes on the free plan. Go unlimited to add
+  more." (`screens/premium-cookbook-full-downgraded.png`, #14).
 - **Cupo count** (canvas page *Cookbook · round 1*, board *N2*): one centred
   line under the switch, 13 pt Figtree 700 `inkMuted`: "5 of 7 saved on the
   free plan". It shows only when 2 or fewer slots are left: from 5 of 7 on
   the free plan, and always after a downgrade (ADR 0007), when the user sits
-  at the ceiling ("23 of 23 saved on the free plan"). Never on premium.
+  at the ceiling ("23 of 23 saved on the free plan"). On the free plan the
+  line ends with an underlined **Go unlimited** (Figtree 800 `ink`) that
+  opens the paywall. On premium the same line names the plan instead of the
+  count (*Premium and the paywall* below).
 - **Unsaving**, two ways: tap **Saved** on the reverse (the pill goes back to
   **Save** at once, no animation), or long-press a card in the cookbook grid
   for the native iOS context menu with one destructive item, **Remove from
@@ -589,11 +596,14 @@ change. Product terms: `CONTEXT.md` → **Mundo**, **Filtros**, **Intolerancia**
 - Tapping the pill opens a small menu 10 pt below the header row, its right edge on the pill's
   right edge, 252 pt wide: `card` fill, 1 pt `line`, radius 18, 6 pt padding, the button relief
   plus a drop shadow (0, 18, 34, −10, `shadow`).
-- Two rows, 62 pt high, radius 13, 12 pt padding: a 26 pt line icon, the name (Figtree 800
+- Two Mundo rows, 62 pt high, radius 13, 12 pt padding: a 26 pt line icon, the name (Figtree 800
   16 pt) over one line in Figtree 600 13 pt `inkMuted`, and an 18 pt check on the current row,
   which also has a `paper` fill.
   - **For You** · *Your deck for today* (icon: two cards fanned).
   - **Leftovers** · *Reuse what you cooked* (icon: a bowl with steam).
+  - On the free plan only, a third row under a 1 pt `line` divider: **Go Premium** (#14,
+    `screens/premium-world-menu.png`). It is not a Mundo: a chevron instead of the check, and
+    tapping it opens the paywall (*Premium and the paywall* below).
 - Everything below the header row is dimmed with `scrim`. Tapping a row selects that Mundo and
   closes the menu; tapping the current one, the pill or the scrim only closes it.
 - Switching Mundo keeps each Mundo's position (ADR 0009) and **never changes the filters**:
@@ -707,6 +717,164 @@ and the bottom safe area, 36 pt from the sides. The header stays as it is, badge
   `track` container with the same 4 pt inset; the chosen or on rows keep their colours, and an
   on multi-choice row adds a check at the right. Not drawn: an implementation that needs more
   than this asks under *Open decisions*.
+
+## Premium and the paywall
+
+Signed off on 2026-10-30 by the founder (#14). The rounds behind each choice are in two
+artifacts: *Karta Premium ronda 1* (<https://claude.ai/artifact/4oxC46WwATG15RJoV4fVeM>), rows
+Aviso C, Forma C, Planes A, Prueba A, Legal A, Estados, Premium A and Fin de prueba A; and *Karta
+Premium ronda 2* (<https://claude.ai/artifact/4jdsvKGY5knBHLu7H2UoKS>), rows Celebración A and
+Entrada B. Copies sit on the canvas page *Signed off*. Product context: `CONTEXT.md` → **Cupo**;
+ADR 0007; PRD stories 35–40. Decisions that are not design (plan name, product IDs, prices,
+whether the paywall names the shopping list before #11 ships, Leftovers, Terms and privacy) are
+open in #153. The copy below uses the drawn placeholders until #153 answers them.
+
+All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `premium-cookbook-go-unlimited.png` | cupo line on the free plan, with **Go unlimited** |
+| `premium-save-toast.png` | the one-time toast after the sixth save |
+| `premium-world-menu.png` | the Mundo menu on the free plan, with **Go Premium** |
+| `premium-paywall.png` | the paywall, grown from K3 |
+| `premium-paywall-entry.png` | the paywall opened from an entry point below the cap |
+| `premium-paywall-buying.png` | waiting for the App Store |
+| `premium-paywall-error.png` | the purchase failed |
+| `premium-paywall-pending.png` | the purchase waits for approval (Ask to Buy) |
+| `premium-paywall-no-trial.png` | this Apple ID already used the trial |
+| `premium-paywall-restore-empty.png` | Restore found nothing |
+| `premium-welcome.png` | purchase done: the celebration |
+| `premium-cookbook-trial.png` | the cookbook during the trial |
+| `premium-cookbook-premium.png` | the cookbook on premium |
+| `premium-cookbook-full-downgraded.png` | K3 after a downgrade (ADR 0007) |
+
+**Free forever:** the feed, deciding, the cooking session, the Intolerancias and the time,
+difficulty, Practical and Diet filters, and a cookbook of seven. **Premium:** the unlimited
+cookbook and the shopping list (#11). No premium check ever stands in front of an Intolerancia.
+
+### Ways in
+
+Nothing about premium appears when the app opens or before the user has saved anything. Every
+way in is something the user taps; each opens the same paywall.
+
+1. **K3** (*Save and the cookbook*): **Unlock unlimited cookbook**.
+2. **The cupo line** in the cookbook, from 5 of 7: "5 of 7 saved on the free plan ·
+   **Go unlimited**" (`premium-cookbook-go-unlimited.png`). Only the underlined words are the
+   link.
+3. **The sixth save**, once per user (`premium-save-toast.png`): when the save animation ends,
+   the signed toast appears on the reverse with **Saved to your cookbook** over "1 spot left on
+   the free plan" and a cream **See plans** pill in place of **Undo**. It stays about 5 seconds.
+   It never shows again, not even after unsaving and saving again.
+4. **The Mundo menu** (`premium-world-menu.png`): the **Go Premium** row described in
+   *The Mundo menu*. Icon: a 30 pt `brand` circle with a 20 pt sparkle in `card`; the line
+   under the name reads *Unlimited cookbook, lists* (pending #153, question 6).
+
+Ways 2–4 are hidden during the trial and on premium. After a downgrade they come back.
+
+### The paywall
+
+`premium-paywall.png`. **K3 grows into it:** tapping **Unlock unlimited cookbook** keeps the
+same sheet, which grows to fit the paywall; the fan and the count stay at the top and the rest
+cross-fades. From the other ways in, the same sheet rises over the current screen with the
+`scrim` (`premium-paywall-entry.png`). The sheet hugs its content: `card` fill, radius 28 at
+the top, 10 pt top and 22 pt side padding, 12 pt above the bottom safe area, the grabber
+(38 × 5 pt, `line`) 14 pt above the content, and 14 pt between blocks. Top to bottom:
+
+1. **The fan** of seven card backs from K3 (90 %) and, under it, the count in Figtree 800
+   12 pt, tracking 2, `inkMuted`: the real count, `7 OF 7 SAVED` from K3, `3 OF 7 SAVED` from
+   an entry below the cap, the ceiling after a downgrade (`23 OF 23 SAVED`).
+2. **Keep every recipe you like**, Fraunces 700 27 pt, centred.
+3. **Three lines**, 10 pt apart: a 36 pt `paper` circle with an 18 pt icon, the name in
+   Figtree 800 15 pt and one line in Figtree 500 13 / 17 pt `inkMuted`:
+   - box · **Unlimited cookbook** · *No cap. Keep every recipe worth making again.*
+   - list · **Shopping list** · *Any recipe becomes a list you tick off at the store.*
+     (pending #153, question 6)
+   - shield · **Free for good** · *The feed, cooking and your intolerance filters.* Its
+     circle has no fill and a 1 pt dashed `line` border: it is what stays free.
+4. **The plans**, two rows 64 pt high, 10 pt apart, radius 16, `card` fill, 1 pt `line`, 2 pt
+   `buttonEdge`, 16 pt side padding. On the left a 22 pt radio, then the plan (Figtree 800
+   16 pt) over one line in Figtree 600 12.5 pt `inkMuted`; on the right the billed price
+   (Fraunces 700 22 pt) over its period (Figtree 600 12 pt `inkMuted`).
+   - **Yearly** first and chosen when the paywall opens: 2 pt `ink` border and `inkEdge`
+     edge, the radio filled `ink` with a `card` check. Line: *$4.17 a month, billed yearly*;
+     price **$49.99** *per year*. A **SAVE 40%** badge sits on its top edge, 14 pt from the
+     right: `brand` fill, Figtree 800 10.5 pt `card`, tracking 1, radius 7.
+   - **Monthly**: *Billed every month*; **$6.99** *per month*.
+   - The billed price is always the largest price on the screen; the monthly equivalent of
+     the yearly plan stays small (App Review rule). Prices and the percentage come from the
+     App Store for the user's storefront, never from the app.
+5. **Start 7-day free trial**, the primary button.
+6. **The renewal line**, Figtree 500 12 / 16 pt `inkMuted`, centred, always visible: *7 days
+   free, then $49.99 a year. Renews automatically until you cancel; cancel in Settings at least
+   24 hours before it renews.* It follows the chosen plan.
+7. **The footer**, Figtree 700 12.5 pt `ink`, underlined in `line`: **Restore purchases ·
+   Terms of Use · Privacy Policy**. The two links open in Safari (targets pending #153,
+   question 7).
+
+Swiping the sheet down or tapping the scrim closes it, like **Not now**.
+
+### Purchase states
+
+Cancelling on Apple's purchase sheet returns to the paywall as it was, with no message.
+
+- **Waiting for the App Store** (`premium-paywall-buying.png`): the button shows an 18 pt
+  spinner and *Waiting for the App Store…*; everything else drops to 45 % and nothing can be
+  tapped. Apple's own sheet appears on top (not drawn).
+- **Failed** (`premium-paywall-error.png`): a note above the button, `paper` fill, radius 14,
+  10 × 12 pt padding, Figtree 700 13.5 / 19 pt `ink`, centred: *The App Store didn't answer.
+  Check your connection and try again. You haven't been charged.* The button reads **Try
+  again**. Never `alert`: crimson belongs to the Intolerancias.
+- **Waiting for approval** (`premium-paywall-pending.png`, Ask to Buy): the same note with
+  *Waiting for approval. Premium turns on by itself as soon as it's approved.* and a tactile
+  **Close** in place of the button.
+- **No trial left** (`premium-paywall-no-trial.png`): when the App Store says this Apple ID
+  already used the trial, the button reads **Subscribe for $49.99 a year** and the renewal line
+  starts *Your free trial was already used on this Apple ID.*
+- **Restore found nothing** (`premium-paywall-restore-empty.png`): the signed toast, without a
+  pill, at the top of the screen: **Nothing to restore** over *No Karta subscription on this
+  Apple ID*. When Restore finds a subscription it behaves as a finished purchase.
+
+### Purchase done
+
+`premium-welcome.png`. The same sheet shows the celebration, and the recipe whose save hit the
+cap is saved behind it (the pill reads **Saved**):
+
+- A 200 pt band with a 92 pt `brand` circle in the middle holding the box-with-check icon
+  (44 pt, `card`, stroke 1.7), its 4 pt `brandEdge` edge and a soft shadow; around it, about
+  twenty small card backs (16 × 22 pt, radius 3, a 1 pt cream frame) in the four suits' `back`
+  colours, each with its suit's `edge`.
+- **Welcome to Premium**, Fraunces 700 30 pt; *Spanish Tortilla is saved. Keep every recipe you
+  like from now on.*; the primary **Done**, which closes the sheet.
+- **Motion**, about 1.2 s: the cards fall and spin into place while the circle bumps to 1.07
+  and settles; a success haptic as it lands. **Reduce Motion:** the final frame fades in.
+- Opened from a way in without a recipe (the Mundo menu, the cupo line), the line drops the
+  first sentence. Not drawn.
+
+### Premium in the cookbook
+
+The cupo line under the switch names the plan, with **Manage** underlined; **Manage** opens
+Apple's manage-subscriptions sheet. There is no settings screen.
+
+- **Trial** (`premium-cookbook-trial.png`): *Free trial until Nov 6 · **Manage***.
+- **Premium** (`premium-cookbook-premium.png`): *Premium · **Manage***.
+- Both always show, whatever the count.
+
+### When the trial or the subscription ends
+
+Nothing new appears (ADR 0007). Everything saved stays. The cupo line shows the ceiling with
+**Go unlimited** ("23 of 23 saved on the free plan · Go unlimited"), the Undo toast states the
+new ceiling, and the next save opens K3 with the downgrade copy
+(`premium-cookbook-full-downgraded.png`).
+
+### Open decisions
+
+- #153 (product and App Store Connect): plan name, IDs, prices per storefront, the trial on
+  each plan, the shopping-list line on the paywall and in the Go Premium row before #11,
+  Leftovers, Terms and privacy, Family Sharing.
+- Not drawn: the paywall at larger text sizes. The renewal line and the footer must stay
+  visible next to the button, so ask before letting them scroll away.
+- Not decided: where the "toast already shown" flag for the sixth save lives (ADR 0010).
+- The shopping list itself, its button and how a free user meets it belong to #11.
 
 ## Suits (Course icons)
 
