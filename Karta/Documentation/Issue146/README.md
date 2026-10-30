@@ -11,7 +11,9 @@ accessibility text sizes, as a follow-up to #5 / PR #143 and PR #147.
   `app.karta.Karta`, seeds via `SIMCTL_CHILD_KARTA_SEED`
   (`cooking-t1-running`, `cooking-t1-paused`, `cooking-t1-done`,
   `cooking-clip`).
-- Tested commit: `6700cab` (screenshots) — unchanged by this docs-only PR.
+- Tested commit: `000bb0e` (branch head; the app code is unchanged by this
+  docs-only PR — the captures were taken on `6700cab`, which differs only
+  by this evidence).
 
 ## Content-size mapping and verification
 
