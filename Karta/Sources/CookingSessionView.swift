@@ -893,18 +893,19 @@ struct CookingSessionView: View {
                     Spacer()
                     timerRowButtons(timer)
                 }
-                .frame(height: KartaDesign.cooking.timerButton)
+                .frame(minHeight: KartaDesign.cooking.timerButton)
                 .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
                 .padding(.top, KartaDesign.cooking.timerRuleToRow)
                 .padding(.bottom, KartaDesign.cooking.timerBottomGap)
             }
-            .frame(height: KartaDesign.cooking.timerZoneHeight)
+            .frame(minHeight: KartaDesign.cooking.timerZoneHeight)
         }
     }
 
     /// The rule under the body: a 1 pt `line` 20 pt from the card sides in
-    /// every state, so the zone is `timerZoneHeight` everywhere and the card
-    /// never jumps. Running turns it into the 2 pt brand progress bar, paused
+    /// every state, so the zone sits at `timerZoneHeight` at default text
+    /// size and only grows when the text needs it. Running turns it into
+    /// the 2 pt brand progress bar, paused
     /// keeps the bar muted in `chipInk`, *Time's up* fills it — all drawn on
     /// top of the rule without adding to the layout height.
     private func timerRule(_ timer: CookingStepPresentation.Timer) -> some View {
@@ -1051,7 +1052,7 @@ struct CookingSessionView: View {
                     .font(KartaDesign.FontToken.cookTimerStopLabel())
                     .foregroundStyle(KartaDesign.ColorToken.card)
                     .padding(.horizontal, KartaDesign.cooking.timerStopPadX)
-                    .frame(height: KartaDesign.cooking.timerButton)
+                    .frame(minHeight: KartaDesign.cooking.timerButton)
                     .background {
                         Capsule()
                             .fill(KartaDesign.ColorToken.brandEdge)
