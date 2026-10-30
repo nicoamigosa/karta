@@ -17,6 +17,11 @@ targets:
         buildPhase: resources
       - path: Resources
         buildPhase: resources
+        excludes:
+          - clips
+      - path: Resources/clips
+        type: folder
+        buildPhase: resources
     info:
       path: Info.plist
       properties:
@@ -36,6 +41,17 @@ targets:
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_ENTITLEMENTS: Karta.entitlements
+    # Debug-only clip: EXCLUDED_SOURCE_FILE_NAMES does not reach inside
+    # folder references, so strip the debug file after the copy on Release
+    # (the rest of clips/ stays).
+    postBuildScripts:
+      - name: Strip debug clip on Release
+        shell: /bin/sh
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$CONFIGURATION" = "Release" ]; then
+            rm -f "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/clips/debug-clip.mp4"
+          fi
     dependencies:
       - package: KartaCore
         product: KartaCore

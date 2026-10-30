@@ -54,7 +54,7 @@ struct ClipPlaybackTests {
     ) async throws {
         let deadline = Date().addingTimeInterval(timeout)
         while controller.phase != expected {
-            #expect(Date() < deadline, "phase stayed \(controller.phase)")
+            try #require(Date() < deadline, "phase stayed \(controller.phase)")
             try await Task.sleep(for: .milliseconds(50))
         }
     }
@@ -62,9 +62,12 @@ struct ClipPlaybackTests {
     @Test("A bundled clip loads, plays muted and toggles pause/resume")
     @MainActor
     func bundledClipPlays() async throws {
+        // `clips/debug-clip.mp4` is a bundle subdirectory path: the asset
+        // only resolves because `Resources/clips` ships as a folder
+        // reference, the same layout real clips under `clips/` will use.
         let (clip, controller) = try clipPresentation(
             source: .local("clips/debug.mp4"),
-            manifest: MediaAssetManifest(["clips/debug.mp4": "debug-clip.mp4"])
+            manifest: MediaAssetManifest(["clips/debug.mp4": "clips/debug-clip.mp4"])
         )
         controller.play(clip: clip)
         try await waitForPhase(.playing, on: controller)
@@ -119,7 +122,7 @@ struct ClipPlaybackTests {
     func seekClamps() async throws {
         let (clip, controller) = try clipPresentation(
             source: .local("clips/debug.mp4"),
-            manifest: MediaAssetManifest(["clips/debug.mp4": "debug-clip.mp4"])
+            manifest: MediaAssetManifest(["clips/debug.mp4": "clips/debug-clip.mp4"])
         )
         controller.play(clip: clip)
         try await waitForPhase(.playing, on: controller)

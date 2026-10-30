@@ -353,11 +353,13 @@ enum DebugSeeds {
 
     /// The media manifest the shell loads, plus the debug clip's asset key
     /// when a clip seed asks for it. The bundled debug video resolves to
-    /// `Resources/clips/debug-clip.mp4` (copied flat to the bundle root).
+    /// `Resources/clips/debug-clip.mp4`, copied to `clips/` in the bundle
+    /// by the folder reference in `project.yml` (and stripped on Release)
+    /// — the same bundle subdirectory layout real clips will use.
     static func mediaManifest(loading seed: SeedResourceAdapter) throws -> MediaAssetManifest {
         var assets = try seed.loadMediaManifest().assets
         if ProcessInfo.processInfo.environment["KARTA_SEED"] == "cooking-clip" {
-            assets["clips/debug.mp4"] = "debug-clip.mp4"
+            assets["clips/debug.mp4"] = "clips/debug-clip.mp4"
         }
         return MediaAssetManifest(assets)
     }

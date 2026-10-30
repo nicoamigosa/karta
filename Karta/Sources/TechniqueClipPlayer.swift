@@ -217,7 +217,7 @@ final class ClipPlaybackController {
         case let .remote(url):
             return url
         case let .bundle(resource):
-            let name = (resource as NSString).deletingPathExtension
+            let name = ((resource as NSString).lastPathComponent as NSString).deletingPathExtension
             let ext = (resource as NSString).pathExtension
             let directory = (resource as NSString).deletingLastPathComponent
             guard let url = bundle.url(
