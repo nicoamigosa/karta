@@ -36,7 +36,9 @@ enum DebugSeeds {
              "cooking-last", "cooking-answered", "cooking-timer-running",
              "cooking-timer-paused",
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
-             "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins":
+             "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins",
+             "cooking-t1-running", "cooking-t1-paused",
+             "cooking-t1-done", "cooking-alarms-off":
             seedCooking(name, into: store)
         default:
             break
@@ -102,7 +104,8 @@ enum DebugSeeds {
         let target: Int
         switch name {
         case "cooking-timer", "cooking-timer-running", "cooking-timer-paused",
-             "cooking-timer-done": target = 1
+             "cooking-timer-done", "cooking-t1-running", "cooking-t1-paused",
+             "cooking-t1-done", "cooking-alarms-off": target = 1
         case "cooking-timer-twins", "cooking-overflow-twins": target = 1
         case "cooking-step": target = 2
         case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk",
@@ -139,6 +142,23 @@ enum DebugSeeds {
             // its segment shows the "Time's up" pill.
             store.send(.startTimer(now: Date().timeIntervalSince1970 - 800))
             store.send(.nextStep(now: Date().timeIntervalSince1970))
+        }
+        if name == "cooking-t1-running" {
+            store.send(.startTimer(now: Date().timeIntervalSince1970))
+        }
+        if name == "cooking-t1-paused" {
+            let now = Date().timeIntervalSince1970
+            store.send(.startTimer(now: now))
+            store.send(.pauseTimer(now: now + 225))
+        }
+        if name == "cooking-t1-done" {
+            store.send(.startTimer(now: Date().timeIntervalSince1970 - 800))
+        }
+        if name == "cooking-alarms-off" {
+            // The first start was denied: the store shows the one-time
+            // "Alarms are off" sheet while the Temporizador still runs.
+            store.send(.startTimer(now: Date().timeIntervalSince1970))
+            store.send(.alarmPermissionDenied)
         }
     }
 
@@ -274,7 +294,9 @@ enum DebugSeeds {
              "cooking-last", "cooking-answered", "cooking-timer-running",
              "cooking-timer-paused",
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
-             "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins":
+             "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins",
+             "cooking-t1-running", "cooking-t1-paused",
+             "cooking-t1-done", "cooking-alarms-off":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])

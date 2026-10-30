@@ -1,3 +1,4 @@
+import AudioToolbox
 import SwiftUI
 import UIKit
 import KartaCore
@@ -39,6 +40,13 @@ struct CookingSessionView: View {
     @State private var rowBottoms: [Int: CGFloat] = [:]
     /// Bumped when a card settles so the scroll indicator flashes.
     @State private var indicatorFlash = 0
+    /// The one-second clock that refreshes the countdown presentations
+    /// (`remainingLabel` is projected from `now`); bumped by the tick task.
+    @State private var tick = Date()
+    /// Which Temporizador indexes already played *Time's up* in this run.
+    @State private var fireDetector = TimerFireDetector()
+    /// The AlarmKit mirror, created once the view exists.
+    @State private var alarmController: CookingAlarmController?
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)
@@ -83,22 +91,60 @@ struct CookingSessionView: View {
         .foregroundStyle(KartaDesign.ColorToken.ink)
         .contentShape(Rectangle())
         .gesture(dragGesture)
-        .confirmationDialog(
-            leaveTitle,
-            isPresented: $confirmLeave,
-            titleVisibility: .visible
-        ) {
-            Button("Leave", role: .destructive) {
-                store.send(.exitCooking)
+        .overlay {
+            if confirmLeave {
+                CookingSheet(
+                    title: "Leave cooking?",
+                    bodyText: "You're on step \(session.currentIndex + 1) of \(session.steps.count).",
+                    primaryLabel: "Keep cooking",
+                    secondaryLabel: "Leave",
+                    onPrimary: {
+                        withAnimation { confirmLeave = false }
+                    },
+                    onSecondary: {
+                        withAnimation { confirmLeave = false }
+                        store.send(.exitCooking)
+                        // `timerAlarms` is empty now: cancel every alarm
+                        // before the card transition unmounts the view.
+                        alarmController?.reconcile()
+                    },
+                    onDismiss: {
+                        withAnimation { confirmLeave = false }
+                    }
+                )
             }
-            Button("Keep cooking", role: .cancel) {}
+            if store.state.showsAlarmPermissionSheet {
+                CookingSheet(
+                    title: "Alarms are off",
+                    bodyText: "The timer runs, but it can only ring while Karta is open. To hear it with the phone locked, allow alarms in Settings.",
+                    primaryLabel: "OK",
+                    secondaryLabel: "Open Settings",
+                    onPrimary: {
+                        store.send(.dismissAlarmPermissionSheet)
+                    },
+                    onSecondary: {
+                        store.send(.dismissAlarmPermissionSheet)
+                        UIApplication.shared.open(URL(
+                            string: UIApplication.openSettingsURLString
+                        )!)
+                    }
+                )
+            }
         }
+        .animation(.easeOut(duration: 0.25), value: confirmLeave)
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             indicatorFlash += 1
+            let controller = alarmController ?? CookingAlarmController(store: store)
+            alarmController = controller
+            controller.start()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            // Covers every exit path (Leave, Finish, back): with the
+            // session gone `timerAlarms` is empty and reconcile cancels
+            // whatever AlarmKit still holds.
+            alarmController?.reconcile()
         }
         .onChange(of: session.currentIndex) { _, _ in
             resetMeasuredBody()
@@ -114,6 +160,30 @@ struct CookingSessionView: View {
             )
             swipeHintVisible = false
         }
+        .task {
+            // The presentation's countdown labels are projected from `now`:
+            // refresh once per second while the session lives, play the
+            // *Time's up* haptic and sound on each crossing and keep the
+            // AlarmKit mirror reconciled (ADR 0014).
+            while !Task.isCancelled {
+                try? await Task.sleep(
+                    for: .seconds(KartaDesign.cooking.timerTickSeconds)
+                )
+                guard !Task.isCancelled else { return }
+                tick = Date()
+                let timers = store.session?.timers ?? [:]
+                for _ in fireDetector.poll(timers: timers, now: now) {
+                    timerFeedback()
+                }
+                alarmController?.reconcile()
+            }
+        }
+    }
+
+    /// One *Time's up* in the app: warning haptic plus a system sound.
+    private func timerFeedback() {
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        AudioServicesPlayAlertSound(SystemSoundID(1005))
     }
 
     /// The geometry probes of the outgoing card do not carry over: the row
@@ -133,11 +203,7 @@ struct CookingSessionView: View {
         session.isOnFinish ? -1 : session.currentIndex
     }
 
-    /// The signed-off text of the leave sheet (no board yet; the title carries
-    /// the step position, e.g. "Leave cooking? You're on step 3 of 4.").
-    private var leaveTitle: String {
-        "Leave cooking? You're on step \(session.currentIndex + 1) of \(session.steps.count)."
-    }
+
 
     // MARK: - The card
 
@@ -288,10 +354,8 @@ struct CookingSessionView: View {
 
                 Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
 
-                if bottomZoneScrolls, presentation.timerLabel != nil {
+                if bottomZoneScrolls, presentation.timer != nil {
                     timerBlock(presentation)
-                        .padding(.horizontal, KartaDesign.cooking.cardInset)
-                        .padding(.bottom, KartaDesign.cooking.timerBottomGap)
                         .onGeometryChange(
                             for: CGFloat.self,
                             of: { $0.size.height }
@@ -305,10 +369,8 @@ struct CookingSessionView: View {
                     .id(ScrollBodyAnchor.end)
             }
         } bottomZone: {
-            if !bottomZoneScrolls, presentation.timerLabel != nil {
+            if !bottomZoneScrolls {
                 timerBlock(presentation)
-                    .padding(.horizontal, KartaDesign.cooking.cardInset)
-                    .padding(.bottom, KartaDesign.cooking.timerBottomGap)
             }
         }
         .overlay(alignment: .bottom) {
@@ -817,32 +879,130 @@ struct CookingSessionView: View {
 
     // MARK: - Bottom zone (pinned up to xxxL)
 
-    /// The ready-state Temporizador block: declared duration, TIMER label and
-    /// the brand play circle. Starting and running timers are issue #5; the
-    /// play affordance is drawn but inert in this slice.
+    /// The T1 · Line Temporizador zone: a rule edge to edge, the 44 pt row
+    /// and the bottom gap — 71 pt in every state. It only mirrors
+    /// `presentation.timer`: the store's actions do all the work.
+    @ViewBuilder
     private func timerBlock(_ presentation: CookingStepPresentation) -> some View {
-        HStack {
-            HStack(alignment: .firstTextBaseline, spacing: KartaDesign.space.cardGap) {
-                Text(presentation.timerLabel ?? "")
-                    .font(KartaDesign.FontToken.cookTimer())
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .foregroundStyle(suit.chipInk)
-                Text("TIMER")
-                    .font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.heavy))
-                    .tracking(KartaDesign.cooking.timerLabelTracking)
-                    .foregroundStyle(suit.chipInk)
+        if let timer = presentation.timer {
+            VStack(spacing: 0) {
+                timerRule(timer)
+
+                HStack(spacing: KartaDesign.cooking.timerDigitLabelGap) {
+                    timerRowContent(timer)
+                    Spacer()
+                    timerRowButtons(timer)
+                }
+                .frame(minHeight: KartaDesign.cooking.timerButton)
+                .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
+                .padding(.top, KartaDesign.cooking.timerRuleToRow)
+                .padding(.bottom, KartaDesign.cooking.timerBottomGap)
             }
-            Spacer()
+            .frame(minHeight: KartaDesign.cooking.timerZoneHeight)
+        }
+    }
+
+    /// The rule under the body: a 1 pt `line` 20 pt from the card sides in
+    /// every state, so the zone sits at `timerZoneHeight` at default text
+    /// size and only grows when the text needs it. Running turns it into
+    /// the 2 pt brand progress bar, paused
+    /// keeps the bar muted in `chipInk`, *Time's up* fills it — all drawn on
+    /// top of the rule without adding to the layout height.
+    private func timerRule(_ timer: CookingStepPresentation.Timer) -> some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                KartaDesign.ColorToken.line
+                    .frame(height: KartaDesign.cooking.timerRuleHeight)
+                switch timer.state {
+                case .ready:
+                    EmptyView()
+                case let .running(_, fraction):
+                    timerProgressFill(
+                        fraction: fraction,
+                        width: geometry.size.width,
+                        fill: KartaDesign.ColorToken.brand
+                    )
+                case let .paused(_, fraction):
+                    timerProgressFill(
+                        fraction: fraction,
+                        width: geometry.size.width,
+                        fill: suit.chipInk.opacity(0.45)
+                    )
+                case .finished:
+                    KartaDesign.ColorToken.brand
+                        .frame(height: KartaDesign.cooking.timerProgressHeight)
+                }
+            }
+        }
+        .frame(height: KartaDesign.cooking.timerRuleHeight)
+        .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
+    }
+
+    /// `fractionElapsed` of the Temporizador, drawn over the `line` track.
+    private func timerProgressFill(fraction: Double, width: CGFloat, fill: Color) -> some View {
+        Rectangle()
+            .fill(fill)
+            .frame(
+                width: width * min(max(fraction, 0), 1),
+                height: KartaDesign.cooking.timerProgressHeight
+            )
+    }
+
+    /// Digits + status label (TIMER / LEFT / PAUSED) or the *Time's up*
+    /// readout, left-aligned in the row.
+    @ViewBuilder
+    private func timerRowContent(_ timer: CookingStepPresentation.Timer) -> some View {
+        switch timer.state {
+        case let .ready(label):
+            Text(label)
+                .font(KartaDesign.FontToken.cookTimerDigits())
+                .monospacedDigit()
+                .foregroundStyle(suit.chipInk)
+            Text("TIMER")
+                .font(KartaDesign.FontToken.cookTimerLabel())
+                .tracking(KartaDesign.cooking.timerLabelTracking)
+                .foregroundStyle(suit.chipInk)
+        case let .running(remaining, _):
+            Text(remaining)
+                .font(KartaDesign.FontToken.cookTimerDigits())
+                .monospacedDigit()
+                .foregroundStyle(suit.chipInk)
+            Text("LEFT")
+                .font(KartaDesign.FontToken.cookTimerLabel())
+                .tracking(KartaDesign.cooking.timerLabelTracking)
+                .foregroundStyle(suit.chipInk)
+        case let .paused(remaining, _):
+            Text(remaining)
+                .font(KartaDesign.FontToken.cookTimerDigits())
+                .monospacedDigit()
+                .foregroundStyle(suit.chipInk)
+            Text("PAUSED")
+                .font(KartaDesign.FontToken.cookTimerLabel())
+                .tracking(KartaDesign.cooking.timerLabelTracking)
+                .foregroundStyle(suit.chipInk)
+        case .finished:
+            Text("Time's up")
+                .font(KartaDesign.FontToken.cookTimerDone())
+                .foregroundStyle(KartaDesign.ColorToken.brand)
+        }
+    }
+
+    /// The row's controls: play starts, the tactile circle pauses, ↺ resets
+    /// a paused one, the brand circle resumes and the Stop pill clears a
+    /// finished one back to ready.
+    @ViewBuilder
+    private func timerRowButtons(_ timer: CookingStepPresentation.Timer) -> some View {
+        switch timer.state {
+        case .ready:
             Button {
-                // Starting a Temporizador is issue #5.
+                store.send(.startTimer(now: now))
             } label: {
                 Image(systemName: "play.fill")
                     .font(.system(size: 18))
                     .foregroundStyle(KartaDesign.ColorToken.card)
                     .frame(
-                        width: KartaDesign.cooking.timerPlay,
-                        height: KartaDesign.cooking.timerPlay
+                        width: KartaDesign.cooking.timerButton,
+                        height: KartaDesign.cooking.timerButton
                     )
                     .background {
                         Circle()
@@ -852,16 +1012,85 @@ struct CookingSessionView: View {
                     }
             }
             .accessibilityLabel("Start timer")
-        }
-        .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
-        .padding(.vertical, KartaDesign.cooking.timerPaddingY)
-        .background(
-            suit.chip,
-            in: RoundedRectangle(
-                cornerRadius: KartaDesign.cooking.timerRadius,
-                style: .continuous
+        case .running:
+            timerTactileButton(
+                icon: "pause.fill",
+                label: "Pause timer",
+                action: { store.send(.pauseTimer(now: now)) }
             )
-        )
+        case .paused:
+            HStack(spacing: KartaDesign.cooking.timerButtonGap) {
+                timerTactileButton(
+                    icon: "arrow.counterclockwise",
+                    label: "Reset timer",
+                    action: { store.send(.resetTimer) }
+                )
+                Button {
+                    store.send(.resumeTimer(now: now))
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(KartaDesign.ColorToken.card)
+                        .frame(
+                            width: KartaDesign.cooking.timerButton,
+                            height: KartaDesign.cooking.timerButton
+                        )
+                        .background {
+                            Circle()
+                                .fill(KartaDesign.ColorToken.brandEdge)
+                                .offset(y: KartaDesign.space.ctaEdge)
+                            Circle().fill(KartaDesign.ColorToken.brand)
+                        }
+                }
+                .accessibilityLabel("Resume timer")
+            }
+        case .finished:
+            Button {
+                store.send(.stopTimer(now: now))
+            } label: {
+                Text("Stop")
+                    .font(KartaDesign.FontToken.cookTimerStopLabel())
+                    .foregroundStyle(KartaDesign.ColorToken.card)
+                    .padding(.horizontal, KartaDesign.cooking.timerStopPadX)
+                    .frame(minHeight: KartaDesign.cooking.timerButton)
+                    .background {
+                        Capsule()
+                            .fill(KartaDesign.ColorToken.brandEdge)
+                            .offset(y: KartaDesign.space.ctaEdge)
+                        Capsule().fill(KartaDesign.ColorToken.brand)
+                    }
+            }
+            .accessibilityLabel("Stop timer")
+        }
+    }
+
+    /// The tactile card circle of the pause and reset buttons: `card` fill,
+    /// 1 pt `line`, the `buttonEdge` under-edge and a `chipInk` glyph.
+    private func timerTactileButton(
+        icon: String,
+        label: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(suit.chipInk)
+                .frame(
+                    width: KartaDesign.cooking.timerButton,
+                    height: KartaDesign.cooking.timerButton
+                )
+                .background {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.buttonEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Circle().fill(KartaDesign.ColorToken.card)
+                    Circle().strokeBorder(
+                        KartaDesign.ColorToken.line,
+                        lineWidth: KartaDesign.elevation.backFrameLineWidth
+                    )
+                }
+        }
+        .accessibilityLabel(label)
     }
 
     /// The 1 pt separator between the card body and the pinned bottom zone;
