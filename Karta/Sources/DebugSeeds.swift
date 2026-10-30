@@ -39,7 +39,8 @@ enum DebugSeeds {
              "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins",
              "cooking-t1-running", "cooking-t1-paused",
              "cooking-t1-done", "cooking-alarms-off",
-             "cooking-clip", "cooking-clip-unavailable":
+             "cooking-clip", "cooking-clip-unavailable",
+             "cooking-short-photo":
             seedCooking(name, into: store)
         default:
             break
@@ -93,6 +94,9 @@ enum DebugSeeds {
             recipe = Self.timerTwinsRecipe
         } else if name == "cooking-overflow-twins" {
             recipe = Self.overflowTwinsRecipe
+        } else if name == "cooking-short-photo" {
+            recipe = try? SeedResourceAdapter().loadRecipes()
+                .first(where: { $0.id == "baked-salmon-with-lemon" })
         } else {
             recipe = try? SeedResourceAdapter().loadRecipes()
                 .first(where: { $0.id == "spanish-tortilla" })
@@ -298,7 +302,8 @@ enum DebugSeeds {
              "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins",
              "cooking-t1-running", "cooking-t1-paused",
              "cooking-t1-done", "cooking-alarms-off",
-             "cooking-clip", "cooking-clip-unavailable":
+             "cooking-clip", "cooking-clip-unavailable",
+             "cooking-short-photo":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])

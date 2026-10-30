@@ -34,6 +34,9 @@ struct CookingSessionView: View {
     @State private var leadingHeight: CGFloat = 0
     @State private var rowsHeight: CGFloat = 0
     @State private var scrolledBottomHeight: CGFloat = 0
+    /// Height of the chip text under the media window (text + the 8 pt
+    /// gap); 0 below AX3, where the chip stays inside the window.
+    @State private var chipUnderHeight: CGFloat = 0
     /// Live scroll metrics for the signalled scroll (fade, chip, at-end).
     @State private var scrollGeometry: ScrollGeometry?
     /// Bottom edge of every FOR THIS STEP row, in scroll-body coordinates.
@@ -81,6 +84,15 @@ struct CookingSessionView: View {
     /// and the finish card's buttons move to the end of the scroll.
     private var bottomZoneScrolls: Bool {
         dynamicTypeSize.isAccessibilitySize
+    }
+
+    /// From AX3 to AX5 (signed off #149) the Temporizador label sits under
+    /// the time, the window's chip text sits under the window and the
+    /// signal chip reads the short labels. AX2 stays as AX1.
+    private var largeAccessibilitySize: Bool {
+        dynamicTypeSize == .accessibility3
+            || dynamicTypeSize == .accessibility4
+            || dynamicTypeSize == .accessibility5
     }
 
     private var presentation: CookingStepPresentation? {
@@ -230,6 +242,7 @@ struct CookingSessionView: View {
         scrolledBottomHeight = 0
         leadingHeight = 0
         rowsHeight = 0
+        chipUnderHeight = 0
     }
 
     /// One identity per position — every Paso and the Cierre — so the scroll
@@ -372,10 +385,29 @@ struct CookingSessionView: View {
 
                 // The media window gives way 220 → 160 after the free space
                 // has shrunk to its 20 pt minimum, before the body scrolls.
-                mediaWindow(presentation)
-                    .frame(height: mediaHeight(extra: scrolledBottomHeight))
-                    .padding(.top, KartaDesign.cooking.sectionGap)
-                    .padding(.horizontal, KartaDesign.cooking.mediaInset)
+                VStack(alignment: .leading, spacing: 0) {
+                    mediaWindow(presentation)
+                        .frame(height: mediaHeight(extra: scrolledBottomHeight))
+                        .padding(.horizontal, KartaDesign.cooking.mediaInset)
+
+                    if largeAccessibilitySize {
+                        // From AX3 the chip's text leaves the window and
+                        // sits 8 pt under it, on the 20 pt inner edge, with
+                        // no fill, wrapping as needed and never truncated.
+                        // Its height counts in the give-way order like any
+                        // other block before the free space.
+                        mediaChipText(presentation)
+                            .padding(.top, KartaDesign.cooking.mediaChipUnderGap)
+                            .padding(.horizontal, KartaDesign.cooking.cardInset)
+                            .onGeometryChange(
+                                for: CGFloat.self,
+                                of: { $0.size.height }
+                            ) { _, newHeight in
+                                chipUnderHeight = newHeight
+                            }
+                    }
+                }
+                .padding(.top, KartaDesign.cooking.sectionGap)
 
                 ingredientsSection(presentation)
                     .padding(.top, KartaDesign.cooking.sectionGap)
@@ -423,6 +455,7 @@ struct CookingSessionView: View {
             + KartaDesign.cooking.sectionGap * 2
             + rowsHeight
             + KartaDesign.cooking.freeSpaceMin
+            + chipUnderHeight
             + extra
         return min(
             KartaDesign.cooking.mediaHeight,
@@ -816,34 +849,49 @@ struct CookingSessionView: View {
             style: .continuous
         ))
         .overlay(alignment: .bottomLeading) {
-            mediaChip(presentation)
-                .padding(KartaDesign.cooking.mediaChipInset)
+            if !largeAccessibilitySize {
+                mediaChip(presentation)
+                    .padding(KartaDesign.cooking.mediaChipInset)
+            }
         }
     }
 
     /// The bottom-left chip of the media window: the Foto's cue, the clip's
     /// name and length, or *Clip unavailable* after a warning glyph when the
-    /// clip failed to load (no retry — clips are bundled).
+    /// clip failed to load (no retry — clips are bundled). Up to AX2 it is a
+    /// `card` chip inside the window.
     private func mediaChip(_ presentation: CookingStepPresentation) -> some View {
+        mediaChipText(presentation, breaks: false)
+            .padding(.vertical, KartaDesign.space.stepCueY + 2)
+            .padding(.horizontal, KartaDesign.space.rankGap * 2 + 4)
+            .background(
+                KartaDesign.ColorToken.card,
+                in: RoundedRectangle(
+                    cornerRadius: KartaDesign.cooking.mediaChipRadius,
+                    style: .continuous
+                )
+            )
+    }
+
+    /// The chip's text: one line inside the window, wrapping on as many
+    /// lines as it needs under the window from AX3 (`breaks: true`). The
+    /// clip's length never goes to a line alone without its dot, so
+    /// `· 6 s` is one unbreakable tail.
+    private func mediaChipText(
+        _ presentation: CookingStepPresentation,
+        breaks: Bool = true
+    ) -> some View {
         HStack(spacing: KartaDesign.space.rankGap) {
             if clipController.phase == .failed {
                 Image(systemName: "exclamationmark.circle")
                     .font(.system(size: 11, weight: .bold))
             }
-            Text(mediaChipLabel(presentation))
-                .lineLimit(1)
+            Text(mediaChipLabel(presentation, unbreakableTail: breaks))
+                .lineLimit(breaks ? nil : 1)
+                .fixedSize(horizontal: false, vertical: breaks)
         }
         .font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.heavy))
         .foregroundStyle(suit.chipInk)
-        .padding(.vertical, KartaDesign.space.stepCueY + 2)
-        .padding(.horizontal, KartaDesign.space.rankGap * 2 + 4)
-        .background(
-            KartaDesign.ColorToken.card,
-            in: RoundedRectangle(
-                cornerRadius: KartaDesign.cooking.mediaChipRadius,
-                style: .continuous
-            )
-        )
         .accessibilityElement(children: .combine)
     }
 
@@ -969,12 +1017,19 @@ struct CookingSessionView: View {
         .allowsHitTesting(false)
     }
 
-    private func mediaChipLabel(_ presentation: CookingStepPresentation) -> String {
+    private func mediaChipLabel(
+        _ presentation: CookingStepPresentation,
+        unbreakableTail: Bool
+    ) -> String {
         if clipController.phase == .failed {
             return "Clip unavailable"
         }
         if let clip = presentation.clip {
-            return "\(clip.name) · \(clip.lengthLabel)"
+            // From AX3 the text wraps under the window: bind `· 6 s` with
+            // non-breaking spaces so the length never goes to a line on its
+            // own without its dot.
+            let tail = unbreakableTail ? "\u{00A0}" : " "
+            return "\(clip.name) ·\(tail)\(clip.lengthLabel.replacingOccurrences(of: " ", with: tail))"
         }
         return "When it looks like this, move on"
     }
@@ -1106,42 +1161,60 @@ struct CookingSessionView: View {
     }
 
     /// Digits + status label (TIMER / LEFT / PAUSED) or the *Time's up*
-    /// readout, left-aligned in the row.
+    /// readout, left-aligned in the row. From AX3 the label goes under the
+    /// time, 2 pt below it and left-aligned, so the same two-line block
+    /// serves ready, running and paused and the time never moves between
+    /// states. No word and no time is ever broken in the middle.
     @ViewBuilder
     private func timerRowContent(_ timer: CookingStepPresentation.Timer) -> some View {
         switch timer.state {
         case let .ready(label):
-            Text(label)
-                .font(KartaDesign.FontToken.cookTimerDigits())
-                .monospacedDigit()
-                .foregroundStyle(suit.chipInk)
-            Text("TIMER")
-                .font(KartaDesign.FontToken.cookTimerLabel())
-                .tracking(KartaDesign.cooking.timerLabelTracking)
-                .foregroundStyle(suit.chipInk)
+            timerDigitsAndLabel(time: label, label: "TIMER")
         case let .running(remaining, _):
-            Text(remaining)
-                .font(KartaDesign.FontToken.cookTimerDigits())
-                .monospacedDigit()
-                .foregroundStyle(suit.chipInk)
-            Text("LEFT")
-                .font(KartaDesign.FontToken.cookTimerLabel())
-                .tracking(KartaDesign.cooking.timerLabelTracking)
-                .foregroundStyle(suit.chipInk)
+            timerDigitsAndLabel(time: remaining, label: "LEFT")
         case let .paused(remaining, _):
-            Text(remaining)
-                .font(KartaDesign.FontToken.cookTimerDigits())
-                .monospacedDigit()
-                .foregroundStyle(suit.chipInk)
-            Text("PAUSED")
-                .font(KartaDesign.FontToken.cookTimerLabel())
-                .tracking(KartaDesign.cooking.timerLabelTracking)
-                .foregroundStyle(suit.chipInk)
+            timerDigitsAndLabel(time: remaining, label: "PAUSED")
         case .finished:
+            // *Time's up* keeps its one row and may wrap only between its
+            // two words; the Stop pill on the right grows with its label.
             Text("Time's up")
                 .font(KartaDesign.FontToken.cookTimerDone())
                 .foregroundStyle(KartaDesign.ColorToken.brand)
+                .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// The time over its status label: side by side up to AX2, stacked from
+    /// AX3. Neither the digits nor the label can break in the middle.
+    @ViewBuilder
+    private func timerDigitsAndLabel(time: String, label: String) -> some View {
+        if largeAccessibilitySize {
+            VStack(alignment: .leading, spacing: KartaDesign.cooking.timerTimeLabelGap) {
+                timerDigits(time)
+                timerStatusLabel(label)
+            }
+        } else {
+            timerDigits(time)
+            timerStatusLabel(label)
+        }
+    }
+
+    private func timerDigits(_ time: String) -> some View {
+        Text(time)
+            .font(KartaDesign.FontToken.cookTimerDigits())
+            .monospacedDigit()
+            .foregroundStyle(suit.chipInk)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private func timerStatusLabel(_ label: String) -> some View {
+        Text(label)
+            .font(KartaDesign.FontToken.cookTimerLabel())
+            .tracking(KartaDesign.cooking.timerLabelTracking)
+            .foregroundStyle(suit.chipInk)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
     }
 
     /// The row's controls: play starts, the tactile circle pauses, ↺ resets
@@ -1301,9 +1374,15 @@ struct CookingSessionView: View {
     /// never changes Paso.
     private func signalChip(proxy: ScrollViewProxy) -> some View {
         let hidden = hiddenRows.count
-        let label = hidden == 0
-            ? "More below"
-            : "\(hidden) more ingredient\(hidden == 1 ? "" : "s")"
+        // From AX3 the chip reads the short labels: *N more* / *More*.
+        let label: String
+        if largeAccessibilitySize {
+            label = hidden == 0 ? "More" : "\(hidden) more"
+        } else {
+            label = hidden == 0
+                ? "More below"
+                : "\(hidden) more ingredient\(hidden == 1 ? "" : "s")"
+        }
         return Button {
             withAnimation {
                 if let next = hiddenRows.nextIndex {
