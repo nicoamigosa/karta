@@ -399,6 +399,31 @@ struct CookingAlarmPlanTests {
         #expect(classified.expected[a] == nil)
     }
 
+    @Test("A press first seen by a poll is sent once — the later update does not resend it")
+    func systemClassifyPollFirst() {
+        let a = UUID()
+        let ids = [(id: a, stepIndex: 0)]
+
+        // A Lock Screen pause read first by an `AlarmManager.alarms` poll
+        // (no echo registered) is a press: it must reach the store exactly
+        // as an `alarmUpdates` transition would.
+        var classified = CookingAlarmPlan.classify(
+            expected: [:],
+            old: [a: .countdown], new: [a: .paused], ids: ids
+        )
+        #expect(classified.sends == [
+            .init(id: a, effect: .pause, stepIndex: 0)
+        ])
+
+        // The `alarmUpdates` that lands after — same state on both sides
+        // now — must not send the same press again.
+        classified = CookingAlarmPlan.classify(
+            expected: classified.expected,
+            old: [a: .paused], new: [a: .paused], ids: ids
+        )
+        #expect(classified.sends.isEmpty)
+    }
+
     @Test("Every session alarm resolves back to its own Paso, wherever the cook is")
     func systemPressStepIndex() {
         // A press on another Paso's alarm reaches that Paso, not the one on

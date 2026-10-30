@@ -74,7 +74,11 @@ final class CookingAlarmController {
 
     /// Reconcile the store's `timerAlarms` into AlarmKit. Called on every
     /// store-driven timer change, on the one-second tick and on appear.
+    /// Reads AlarmKit first — through `classify`, like every other read —
+    /// so a Lock Screen press lands in the store before the diff can
+    /// revert it.
     func reconcile() {
+        refreshObserved()
         guard pendingSystemSends == 0 else { return }
         let now = Date().timeIntervalSince1970
         let desired = store.state.timerAlarms(now: now).map {
@@ -114,20 +118,26 @@ final class CookingAlarmController {
         }
     }
 
-    /// Reflect AlarmKit-side transitions into the same store actions the
-    /// view would send — for every Paso of the session, including from the
-    /// Cierre: each alarm maps back to its own `stepIndex` (the ids are
-    /// deterministic) and the press goes to the Paso-indexed
-    /// `.pauseTimer/.resumeTimer/.stopTimer(stepIndex:now:)`.
+    /// Reflect an `alarmUpdates` event into the store — the same ingest
+    /// every read of AlarmKit's state goes through.
     private func applySystemUpdate(_ alarms: [Alarm]) {
-        let now = Date().timeIntervalSince1970
-        let current = Dictionary(uniqueKeysWithValues: alarms.map { ($0.id, $0.state) })
-        defer {
-            observed = current
-            if pendingSystemSends == 0 {
-                reconcile()
-            }
+        ingest(Dictionary(uniqueKeysWithValues: alarms.map { ($0.id, $0.state) }))
+        if pendingSystemSends == 0 {
+            reconcile()
         }
+    }
+
+    /// The only way AlarmKit state enters `observed`: every snapshot — an
+    /// `alarmUpdates` event or a poll of `AlarmManager.alarms` — goes
+    /// through `classify`, so own-op echoes are consumed and anything else
+    /// is a press sent to its own Paso (`stepIndex`) on the Paso-indexed
+    /// `.pauseTimer/.resumeTimer/.stopTimer(stepIndex:now:)`, from wherever
+    /// the cook is, including the Cierre. Nothing bypasses this: a press
+    /// first seen by a poll must reach the store exactly as one first seen
+    /// by `alarmUpdates` does.
+    private func ingest(_ current: [UUID: Alarm.State]) {
+        let now = Date().timeIntervalSince1970
+        defer { observed = current }
         guard let session = store.session, !session.isExited else { return }
         let ids = session.steps.indices.map {
             (id: CookingAlarmID.id(recipeID: session.recipeID, stepIndex: $0), stepIndex: $0)
@@ -328,10 +338,12 @@ final class CookingAlarmController {
     }
 
     /// `AlarmManager.alarms` is the observed truth between update events.
+    /// A poll goes through `ingest` like an `alarmUpdates` event: a Lock
+    /// Screen press must reach the store no matter which read saw it first.
     private func refreshObserved() {
-        observed = Dictionary(
+        ingest(Dictionary(
             uniqueKeysWithValues: (try? AlarmManager.shared.alarms)?.map { ($0.id, $0.state) } ?? []
-        )
+        ))
     }
 }
 
