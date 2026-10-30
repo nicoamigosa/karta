@@ -190,3 +190,101 @@ struct CookingSessionTests {
         #expect(CookingRoute.recipe(for: other, in: recipes) == nil)
     }
 }
+
+@Suite("Timer fire detector")
+struct TimerFireDetectorTests {
+    @Test("A running timer crossing zero fires once; a paused one re-arms")
+    func fireOnce() {
+        var detector = TimerFireDetector()
+        var timers: [Int: StepTimer] = [
+            1: StepTimer(startedAt: 0, duration: 10)
+        ]
+
+        #expect(detector.poll(timers: timers, now: 5) == [])
+        #expect(detector.poll(timers: timers, now: 10) == [1])
+        #expect(detector.poll(timers: timers, now: 11) == [])
+
+        // Pausing before zero arms again when it resumes.
+        timers[1] = StepTimer(startedAt: 0, duration: 10, pausedRemaining: 4)
+        #expect(detector.poll(timers: timers, now: 12) == [])
+        // Resumed at 12 with 4 s left: startedAt shifts so it ends at 16.
+        timers[1] = StepTimer(startedAt: 6, duration: 10)
+        #expect(detector.poll(timers: timers, now: 15.5) == [])
+        #expect(detector.poll(timers: timers, now: 16) == [1])
+
+        // A timer that disappeared while armed can never fire again.
+        timers.removeAll()
+        #expect(detector.poll(timers: timers, now: 20) == [])
+        timers[1] = StepTimer(startedAt: 20, duration: 10)
+        #expect(detector.poll(timers: timers, now: 29) == [])
+    }
+}
+
+@Suite("Cooking alarm reconcile")
+struct CookingAlarmPlanTests {
+    private typealias Observed = CookingAlarmPlan.Observed
+    private typealias Op = CookingAlarmPlan.Op
+
+    private let idA = CookingAlarmID.id(recipeID: "r1", stepIndex: 0)
+    private let idB = CookingAlarmID.id(recipeID: "r1", stepIndex: 2)
+
+    @Test("Missing alarms schedule; extras are removed; transitions map")
+    func diff() {
+        // A running desired timer with no alarm schedules a countdown.
+        let ops = CookingAlarmPlan.diff(
+            desired: [(idA, .running(endsAt: 130))],
+            observed: [:],
+            now: 100
+        )
+        #expect(ops == [.schedule(id: idA, running: true, seconds: 30)])
+
+        // Paused desired schedules then the controller pauses it.
+        #expect(CookingAlarmPlan.diff(
+            desired: [(idA, .paused(remaining: 45))],
+            observed: [:],
+            now: 100
+        ) == [.schedule(id: idA, running: false, seconds: 45)])
+
+        // Paused observed + running desired → resume.
+        #expect(CookingAlarmPlan.diff(
+            desired: [(idA, .running(endsAt: 130))],
+            observed: [idA: .paused],
+            now: 100
+        ) == [.resume(id: idA)])
+
+        // Countdown observed + paused desired → pause.
+        #expect(CookingAlarmPlan.diff(
+            desired: [(idA, .paused(remaining: 45))],
+            observed: [idA: .countdown],
+            now: 100
+        ) == [.pause(id: idA)])
+
+        // A timer the store no longer reports is cancelled; an alerting one
+        // is stopped.
+        #expect(CookingAlarmPlan.diff(
+            desired: [],
+            observed: [idA: .countdown, idB: .alerting],
+            now: 100
+        ) == [.remove(id: idA, alerting: false), .remove(id: idB, alerting: true)])
+
+        // In agreement → no ops.
+        #expect(CookingAlarmPlan.diff(
+            desired: [
+                (idA, .running(endsAt: 130)),
+                (idB, .finished)
+            ],
+            observed: [idA: .countdown, idB: .alerting],
+            now: 100
+        ) == [])
+    }
+
+    @Test("Alarm ids are stable per recipe and Paso")
+    func stableIDs() {
+        #expect(CookingAlarmID.id(recipeID: "r1", stepIndex: 0)
+            == CookingAlarmID.id(recipeID: "r1", stepIndex: 0))
+        #expect(CookingAlarmID.id(recipeID: "r1", stepIndex: 0)
+            != CookingAlarmID.id(recipeID: "r1", stepIndex: 1))
+        #expect(CookingAlarmID.id(recipeID: "r1", stepIndex: 0)
+            != CookingAlarmID.id(recipeID: "r2", stepIndex: 0))
+    }
+}

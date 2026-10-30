@@ -71,3 +71,111 @@ enum CookingRoute {
         return recipes.first { $0.id == session.recipeID }
     }
 }
+
+/// The pure decision behind the in-app *Time's up* sound and haptics: which
+/// Temporizadores crossed zero since the last poll. A timer arms itself while
+/// it is running and unfired; a paused or stopped timer never fires — paused
+/// ones re-arm when they resume. The shell plays the feedback once per index
+/// in the returned list.
+struct TimerFireDetector {
+    private var armed: Set<Int> = []
+
+    mutating func poll(timers: [Int: StepTimer], now: TimeInterval) -> [Int] {
+        armed.formIntersection(timers.keys)
+        var fired: [Int] = []
+        for (index, timer) in timers.sorted(by: { $0.key < $1.key }) {
+            if timer.hasFired(at: now) {
+                if armed.contains(index) {
+                    fired.append(index)
+                    armed.remove(index)
+                }
+            } else if !timer.isPaused {
+                armed.insert(index)
+            }
+        }
+        return fired
+    }
+}
+
+/// The pure decision behind the AlarmKit mirror (ADR 0014): what the shell
+/// must change so the system's alarms reflect `KartaState.timerAlarms` — no
+/// more, no less. `Observed` is the shell's snapshot of `AlarmManager.alarms`
+/// for the ids it manages. The view never decides: it only mirrors.
+enum CookingAlarmPlan {
+    /// An AlarmKit state the shell observes, in its own words so the diff is
+    /// testable without importing AlarmKit.
+    enum Observed: Equatable {
+        case scheduled
+        case countdown
+        case paused
+        case alerting
+    }
+
+    /// One change, in execution order.
+    enum Op: Equatable {
+        /// Schedule a fresh countdown for the timer (running: seconds until
+        /// `endsAt`; paused: the frozen `remaining`, paused right after).
+        case schedule(id: UUID, running: Bool, seconds: TimeInterval)
+        case pause(id: UUID)
+        case resume(id: UUID)
+        /// Remove an alarm that no longer maps to a store timer (Stop,
+        /// reset, leaving): `stop` while alerting, `cancel` otherwise.
+        case remove(id: UUID, alerting: Bool)
+    }
+
+    /// Diff desired `TimerAlarm`s (already keyed by alarm id) against the
+    /// observed AlarmKit states.
+    static func diff(
+        desired: [(id: UUID, state: TimerAlarm.State)],
+        observed: [UUID: Observed],
+        now: TimeInterval
+    ) -> [Op] {
+        var ops: [Op] = []
+        let desiredIDs = Set(desired.map(\.id))
+
+        for entry in desired {
+            switch (entry.state, observed[entry.id]) {
+            case (.running(let endsAt), nil):
+                ops.append(.schedule(
+                    id: entry.id, running: true,
+                    seconds: max(endsAt - now, 0)
+                ))
+            case (.paused(let remaining), nil):
+                // There is no "schedule paused": the alarm starts counting
+                // down and is paused at once.
+                ops.append(.schedule(id: entry.id, running: false, seconds: remaining))
+            case (.running, .paused):
+                ops.append(.resume(id: entry.id))
+            case (.paused, .countdown), (.paused, .scheduled):
+                ops.append(.pause(id: entry.id))
+            case (.finished, .countdown), (.finished, .paused), (.finished, .scheduled):
+                // The store reached zero; the system's own fire time is the
+                // same end, so the alert arrives on its own.
+                break
+            case (.finished, nil):
+                // Nothing to schedule and nothing to cancel: *Time's up*
+                // stays until Stop in the app.
+                break
+            case (.running(let endsAt), .alerting):
+                // A fresh timer reusing the id while the old alert rings:
+                // silence it first, then schedule the new countdown.
+                ops.append(.remove(id: entry.id, alerting: true))
+                ops.append(.schedule(
+                    id: entry.id, running: true,
+                    seconds: max(endsAt - now, 0)
+                ))
+            default:
+                // Already in agreement (paused↔paused, running↔running,
+                // finished↔alerting, or a transient state the next pass
+                // settles).
+                break
+            }
+        }
+
+        for (id, state) in observed.sorted(by: { $0.key.uuidString < $1.key.uuidString })
+        where !desiredIDs.contains(id) {
+            ops.append(.remove(id: id, alerting: state == .alerting))
+        }
+        return ops
+    }
+}

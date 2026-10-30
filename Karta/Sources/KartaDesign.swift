@@ -173,6 +173,36 @@ enum KartaDesign {
             display(size: 36, relativeTo: .largeTitle, weight: 900)
         }
 
+        /// T1 Temporizador digits (Fraunces 900, 28 → `.title1`, tabular).
+        static func cookTimerDigits() -> Font {
+            display(size: 28, relativeTo: .title1, weight: 900)
+        }
+
+        /// T1 *Time's up* (Fraunces 900, 26 → `.title1`).
+        static func cookTimerDone() -> Font {
+            display(size: 26, relativeTo: .title1, weight: 900)
+        }
+
+        /// T1 status label — TIMER / LEFT / PAUSED (Figtree 800, 11 →
+        /// `.caption2`, tracking 1.2).
+        static func cookTimerLabel() -> Font {
+            .custom("Figtree", size: 11, relativeTo: .caption2)
+                .weight(.heavy)
+        }
+
+        /// The Stop pill label of a finished Temporizador (Figtree 800, 15 →
+        /// `.callout`, close to the sheet's button scale).
+        static func cookTimerStopLabel() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .callout)
+                .weight(.heavy)
+        }
+
+        /// Bottom-sheet title — Leave cooking?, Alarms are off (Resumen
+        /// style: Fraunces 700, 28 → `.title1`).
+        static func cookSheetTitle() -> Font {
+            display(size: 28, relativeTo: .title1, weight: 700)
+        }
+
         /// Cookbook grid card title (Fraunces 700, 17/20).
         static func gridTitle() -> Font {
             display(size: 17, relativeTo: .headline, weight: 700)
@@ -542,11 +572,19 @@ enum KartaDesign {
         static let ingredientRowGap: CGFloat = 5
         static let freeSpaceMin: CGFloat = 20
         static let timerTopGap: CGFloat = 14
-        /// Inner vertical padding of the Temporizador block: 52 + 2×10 = 72 pt.
-        static let timerPaddingY: CGFloat = 10
-        static let timerRadius: CGFloat = 18
-        static let timerPlay: CGFloat = 52
+        /// T1 · Line: the zone is 71 pt whatever the state — a 1 pt rule,
+        /// 12 pt, the 44 pt row and 14 pt to the card's bottom edge.
+        static let timerRuleHeight: CGFloat = 1
+        static let timerProgressHeight: CGFloat = 2
+        static let timerRuleToRow: CGFloat = 12
+        static let timerButton: CGFloat = 44
+        static let timerButtonGap: CGFloat = 8
+        static let timerDigitLabelGap: CGFloat = 8
+        static let timerZoneHeight: CGFloat = 71
         static let timerLabelTracking: CGFloat = 1.2
+        /// The Stop pill of a finished Temporizador: 44 pt high, 20 pt side
+        /// padding, `brand` fill over the `brandEdge` edge.
+        static let timerStopPadX: CGFloat = 20
         /// Pinned bottom zone: 14 pt on top (under the hairline or the
         /// scroll edge), 20 pt at the sides, 20/14 pt at the bottom edge.
         static let bottomZoneTopGap: CGFloat = 14
@@ -584,6 +622,17 @@ enum KartaDesign {
         /// Horizontal flight of a Paso leaving the stack (deck curve, x axis).
         static let leavingTranslationScale: CGFloat = 1.15
         static let leavingRotation: Double = 9
+        /// Bottom sheets in the session (Leave cooking?, Alarms are off):
+        /// 20 pt side padding, buttons 56 pt, 16 pt above the bottom safe
+        /// area, and the gaps between title, body and buttons.
+        static let sheetTitleGap: CGFloat = 8
+        static let sheetBodyGap: CGFloat = 24
+        static let sheetButtonGap: CGFloat = 12
+        static let sheetButtonHeight: CGFloat = 56
+        static let sheetBottomGap: CGFloat = 16
+        /// The one-second tick that refreshes countdown presentations while
+        /// any Temporizador exists.
+        static let timerTickSeconds: TimeInterval = 1
     }
 
     enum elevation {
