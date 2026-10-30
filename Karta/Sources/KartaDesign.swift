@@ -571,6 +571,8 @@ enum KartaDesign {
         static let mediaMinHeight: CGFloat = 160
         static let mediaRadius: CGFloat = 18
         static let mediaChipInset: CGFloat = 10
+        /// From AX3 the window's chip text sits 8 pt under the window.
+        static let mediaChipUnderGap: CGFloat = 8
         static let mediaChipRadius: CGFloat = 8
         static let playCircle: CGFloat = 60
         /// The technique clip: spinner inside the play circle, 5 pt progress
@@ -602,6 +604,8 @@ enum KartaDesign {
         static let timerButton: CGFloat = 44
         static let timerButtonGap: CGFloat = 8
         static let timerDigitLabelGap: CGFloat = 8
+        /// From AX3 the status label sits 2 pt under the time.
+        static let timerTimeLabelGap: CGFloat = 2
         static let timerZoneHeight: CGFloat = 71
         static let timerLabelTracking: CGFloat = 1.2
         /// The Stop pill of a finished Temporizador: 44 pt high, 20 pt side
