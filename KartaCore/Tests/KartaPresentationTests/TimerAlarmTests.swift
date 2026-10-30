@@ -16,6 +16,83 @@ struct TimerAlarmTests {
         ], allergenReview: .reviewed([])
     )
 
+    @Test("An indexed pause from another Paso updates its pill, alarm and snapshot at the press time")
+    @MainActor
+    func indexedPause() throws {
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let clips = try TechniqueClipLibrary(clips: [])
+        store.send(.startCooking(recipe, startedAt: 100))
+        store.send(.startTimer(now: 100))
+        store.send(.nextStep(now: 200))
+        store.send(.startTimer(now: 200))
+        store.send(.nextStep(now: 210))
+        #expect(store.state.timerAlarms(now: 400).map(\.state) == [.running(endsAt: 700), .finished])
+
+        store.send(.pauseTimer(stepIndex: 1, now: 230))
+
+        #expect(store.session?.currentIndex == 2)
+        #expect(store.cookingStepPresentation(for: recipe, clips: clips, now: 400)?
+            .progress[1].timer == .paused(remainingLabel: "1:30"))
+        #expect(store.state.timerAlarms(now: 400).map(\.state) == [.running(endsAt: 700), .paused(remaining: 90)])
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 2), cookingSession: store.session
+        )
+        let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot?.cookingSession)
+        #expect(restored == store.session)
+        #expect(KartaState(session: restored, safetyProfile: SafetyProfile(intolerances: []))
+            .timerAlarms(now: 400) == store.state.timerAlarms(now: 400))
+    }
+
+    @Test("Indexed resume and Stop from Cierre update only the named alarm and survive restoration")
+    @MainActor
+    func indexedResumeAndStop() throws {
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        store.send(.startCooking(recipe, startedAt: 100))
+        store.send(.startTimer(now: 100))
+        store.send(.nextStep(now: 200))
+        store.send(.startTimer(now: 200))
+        store.send(.pauseTimer(now: 230))
+        store.send(.nextStep(now: 300))
+        store.send(.nextStep(now: 400))
+        store.send(.nextStep(now: 500))
+
+        store.send(.resumeTimer(stepIndex: 1, now: 1000))
+        #expect(store.session?.isOnFinish == true)
+        #expect(store.session?.currentIndex == 3)
+        #expect(store.cookingFinishPresentation(for: recipe, now: 1000)?
+            .progress[1].timer == .running(remainingLabel: "1:30"))
+        #expect(store.state.timerAlarms(now: 1000).map(\.state) == [.finished, .running(endsAt: 1090)])
+        try expectSnapshotRoundTrip(store, now: 1000)
+
+        store.send(.stopTimer(stepIndex: 1, now: 1090))
+        #expect(store.session?.isOnFinish == true)
+        #expect(store.session?.currentIndex == 3)
+        #expect(store.cookingFinishPresentation(for: recipe, now: 1090)?.progress[1].timer == nil)
+        #expect(store.state.timerAlarms(now: 1090).map(\.stepIndex) == [0])
+        #expect(store.state.timerAlarms(now: 1090).map(\.state) == [.finished])
+        #expect(store.session?.startedTimerSteps == [0, 1])
+        #expect(store.state.cookHistory.count == 1)
+        try expectSnapshotRoundTrip(store, now: 1090)
+
+        store.send(.previousStep)
+        store.send(.previousStep)
+        store.send(.previousStep)
+        let clips = try TechniqueClipLibrary(clips: [])
+        #expect(store.cookingStepPresentation(for: recipe, clips: clips, now: 1090)?
+            .timer?.state == .ready(label: "2:00"))
+    }
+
+    @MainActor
+    private func expectSnapshotRoundTrip(_ store: KartaStore, now: TimeInterval) throws {
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 2), cookingSession: store.session
+        )
+        let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot?.cookingSession)
+        #expect(restored == store.session)
+        #expect(KartaState(session: restored, safetyProfile: SafetyProfile(intolerances: []))
+            .timerAlarms(now: now) == store.state.timerAlarms(now: now))
+    }
+
     @Test("The alarm list includes every active Paso in order, even away from the current Paso")
     @MainActor
     func allTimerStates() throws {

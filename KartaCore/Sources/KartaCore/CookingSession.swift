@@ -365,9 +365,16 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Freeze only a running Temporizador on the current Paso.
     public mutating func pauseTimer(now: TimeInterval) {
-        guard !isExited, !isOnFinish, let timer = timers[currentIndex],
+        guard !isOnFinish else { return }
+        pauseTimer(stepIndex: currentIndex, now: now)
+    }
+
+    /// Freeze a running Temporizador on the named Paso, including from Cierre.
+    /// Uses the instant of the press, even if a later time was already observed.
+    public mutating func pauseTimer(stepIndex: Int, now: TimeInterval) {
+        guard !isExited, steps.indices.contains(stepIndex), let timer = timers[stepIndex],
               !timer.isPaused, !timer.hasFired(at: now) else { return }
-        timers[currentIndex] = StepTimer(
+        timers[stepIndex] = StepTimer(
             startedAt: timer.startedAt, duration: timer.duration,
             pausedRemaining: timer.remaining(at: now)
         )
@@ -375,9 +382,15 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Resume from the frozen time left, keeping the original duration for progress.
     public mutating func resumeTimer(now: TimeInterval) {
-        guard !isExited, !isOnFinish, let timer = timers[currentIndex],
+        guard !isOnFinish else { return }
+        resumeTimer(stepIndex: currentIndex, now: now)
+    }
+
+    /// Resume the named Paso's paused Temporizador without navigating to it.
+    public mutating func resumeTimer(stepIndex: Int, now: TimeInterval) {
+        guard !isExited, steps.indices.contains(stepIndex), let timer = timers[stepIndex],
               let remaining = timer.pausedRemaining else { return }
-        timers[currentIndex] = StepTimer(
+        timers[stepIndex] = StepTimer(
             startedAt: now - (timer.duration - remaining), duration: timer.duration
         )
     }
@@ -390,8 +403,15 @@ public struct CookingSession: Equatable, Sendable {
 
     /// Stop only a finished Temporizador. The shell supplies time, as for start/pause.
     public mutating func stopTimer(now: TimeInterval) {
-        guard !isExited, !isOnFinish, timers[currentIndex]?.hasFired(at: now) == true else { return }
-        timers.removeValue(forKey: currentIndex)
+        guard !isOnFinish else { return }
+        stopTimer(stepIndex: currentIndex, now: now)
+    }
+
+    /// Stop the named Paso's finished Temporizador, including from Cierre.
+    public mutating func stopTimer(stepIndex: Int, now: TimeInterval) {
+        guard !isExited, steps.indices.contains(stepIndex),
+              timers[stepIndex]?.hasFired(at: now) == true else { return }
+        timers.removeValue(forKey: stepIndex)
     }
 
     /// Seconds left on the current step's running timer at `now`, or `nil` if none.
