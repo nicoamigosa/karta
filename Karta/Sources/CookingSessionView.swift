@@ -34,6 +34,9 @@ struct CookingSessionView: View {
     @State private var leadingHeight: CGFloat = 0
     @State private var rowsHeight: CGFloat = 0
     @State private var scrolledBottomHeight: CGFloat = 0
+    /// Height of the chip text under the media window (text + the 8 pt
+    /// gap); 0 below AX3, where the chip stays inside the window.
+    @State private var chipUnderHeight: CGFloat = 0
     /// Live scroll metrics for the signalled scroll (fade, chip, at-end).
     @State private var scrollGeometry: ScrollGeometry?
     /// Bottom edge of every FOR THIS STEP row, in scroll-body coordinates.
@@ -239,6 +242,7 @@ struct CookingSessionView: View {
         scrolledBottomHeight = 0
         leadingHeight = 0
         rowsHeight = 0
+        chipUnderHeight = 0
     }
 
     /// One identity per position — every Paso and the Cierre — so the scroll
@@ -390,9 +394,17 @@ struct CookingSessionView: View {
                         // From AX3 the chip's text leaves the window and
                         // sits 8 pt under it, on the 20 pt inner edge, with
                         // no fill, wrapping as needed and never truncated.
+                        // Its height counts in the give-way order like any
+                        // other block before the free space.
                         mediaChipText(presentation)
                             .padding(.top, KartaDesign.cooking.mediaChipUnderGap)
                             .padding(.horizontal, KartaDesign.cooking.cardInset)
+                            .onGeometryChange(
+                                for: CGFloat.self,
+                                of: { $0.size.height }
+                            ) { _, newHeight in
+                                chipUnderHeight = newHeight
+                            }
                     }
                 }
                 .padding(.top, KartaDesign.cooking.sectionGap)
@@ -443,6 +455,7 @@ struct CookingSessionView: View {
             + KartaDesign.cooking.sectionGap * 2
             + rowsHeight
             + KartaDesign.cooking.freeSpaceMin
+            + chipUnderHeight
             + extra
         return min(
             KartaDesign.cooking.mediaHeight,

@@ -49,6 +49,12 @@ AX1, AX3 and AX5 captures.
   the chip's text *When it looks like this, move on* sits under the
   window on the 20 pt inner edge with no fill, wrapping; the signal chip
   reads `3 more`. Matches `cooking-ax-photo.png`.
+- `iphone17-ios27-ax3-short-photo.png` — the short photo Paso *Preheat
+  the oven* (seed `cooking-short-photo`): the window keeps its full
+  220 pt with the chip text under it and the card does not scroll — the
+  give-way order (free space to 20 pt, then the window 220 → 160, then
+  scroll) still holds now that the under-window chip's height counts in
+  `mediaHeight`'s `rest`.
 
 ### AX5 — `accessibility-extra-extra-extra-large`
 
