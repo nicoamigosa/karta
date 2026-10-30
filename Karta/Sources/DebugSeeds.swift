@@ -38,7 +38,8 @@ enum DebugSeeds {
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
              "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins",
              "cooking-t1-running", "cooking-t1-paused",
-             "cooking-t1-done", "cooking-alarms-off":
+             "cooking-t1-done", "cooking-alarms-off",
+             "cooking-clip", "cooking-clip-unavailable":
             seedCooking(name, into: store)
         default:
             break
@@ -109,7 +110,7 @@ enum DebugSeeds {
         case "cooking-timer-twins", "cooking-overflow-twins": target = 1
         case "cooking-step": target = 2
         case "cooking-last", "cooking-answered", "cooking-finish", "cooking-shrunk",
-             "cooking-scroll":
+             "cooking-scroll", "cooking-clip", "cooking-clip-unavailable":
             target = 3
         default: target = 0
         }
@@ -296,7 +297,8 @@ enum DebugSeeds {
              "cooking-timer-done", "cooking-finish", "cooking-shrunk",
              "cooking-scroll", "cooking-timer-twins", "cooking-overflow-twins",
              "cooking-t1-running", "cooking-t1-paused",
-             "cooking-t1-done", "cooking-alarms-off":
+             "cooking-t1-done", "cooking-alarms-off",
+             "cooking-clip", "cooking-clip-unavailable":
             return KartaState(
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
@@ -317,6 +319,56 @@ enum DebugSeeds {
         default:
             return []
         }
+    }
+
+    /// The clip library the shell loads (#12). The `cooking-clip` and
+    /// `cooking-clip-unavailable` seeds swap in a single debug clip under the
+    /// real "cuajar-tortilla" id — the stand-in title of the signed boards —
+    /// so the Spanish-tortilla Paso can be photographed in every clip state.
+    /// Debug content only: never part of the real catalog or seed data.
+    static func clipLibrary(loading seed: SeedResourceAdapter) throws -> TechniqueClipLibrary {
+        switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
+        case "cooking-clip":
+            return try TechniqueClipLibrary(clips: [
+                TechniqueClip(
+                    id: "cuajar-tortilla",
+                    title: "Flip the tortilla",
+                    seconds: 6,
+                    source: .local("clips/debug.mp4")
+                )
+            ])
+        case "cooking-clip-unavailable":
+            return try TechniqueClipLibrary(clips: [
+                TechniqueClip(
+                    id: "cuajar-tortilla",
+                    title: "Flip the tortilla",
+                    seconds: 6,
+                    source: .local("clips/debug-missing.mp4")
+                )
+            ])
+        default:
+            return try seed.loadTechniqueClips()
+        }
+    }
+
+    /// The media manifest the shell loads, plus the debug clip's asset key
+    /// when a clip seed asks for it. The bundled debug video resolves to
+    /// `Resources/clips/debug-clip.mp4` (copied flat to the bundle root).
+    static func mediaManifest(loading seed: SeedResourceAdapter) throws -> MediaAssetManifest {
+        var assets = try seed.loadMediaManifest().assets
+        if ProcessInfo.processInfo.environment["KARTA_SEED"] == "cooking-clip" {
+            assets["clips/debug.mp4"] = "debug-clip.mp4"
+        }
+        return MediaAssetManifest(assets)
+    }
+
+    /// Artificial clip load delay so the loading state (the play circle's
+    /// spinner, shown only after 0.3 s) can be photographed:
+    /// `KARTA_CLIP_LOAD_DELAY=5`.
+    static var clipLoadDelay: TimeInterval {
+        TimeInterval(
+            ProcessInfo.processInfo.environment["KARTA_CLIP_LOAD_DELAY"] ?? ""
+        ) ?? 0
     }
 
     /// Synthetic recipes a debug seed adds to the loaded catalog — never

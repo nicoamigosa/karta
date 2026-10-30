@@ -140,8 +140,8 @@ struct FeedScreen: View {
                 let seed = SeedResourceAdapter()
                 recipes = (try seed.loadRecipes() + DebugSeeds.extraRecipes())
                     .filter { !DebugSeeds.droppedRecipeIDs.contains($0.id) }
-                clips = try seed.loadTechniqueClips()
-                manifest = try seed.loadMediaManifest()
+                clips = try DebugSeeds.clipLibrary(loading: seed)
+                manifest = try DebugSeeds.mediaManifest(loading: seed)
                 isLoaded = true
             } catch {
                 loadError = error.localizedDescription

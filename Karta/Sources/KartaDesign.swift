@@ -49,6 +49,11 @@ enum KartaDesign {
         /// The filter tracks' inset background (`#EADDC7`, same as the
         /// cookbook switch's `creamLine`; `track` in tokens.json).
         static let track = Color(hex: 0xEADDC7)
+        /// Near-black ground behind the technique clip in full screen.
+        static let videoGround = Color(hex: 0x190D08)
+        /// The unloaded portion of the clip's progress line and scrubber.
+        static let videoTrack = Color.white.opacity(0.3)
+
         /// Scrim under the cookbook-full sheet.
         static let scrim = Color(
             red: 46 / 255,
@@ -568,6 +573,23 @@ enum KartaDesign {
         static let mediaChipInset: CGFloat = 10
         static let mediaChipRadius: CGFloat = 8
         static let playCircle: CGFloat = 60
+        /// The technique clip: spinner inside the play circle, 5 pt progress
+        /// line along the window's bottom edge, 36 pt expand button 10 pt
+        /// from the top right, and the full-screen chrome (44 pt collapse,
+        /// 64 pt play/pause, scrubber and 8/24 pt safe-area gaps).
+        static let clipSpinnerWidth: CGFloat = 3
+        static let clipProgressHeight: CGFloat = 5
+        static let clipExpandButton: CGFloat = 36
+        static let clipExpandInset: CGFloat = 10
+        static let clipCollapseButton: CGFloat = 44
+        static let clipFullScreenCircle: CGFloat = 64
+        static let clipChromeX: CGFloat = 16
+        static let clipChromeTopGap: CGFloat = 8
+        static let clipChromeBottomGap: CGFloat = 24
+        static let clipControlsGap: CGFloat = 18
+        static let clipTimeGap: CGFloat = 10
+        static let clipScrubberTrack: CGFloat = 4
+        static let clipScrubberKnob: CGFloat = 12
         static let sectionGap: CGFloat = 16
         static let ingredientRowGap: CGFloat = 5
         static let freeSpaceMin: CGFloat = 20
