@@ -47,6 +47,27 @@ struct CookingSessionView: View {
     @State private var fireDetector = TimerFireDetector()
     /// The AlarmKit mirror, created once the view exists.
     @State private var alarmController: CookingAlarmController?
+    /// The technique clip's playback: resolution, load and phases live in
+    /// `ClipPlaybackController` (shell), fed by `MediaLoadStateMachine` (#45).
+    @State private var clipController: ClipPlaybackController
+
+    init(
+        session: CookingSession,
+        recipe: Recipe,
+        clips: TechniqueClipLibrary,
+        manifest: MediaAssetManifest,
+        store: KartaStore
+    ) {
+        self.session = session
+        self.recipe = recipe
+        self.clips = clips
+        self.manifest = manifest
+        self.store = store
+        _clipController = State(initialValue: ClipPlaybackController(
+            resolver: MediaResolver(manifest: manifest, baseURL: nil),
+            loadDelay: DebugSeeds.clipLoadDelay
+        ))
+    }
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)
@@ -113,6 +134,16 @@ struct CookingSessionView: View {
                     }
                 )
             }
+            if clipController.isFullScreen,
+               let clip = presentation?.clip {
+                ClipFullScreenOverlay(
+                    controller: clipController,
+                    clipName: clip.name,
+                    pasoSummary: presentation?.summary ?? "",
+                    stepNumber: session.currentIndex + 1
+                )
+                .transition(.opacity)
+            }
             if store.state.showsAlarmPermissionSheet {
                 CookingSheet(
                     title: "Alarms are off",
@@ -145,14 +176,18 @@ struct CookingSessionView: View {
             // session gone `timerAlarms` is empty and reconcile cancels
             // whatever AlarmKit still holds.
             alarmController?.reconcile()
+            clipController.stop()
         }
         .onChange(of: session.currentIndex) { _, _ in
             resetMeasuredBody()
             indicatorFlash += 1
+            // Changing Paso stops the clip: the photo returns.
+            clipController.stop()
         }
         .onChange(of: session.isOnFinish) { _, _ in
             resetMeasuredBody()
             indicatorFlash += 1
+            clipController.stop()
         }
         .task {
             try? await Task.sleep(
@@ -759,7 +794,8 @@ struct CookingSessionView: View {
 
     /// The Foto del paso window. With a technique clip it keeps the photo but
     /// swaps the label chip for the clip's name and length and puts a play
-    /// circle in the centre; playback itself is issue #12.
+    /// circle in the centre; the clip's states (loading, playing, paused,
+    /// unavailable) are drawn on top per `ClipPlaybackController.phase`.
     private func mediaWindow(_ presentation: CookingStepPresentation) -> some View {
         ZStack {
             if let photo = presentation.photo {
@@ -770,26 +806,8 @@ struct CookingSessionView: View {
                 stepPhotoPlaceholder(showsLabel: presentation.clip == nil)
             }
 
-            if presentation.clip != nil {
-                Button {
-                    // Clip playback is issue #12: the affordance is drawn,
-                    // the player is not part of this slice.
-                } label: {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(KartaDesign.ColorToken.ink)
-                        .frame(
-                            width: KartaDesign.cooking.playCircle,
-                            height: KartaDesign.cooking.playCircle
-                        )
-                        .background {
-                            Circle()
-                                .fill(KartaDesign.ColorToken.buttonEdge)
-                                .offset(y: KartaDesign.space.reverseButtonEdge)
-                            Circle().fill(KartaDesign.ColorToken.card)
-                        }
-                }
-                .accessibilityLabel("Play technique clip")
+            if let clip = presentation.clip {
+                clipLayer(clip)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -798,24 +816,163 @@ struct CookingSessionView: View {
             style: .continuous
         ))
         .overlay(alignment: .bottomLeading) {
-            Text(mediaChipLabel(presentation))
-                .font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.heavy))
-                .foregroundStyle(suit.chipInk)
-                .lineLimit(1)
-                .padding(.vertical, KartaDesign.space.stepCueY + 2)
-                .padding(.horizontal, KartaDesign.space.rankGap * 2 + 4)
-                .background(
-                    KartaDesign.ColorToken.card,
-                    in: RoundedRectangle(
-                        cornerRadius: KartaDesign.cooking.mediaChipRadius,
-                        style: .continuous
-                    )
-                )
+            mediaChip(presentation)
                 .padding(KartaDesign.cooking.mediaChipInset)
         }
     }
 
+    /// The bottom-left chip of the media window: the Foto's cue, the clip's
+    /// name and length, or *Clip unavailable* after a warning glyph when the
+    /// clip failed to load (no retry — clips are bundled).
+    private func mediaChip(_ presentation: CookingStepPresentation) -> some View {
+        HStack(spacing: KartaDesign.space.rankGap) {
+            if clipController.phase == .failed {
+                Image(systemName: "exclamationmark.circle")
+                    .font(.system(size: 11, weight: .bold))
+            }
+            Text(mediaChipLabel(presentation))
+                .lineLimit(1)
+        }
+        .font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.heavy))
+        .foregroundStyle(suit.chipInk)
+        .padding(.vertical, KartaDesign.space.stepCueY + 2)
+        .padding(.horizontal, KartaDesign.space.rankGap * 2 + 4)
+        .background(
+            KartaDesign.ColorToken.card,
+            in: RoundedRectangle(
+                cornerRadius: KartaDesign.cooking.mediaChipRadius,
+                style: .continuous
+            )
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The clip surface inside the media window, per phase. From `loading`
+    /// on, the window keeps its taps: a tap on it toggles play/pause and
+    /// never reaches the card's Paso halves.
+    @ViewBuilder
+    private func clipLayer(_ clip: CookingStepPresentation.Clip) -> some View {
+        switch clipController.phase {
+        case .idle:
+            playCircle(glyph: "play.fill") {
+                clipController.play(clip: clip)
+            }
+            .accessibilityLabel("Play technique clip")
+        case .loading:
+            ZStack {
+                if clipController.showsSpinner {
+                    clipSpinner
+                } else {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 20))
+                }
+            }
+            .foregroundStyle(KartaDesign.ColorToken.ink)
+            .frame(
+                width: KartaDesign.cooking.playCircle,
+                height: KartaDesign.cooking.playCircle
+            )
+            .background {
+                Circle()
+                    .fill(KartaDesign.ColorToken.buttonEdge)
+                    .offset(y: KartaDesign.space.reverseButtonEdge)
+                Circle().fill(KartaDesign.ColorToken.card)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { clipController.windowTapped() }
+        case .playing, .paused:
+            if let player = clipController.player {
+                ZStack {
+                    ClipPlayerSurface(player: player)
+                    if clipController.phase == .paused {
+                        playCircle(glyph: "play.fill") {
+                            clipController.resume()
+                        }
+                        .accessibilityLabel("Resume technique clip")
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if clipController.phase == .paused {
+                        Button {
+                            clipController.expand()
+                        } label: {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(suit.chipInk)
+                                .frame(
+                                    width: KartaDesign.cooking.clipExpandButton,
+                                    height: KartaDesign.cooking.clipExpandButton
+                                )
+                                .background {
+                                    Circle()
+                                        .fill(KartaDesign.ColorToken.buttonEdge)
+                                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                                    Circle().fill(KartaDesign.ColorToken.card)
+                                }
+                        }
+                        .accessibilityLabel("Open technique clip full screen")
+                        .padding(KartaDesign.cooking.clipExpandInset)
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    clipProgressLine
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { clipController.windowTapped() }
+                .transition(.opacity)
+            }
+        case .failed:
+            // The photo stays, the chip reads *Clip unavailable*, the play
+            // circle goes and there is no retry.
+            Color.clear
+        }
+    }
+
+    /// The 60 pt `card` circle with a play glyph (buttonEdge under-edge).
+    private func playCircle(glyph: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: glyph)
+                .font(.system(size: 20))
+                .foregroundStyle(KartaDesign.ColorToken.ink)
+                .frame(
+                    width: KartaDesign.cooking.playCircle,
+                    height: KartaDesign.cooking.playCircle
+                )
+                .background {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.buttonEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Circle().fill(KartaDesign.ColorToken.card)
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The loading indicator inside the play circle: suit `chip` track,
+    /// suit `chipInk` arc, spinning.
+    private var clipSpinner: some View {
+        ClipSpinnerArc(track: suit.chip, arc: suit.chipInk)
+            .padding(8)
+    }
+
+    /// The 5 pt progress line along the bottom edge of the window while the
+    /// clip plays or is paused: `card` over a `videoTrack` track.
+    private var clipProgressLine: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                KartaDesign.ColorToken.videoTrack
+                KartaDesign.ColorToken.card
+                    .frame(width: geometry.size.width * clipController.fraction)
+            }
+        }
+        .frame(height: KartaDesign.cooking.clipProgressHeight)
+        .allowsHitTesting(false)
+    }
+
     private func mediaChipLabel(_ presentation: CookingStepPresentation) -> String {
+        if clipController.phase == .failed {
+            return "Clip unavailable"
+        }
         if let clip = presentation.clip {
             return "\(clip.name) · \(clip.lengthLabel)"
         }
