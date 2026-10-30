@@ -25,6 +25,9 @@ enum ClipOrientationLock {
     private static func refreshScenes() {
         for scene in UIApplication.shared.connectedScenes {
             guard let windowScene = scene as? UIWindowScene else { continue }
+            for window in windowScene.windows {
+                window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            }
             windowScene.requestGeometryUpdate(
                 .iOS(interfaceOrientations: mask)
             ) { _ in }
