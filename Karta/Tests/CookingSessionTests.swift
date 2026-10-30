@@ -303,6 +303,68 @@ struct CookingAlarmPlanTests {
         #expect(CookingAlarmPlan.systemEffect(old: .paused, new: nil) == nil)
     }
 
+    @Test("Echoes of the mirror's own ops are consumed; presses still reach the store")
+    func systemClassifyEchoVsPress() {
+        typealias Echo = CookingAlarmPlan.ExpectedEcho
+        let a = UUID(), b = UUID()
+        let ids = [(id: a, stepIndex: 0), (id: b, stepIndex: 1)]
+
+        // The mirror's own pause lands as a transition: consumed, not sent.
+        var classified = CookingAlarmPlan.classify(
+            expected: [a: [.arrives(.paused)]],
+            old: [a: .countdown], new: [a: .paused], ids: ids
+        )
+        #expect(classified.sends.isEmpty)
+        #expect(classified.expected[a] == nil)
+
+        // Pause in the app, Resume on the Lock Screen while the echo is
+        // still pending: the countdown landing is not the echo — it is a
+        // press, and it reaches the store.
+        classified = CookingAlarmPlan.classify(
+            expected: [a: [.arrives(.paused)]],
+            old: [a: .paused], new: [a: .countdown], ids: ids
+        )
+        #expect(classified.sends == [
+            .init(id: a, effect: .resume, stepIndex: 0)
+        ])
+        #expect(classified.expected[a] == nil)
+
+        // The echo landed before the update arrived (refreshObserved): an
+        // unchanged snapshot still consumes it — and an unrelated change
+        // update must not.
+        classified = CookingAlarmPlan.classify(
+            expected: [a: [.arrives(.paused)], b: [.arrives(.paused)]],
+            old: [a: .paused, b: .countdown],
+            new: [a: .paused, b: .countdown],
+            ids: ids
+        )
+        #expect(classified.sends.isEmpty)
+        #expect(classified.expected[a] == nil)
+        #expect(classified.expected[b] == [.arrives(.paused)])
+
+        // remove + schedule on an alerting id: AlarmKit coalesces straight
+        // to the countdown; a later echo target swallows the skipped one.
+        classified = CookingAlarmPlan.classify(
+            expected: [a: [.gone, .arrives(.countdown)]],
+            old: [a: .alerting], new: [a: .countdown], ids: ids
+        )
+        #expect(classified.sends.isEmpty)
+        #expect(classified.expected[a] == nil)
+
+        // A press on another Paso's alarm is a send of its own — echoes on
+        // one id never swallow presses on another.
+        classified = CookingAlarmPlan.classify(
+            expected: [a: [.arrives(.paused)]],
+            old: [a: .countdown, b: .paused],
+            new: [a: .paused, b: .countdown],
+            ids: ids
+        )
+        #expect(classified.sends == [
+            .init(id: b, effect: .resume, stepIndex: 1)
+        ])
+        #expect(classified.expected[a] == nil)
+    }
+
     @Test("Every session alarm resolves back to its own Paso, wherever the cook is")
     func systemPressStepIndex() {
         // A press on another Paso's alarm reaches that Paso, not the one on

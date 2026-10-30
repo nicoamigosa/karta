@@ -199,6 +199,68 @@ enum CookingAlarmPlan {
         }
     }
 
+    /// An AlarmKit landing the mirror caused itself and must not reflect
+    /// back into the store. Every op the mirror applies registers the state
+    /// AlarmKit settles into (or `.gone` for a cancel/stop); exactly that
+    /// landing is then skipped. Without it the mirror cannot tell its own
+    /// echo from a Lock Screen press, and both directions lose presses.
+    enum ExpectedEcho: Equatable {
+        case arrives(Observed)
+        case gone
+
+        func matches(_ state: Observed?) -> Bool {
+            switch self {
+            case .arrives(let target): return state == target
+            case .gone: return state == nil
+            }
+        }
+    }
+
+    /// An AlarmKit-side press to mirror into the store.
+    struct SystemSend: Equatable {
+        let id: UUID
+        let effect: SystemEffect
+        let stepIndex: Int
+    }
+
+    /// Splits an `alarmUpdates` snapshot into echoes of the mirror's own
+    /// ops (consumed, never sent) and genuine AlarmKit-side presses (sent
+    /// as indexed Temporizador actions). Per managed id:
+    /// - an update landing on a registered echo consumes it — whether it
+    ///   arrives as a transition or was already the settled state, and a
+    ///   later target swallows any echoes AlarmKit coalesced away;
+    /// - a transition landing somewhere else is a press: the pending
+    ///   echoes for that id are dropped, they can no longer land;
+    /// - a no-change update leaves pending echoes alone (still in flight);
+    /// - anything else goes through `systemEffect` as before.
+    static func classify(
+        expected: [UUID: [ExpectedEcho]],
+        old: [UUID: Observed],
+        new: [UUID: Observed],
+        ids: [(id: UUID, stepIndex: Int)]
+    ) -> (sends: [SystemSend], expected: [UUID: [ExpectedEcho]]) {
+        var expected = expected
+        var sends: [SystemSend] = []
+        for entry in ids {
+            let before = old[entry.id]
+            let after = new[entry.id]
+            let queue = expected[entry.id] ?? []
+            if let hit = queue.firstIndex(where: { $0.matches(after) }) {
+                let rest = Array(queue.dropFirst(hit + 1))
+                expected[entry.id] = rest.isEmpty ? nil : rest
+                continue
+            }
+            guard before != after else { continue }
+            expected[entry.id] = nil
+            if let effect = systemEffect(old: before, new: after) {
+                sends.append(SystemSend(
+                    id: entry.id, effect: effect, stepIndex: entry.stepIndex
+                ))
+            }
+        }
+        return (sends, expected)
+    }
+
     /// Which Paso an alarm belongs to. Ids are deterministic per
     /// `(recipeID, stepIndex)`, so the Paso is recovered by trying them all —
     /// bounded by the session's step count. This is what lets a Lock Screen

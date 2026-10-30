@@ -40,13 +40,18 @@ final class CookingAlarmController {
     private var updatesTask: Task<Void, Never>?
     /// Last observed AlarmKit states, used to detect a Lock Screen Stop.
     private var observed: [UUID: Alarm.State] = [:]
-    /// Ids seen reaching `.paused` through a live `alarmUpdates` transition.
-    /// A `.paused` snapshot could be a stale alarm from a previous run, and
-    /// stale-paused → fresh-countdown must not read as a Lock Screen resume.
-    private var systemPaused: Set<UUID> = []
+    /// AlarmKit landings the mirror caused itself, per alarm id, in the
+    /// order the ops were applied. `classify` consumes them so an echo is
+    /// never sent back into the store as a press — without it a fast
+    /// pause→play in the app would re-pause itself, and a Lock Screen
+    /// resume after an in-app pause would be mistaken for the echo.
+    private var expectedEchoes: [UUID: [CookingAlarmPlan.ExpectedEcho]] = [:]
     /// Lock Screen presses being mirrored to the store on their own
     /// instant; reconcile must wait or it would revert the press first.
     private var pendingSystemSends = 0
+    /// The single queue the mirrored sends run on, in observation order —
+    /// a later press can never overtake a still-retrying earlier one.
+    private var sendWork: Task<Void, Never>?
     private var permissionAsked = false
 
     init(store: KartaStore) {
@@ -124,38 +129,29 @@ final class CookingAlarmController {
             }
         }
         guard let session = store.session, !session.isExited else { return }
-        // Track genuine countdown→paused transitions seen in-stream.
-        for index in session.steps.indices {
-            let id = CookingAlarmID.id(recipeID: session.recipeID, stepIndex: index)
-            if current[id] == .paused, observed[id] != .paused {
-                systemPaused.insert(id)
-            }
-            if current[id] == nil {
-                systemPaused.remove(id)
-            }
+        let ids = session.steps.indices.map {
+            (id: CookingAlarmID.id(recipeID: session.recipeID, stepIndex: $0), stepIndex: $0)
         }
-        // One deferred send per affected alarm, stamped with AlarmKit's own
-        // instant (`systemInstant`), not the observe time.
-        var sends: [(effect: CookingAlarmPlan.SystemEffect, alarmID: UUID, stepIndex: Int)] = []
-        for index in session.steps.indices {
-            let alarmID = CookingAlarmID.id(recipeID: session.recipeID, stepIndex: index)
-            guard observed[alarmID] != current[alarmID],
-                  let effect = CookingAlarmPlan.systemEffect(
-                      old: observed[alarmID].map(CookingAlarmPlan.Observed.init),
-                      new: current[alarmID].map(CookingAlarmPlan.Observed.init)
-                  ),
-                  effect != .resume || systemPaused.contains(alarmID)
-            else { continue }
-            sends.append((effect, alarmID, index))
-        }
+        let classified = CookingAlarmPlan.classify(
+            expected: expectedEchoes,
+            old: observed.mapValues(CookingAlarmPlan.Observed.init),
+            new: current.mapValues(CookingAlarmPlan.Observed.init),
+            ids: ids
+        )
+        expectedEchoes = classified.expected
+        let sends = classified.sends
         guard !sends.isEmpty else { return }
+        // One send per affected alarm, stamped with AlarmKit's own instant
+        // (`systemInstant`), queued after anything still in flight.
         pendingSystemSends += 1
-        Task { [weak self] in
+        let previous = sendWork
+        sendWork = Task { [weak self] in
+            await previous?.value
             guard let self else { return }
             for send in sends {
                 let instant = await self.systemInstant(
                     for: send.effect,
-                    alarmID: send.alarmID,
+                    alarmID: send.id,
                     stepIndex: send.stepIndex,
                     observedAt: now
                 )
@@ -272,6 +268,11 @@ final class CookingAlarmController {
                 metadata: metadata,
                 tintColor: KartaDesign.ColorToken.brand
             )
+            // The landing this op produces — consumed as an echo by
+            // `classify`, never reflected into the store as a press.
+            expectedEchoes[id, default: []].append(
+                .arrives(running ? .countdown : .paused)
+            )
             Task { [attributes] in
                 let configuration = AlarmManager.AlarmConfiguration<KartaAlarmMetadata>
                     .timer(duration: max(seconds, 0.1), attributes: attributes)
@@ -290,12 +291,15 @@ final class CookingAlarmController {
                 self.refreshObserved()
             }
         case let .pause(id):
+            expectedEchoes[id, default: []].append(.arrives(.paused))
             try? AlarmManager.shared.pause(id: id)
             refreshObserved()
         case let .resume(id):
+            expectedEchoes[id, default: []].append(.arrives(.countdown))
             try? AlarmManager.shared.resume(id: id)
             refreshObserved()
         case let .remove(id, alerting):
+            expectedEchoes[id, default: []].append(.gone)
             if alerting {
                 try? AlarmManager.shared.stop(id: id)
             } else {
@@ -328,7 +332,6 @@ final class CookingAlarmController {
         observed = Dictionary(
             uniqueKeysWithValues: (try? AlarmManager.shared.alarms)?.map { ($0.id, $0.state) } ?? []
         )
-        systemPaused.formIntersection(observed.keys)
     }
 }
 
