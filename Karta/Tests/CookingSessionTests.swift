@@ -365,6 +365,40 @@ struct CookingAlarmPlanTests {
         #expect(classified.expected[a] == nil)
     }
 
+    @Test("A quick pause-then-play in the app sends nothing — the Temporizador stays running")
+    func systemClassifyDoubleTap() {
+        typealias Echo = CookingAlarmPlan.ExpectedEcho
+        let a = UUID()
+        let ids = [(id: a, stepIndex: 0)]
+        var expected: [UUID: [Echo]] = [a: [.arrives(.paused), .arrives(.countdown)]]
+
+        // The pause echo lands first: consumed, nothing sent.
+        var classified = CookingAlarmPlan.classify(
+            expected: expected,
+            old: [a: .countdown], new: [a: .paused], ids: ids
+        )
+        expected = classified.expected
+        #expect(classified.sends.isEmpty)
+
+        // Then the resume echo: consumed as well — the user's own play is
+        // never reflected back as a pause that re-stops the Temporizador.
+        classified = CookingAlarmPlan.classify(
+            expected: expected,
+            old: [a: .paused], new: [a: .countdown], ids: ids
+        )
+        #expect(classified.sends.isEmpty)
+        #expect(classified.expected[a] == nil)
+
+        // And if AlarmKit coalesces straight to the final countdown, the
+        // later echo target swallows the skipped pause echo too.
+        classified = CookingAlarmPlan.classify(
+            expected: [a: [.arrives(.paused), .arrives(.countdown)]],
+            old: [a: .countdown], new: [a: .countdown], ids: ids
+        )
+        #expect(classified.sends.isEmpty)
+        #expect(classified.expected[a] == nil)
+    }
+
     @Test("Every session alarm resolves back to its own Paso, wherever the cook is")
     func systemPressStepIndex() {
         // A press on another Paso's alarm reaches that Paso, not the one on
