@@ -302,4 +302,49 @@ struct CookingAlarmPlanTests {
         #expect(CookingAlarmPlan.systemEffect(old: .countdown, new: .countdown) == nil)
         #expect(CookingAlarmPlan.systemEffect(old: .paused, new: nil) == nil)
     }
+
+    @Test("A mirrored press is stamped with AlarmKit's instant, not the observe time")
+    func systemInstant() {
+        // Lock Screen pause 3 minutes before the app woke up: the frozen
+        // remaining must be AlarmKit's 300 s, so now = endsAt - 300.
+        #expect(CookingAlarmPlan.systemInstant(
+            .pause,
+            press: .init(pausedRemaining: 300),
+            endsAt: 1_000,
+            pausedRemaining: nil,
+            observedAt: 10_000
+        ) == 700)
+        // Lock Screen resume: AlarmKit's new fire date decides now, so
+        // endsAt = now + remaining lands exactly on it.
+        #expect(CookingAlarmPlan.systemInstant(
+            .resume,
+            press: .init(resumedFireDate: 10_300),
+            endsAt: nil,
+            pausedRemaining: 300,
+            observedAt: 10_000
+        ) == 10_000)
+        // Stop carries no instant.
+        #expect(CookingAlarmPlan.systemInstant(
+            .stop,
+            press: .init(),
+            endsAt: nil,
+            pausedRemaining: nil,
+            observedAt: 10_000
+        ) == 10_000)
+        // Anything AlarmKit did not report falls back to the observe time.
+        #expect(CookingAlarmPlan.systemInstant(
+            .pause,
+            press: .init(),
+            endsAt: 1_000,
+            pausedRemaining: nil,
+            observedAt: 10_000
+        ) == 10_000)
+        #expect(CookingAlarmPlan.systemInstant(
+            .resume,
+            press: .init(resumedFireDate: 10_300),
+            endsAt: nil,
+            pausedRemaining: nil,
+            observedAt: 10_000
+        ) == 10_000)
+    }
 }

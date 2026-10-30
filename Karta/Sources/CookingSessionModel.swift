@@ -198,4 +198,41 @@ enum CookingAlarmPlan {
         default: return nil
         }
     }
+
+    /// What AlarmKit itself recorded for a button press: the remaining it
+    /// froze on pause, or the fire date it computed on resume. The press's
+    /// instant in AlarmKit's own words — immune to how long the app was
+    /// suspended before it observed the transition.
+    struct SystemPress: Equatable {
+        var pausedRemaining: TimeInterval?
+        var resumedFireDate: TimeInterval?
+    }
+
+    /// The instant to stamp a mirrored press with. `pauseTimer(now:)` freezes
+    /// `endsAt - now`, so the store agrees with AlarmKit when
+    /// `now = endsAt - alarmRemaining`. `resumeTimer(now:)` sets
+    /// `endsAt = now + remaining`, so `now = alarmFireDate - remaining`.
+    /// Whatever AlarmKit did not report falls back to when the update was
+    /// observed (which is exact while the app is in the foreground anyway).
+    static func systemInstant(
+        _ effect: SystemEffect,
+        press: SystemPress,
+        endsAt: TimeInterval?,
+        pausedRemaining: TimeInterval?,
+        observedAt: TimeInterval
+    ) -> TimeInterval {
+        switch effect {
+        case .pause:
+            if let endsAt, let alarmRemaining = press.pausedRemaining {
+                return endsAt - alarmRemaining
+            }
+        case .resume:
+            if let fireDate = press.resumedFireDate, let pausedRemaining {
+                return fireDate - pausedRemaining
+            }
+        case .stop:
+            break
+        }
+        return observedAt
+    }
 }

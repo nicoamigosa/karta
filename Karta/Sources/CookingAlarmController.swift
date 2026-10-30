@@ -1,3 +1,4 @@
+import ActivityKit
 import CryptoKit
 import Foundation
 import SwiftUI
@@ -43,6 +44,9 @@ final class CookingAlarmController {
     /// A `.paused` snapshot could be a stale alarm from a previous run, and
     /// stale-paused → fresh-countdown must not read as a Lock Screen resume.
     private var systemPaused: Set<UUID> = []
+    /// A Lock Screen press is being mirrored to the store on its own
+    /// instant; reconcile must wait or it would revert the press first.
+    private var pendingSystemSend = false
     private var permissionAsked = false
 
     init(store: KartaStore) {
@@ -113,7 +117,9 @@ final class CookingAlarmController {
         let current = Dictionary(uniqueKeysWithValues: alarms.map { ($0.id, $0.state) })
         defer {
             observed = current
-            reconcile()
+            if !pendingSystemSend {
+                reconcile()
+            }
         }
         guard let session = store.session, !session.isOnFinish else { return }
         let currentID = CookingAlarmID.id(
@@ -128,19 +134,91 @@ final class CookingAlarmController {
             systemPaused.remove(currentID)
         }
         guard observed[currentID] != current[currentID] else { return }
-        switch CookingAlarmPlan.systemEffect(
+        guard let effect = CookingAlarmPlan.systemEffect(
             old: observed[currentID].map(CookingAlarmPlan.Observed.init),
             new: current[currentID].map(CookingAlarmPlan.Observed.init)
-        ) {
-        case .pause:
-            store.send(.pauseTimer(now: now))
-        case .resume where systemPaused.contains(currentID):
-            store.send(.resumeTimer(now: now))
-        case .stop:
-            store.send(.stopTimer(now: now))
-        default:
-            break
+        ) else { return }
+        guard effect != .resume || systemPaused.contains(currentID) else { return }
+        // The press's instant comes from AlarmKit's own record of it — the
+        // app may have been suspended for minutes before observing it — read
+        // off the Live Activity content state (`systemInstant`).
+        pendingSystemSend = true
+        let stepIndex = session.currentIndex
+        Task { [weak self] in
+            guard let self else { return }
+            let instant = await self.systemInstant(
+                for: effect,
+                alarmID: currentID,
+                stepIndex: stepIndex,
+                observedAt: now
+            )
+            self.pendingSystemSend = false
+            switch effect {
+            case .pause:
+                self.store.send(.pauseTimer(now: instant))
+            case .resume:
+                self.store.send(.resumeTimer(now: instant))
+            case .stop:
+                self.store.send(.stopTimer(now: instant))
+            }
+            self.reconcile()
         }
+    }
+
+    /// The instant AlarmKit recorded for a press. AlarmKit updates the Live
+    /// Activity content state a beat after `alarmUpdates`, so a press made
+    /// while the app is in the foreground can need a few retries; one made
+    /// while it was suspended is already there.
+    private func systemInstant(
+        for effect: CookingAlarmPlan.SystemEffect,
+        alarmID: UUID,
+        stepIndex: Int,
+        observedAt: TimeInterval
+    ) async -> TimeInterval {
+        for attempt in 0..<10 {
+            let press = systemPresses()[alarmID] ?? .init()
+            let missing: Bool
+            switch effect {
+            case .pause: missing = press.pausedRemaining == nil
+            case .resume: missing = press.resumedFireDate == nil
+            case .stop: missing = false
+            }
+            if !missing || attempt == 9 {
+                let timer = store.session?.timers[stepIndex]
+                return CookingAlarmPlan.systemInstant(
+                    effect,
+                    press: press,
+                    endsAt: timer.map { $0.startedAt + $0.duration },
+                    pausedRemaining: timer?.pausedRemaining,
+                    observedAt: observedAt
+                )
+            }
+            try? await Task.sleep(nanoseconds: 150_000_000)
+        }
+        return observedAt
+    }
+
+    /// The remaining / fire date AlarmKit recorded per alarm, read from the
+    /// Live Activity content state the Lock Screen itself renders.
+    private func systemPresses() -> [UUID: CookingAlarmPlan.SystemPress] {
+        var presses: [UUID: CookingAlarmPlan.SystemPress] = [:]
+        for activity in Activity<AlarmAttributes<KartaAlarmMetadata>>.activities {
+            let state = activity.contentState
+            switch state.mode {
+            case .countdown(let countdown):
+                presses[state.alarmID] = CookingAlarmPlan.SystemPress(
+                    resumedFireDate: countdown.fireDate.timeIntervalSince1970
+                )
+            case .paused(let paused):
+                presses[state.alarmID] = CookingAlarmPlan.SystemPress(
+                    pausedRemaining: paused.totalCountdownDuration
+                        - paused.previouslyElapsedDuration
+                )
+            default:
+                break
+            }
+        }
+        return presses
     }
 
     private func apply(

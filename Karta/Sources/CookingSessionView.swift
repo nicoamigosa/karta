@@ -898,43 +898,53 @@ struct CookingSessionView: View {
                 .padding(.top, KartaDesign.cooking.timerRuleToRow)
                 .padding(.bottom, KartaDesign.cooking.timerBottomGap)
             }
+            .frame(height: KartaDesign.cooking.timerZoneHeight)
         }
     }
 
-    /// The rule under the body: the running state turns it into the 2 pt
-    /// brand progress bar; paused keeps the bar muted in `chipInk`; *Time's
-    /// up* fills it; ready is the plain 1 pt `line`.
-    @ViewBuilder
+    /// The rule under the body: a 1 pt `line` 20 pt from the card sides in
+    /// every state, so the zone is `timerZoneHeight` everywhere and the card
+    /// never jumps. Running turns it into the 2 pt brand progress bar, paused
+    /// keeps the bar muted in `chipInk`, *Time's up* fills it — all drawn on
+    /// top of the rule without adding to the layout height.
     private func timerRule(_ timer: CookingStepPresentation.Timer) -> some View {
-        switch timer.state {
-        case .ready:
-            edgeToEdgeLine
-        case let .running(_, fraction):
-            timerProgressBar(fraction: fraction, fill: KartaDesign.ColorToken.brand)
-        case let .paused(_, fraction):
-            timerProgressBar(fraction: fraction, fill: suit.chipInk.opacity(0.45))
-        case .finished:
-            KartaDesign.ColorToken.brand
-                .frame(height: KartaDesign.cooking.timerProgressHeight)
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                KartaDesign.ColorToken.line
+                    .frame(height: KartaDesign.cooking.timerRuleHeight)
+                switch timer.state {
+                case .ready:
+                    EmptyView()
+                case let .running(_, fraction):
+                    timerProgressFill(
+                        fraction: fraction,
+                        width: geometry.size.width,
+                        fill: KartaDesign.ColorToken.brand
+                    )
+                case let .paused(_, fraction):
+                    timerProgressFill(
+                        fraction: fraction,
+                        width: geometry.size.width,
+                        fill: suit.chipInk.opacity(0.45)
+                    )
+                case .finished:
+                    KartaDesign.ColorToken.brand
+                        .frame(height: KartaDesign.cooking.timerProgressHeight)
+                }
+            }
         }
+        .frame(height: KartaDesign.cooking.timerRuleHeight)
+        .padding(.horizontal, KartaDesign.cooking.bottomZoneHGap)
     }
 
-    /// `fractionElapsed` of the Temporizador drawn over the `line` track.
-    private func timerProgressBar(fraction: Double, fill: Color) -> some View {
-        GeometryReader { geometry in
-            KartaDesign.ColorToken.line
-                .frame(height: KartaDesign.cooking.timerProgressHeight)
-                .overlay(alignment: .leading) {
-                    Rectangle()
-                        .fill(fill)
-                        .frame(
-                            width: geometry.size.width
-                                * min(max(fraction, 0), 1),
-                            height: KartaDesign.cooking.timerProgressHeight
-                        )
-                }
-        }
-        .frame(height: KartaDesign.cooking.timerProgressHeight)
+    /// `fractionElapsed` of the Temporizador, drawn over the `line` track.
+    private func timerProgressFill(fraction: Double, width: CGFloat, fill: Color) -> some View {
+        Rectangle()
+            .fill(fill)
+            .frame(
+                width: width * min(max(fraction, 0), 1),
+                height: KartaDesign.cooking.timerProgressHeight
+            )
     }
 
     /// Digits + status label (TIMER / LEFT / PAUSED) or the *Time's up*
