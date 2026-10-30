@@ -137,6 +137,10 @@ unavailable). That round replaces the filled bottom zone of *Cooking · round 2*
 Its reference is the artifact *Karta · Cooking timer and clip*
 (<https://claude.ai/artifact/KZiYnZdk5sqrNrAn2LDDbQ>, tab *Para firmar · T1*, marked *Signed off
 2026-10-29*; rounds 1 and 2 are kept in their own tabs).
+On 2026-10-30 (#149) the founder signed off the session at the largest text sizes, AX3 to AX5
+(*Text size*). Its round is the artifact *Karta · Cocina a AX3–AX5*
+(<https://claude.ai/artifact/61V6pGqppgcBmiitBEuhsG>; the simulator captures of #146 next to
+each variant); the signed boards are copied to the *Signed off* page of the canvas linked from #15.
 Earlier reference: the design canvas *Karta · Cooking fit (#101)*
 (<https://claude.ai/artifact/UHnP8RdK9jP9a1fkDeLUm5>; rounds D and E side by side, the signed
 boards are the `Signed*` artboards), plus *Cooking · round 3* in the canvas linked from #15 for
@@ -158,6 +162,10 @@ everything this section does not change. PNGs in `docs/design/screens/`, all dra
 | `cooking-clip-fullscreen.png` | the technique clip full screen, paused |
 | `cooking-step-shrunk.png` | a long Paso: the media window gives way (see *When a Paso does not fit*) |
 | `cooking-step-ax.png` | Paso 2 at Dynamic Type AX1: the card scrolls with the signal |
+| `cooking-ax-timer-paused-ax3.png`, `cooking-ax-timer-paused-ax5.png` | Paso 2 at AX3 and AX5, end of the scroll, Temporizador paused: the label under the time |
+| `cooking-ax-timer-running.png`, `cooking-ax-timer-done.png` | Paso 2 at AX5, end of the scroll, Temporizador running and *Time's up* |
+| `cooking-ax-photo.png` | Paso 2 at AX3: the window's chip under the window, the short signal chip |
+| `cooking-ax-clip.png` | last Paso at AX5: the clip's name and length under the window, the short signal chip |
 
 On the boards of Pasos 1–3 the Foto del paso is a placeholder because no step photos exist yet
 (#104); build the window as on the last Paso. The clip boards show the name *Flip the tortilla*
@@ -228,7 +236,7 @@ Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
   changes. The row holds, left to right: the time in Fraunces 900 28 pt, suit `chipInk`, tabular
   figures; a label 8 pt after it (Figtree 800 11 pt, tracking 1.2, suit `chipInk`); and the
   buttons on the right, 44 pt circles 8 pt apart. A Paso without a Temporizador has no bottom
-  zone.
+  zone. From AX3 the label goes under the time (*Text size*).
   - **Ready** (`cooking-step-timer.png`): the declared time (*12:00*) and *TIMER*; a `brand`
     circle with a play glyph in `card`, edge `brandEdge`. Tapping it starts the Temporizador,
     never on arrival at the Paso.
@@ -272,7 +280,8 @@ Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
 
 The clip always plays **without sound**: there is no sound control, in the window or full
 screen, and it never interrupts the cook's music. It plays once; when it ends, the photo, the
-chip and the play circle come back.
+chip and the play circle come back. From AX3 the chip's text sits under the window instead of
+in it (*Text size*).
 
 - **Loading** (`cooking-clip-loading.png`): the play glyph in the 60 pt circle gives way to an
   activity indicator (suit `chip` track, suit `chipInk` arc). It shows only if loading takes
@@ -345,6 +354,29 @@ Text follows Dynamic Type, scaled relative to: Resumen and the finish-card title
   card the outcome buttons (or **Finish**), move to the end of the scroll. The outcome buttons
   stack one per row, 56 pt high, the icon left of the label. The header stays pinned. Steps 1–3
   of *When a Paso does not fit* still apply, with the same signal (`cooking-step-ax.png`).
+- **From AX3 to AX5** (signed off 2026-10-30, #149) four more things change. AX2 stays as AX1.
+  No word and no time is ever broken in the middle, and nothing is truncated.
+  - **Temporizador** (`cooking-ax-timer-paused-ax3.png`, `cooking-ax-timer-paused-ax5.png`,
+    `cooking-ax-timer-running.png`): in every state with a time (ready, running, paused) the
+    label goes **under the time**, left-aligned, 2 pt below it: *12:00* over *TIMER*, *11:35*
+    over *LEFT*, *8:15* over *PAUSED*. The buttons stay on the right, 44 pt circles 8 pt apart,
+    centred on that two-line block. The rule, the progress line, the fonts and the colours do not
+    change. The layout is the same in all three states, so pausing or resuming never moves the
+    time. A time with hours (*1:05:00*) still fits next to two circles at AX5.
+  - ***Time's up*** (`cooking-ax-timer-done.png`) keeps its one row: *Time's up* wraps between
+    its two words when it must, and the *Stop* pill stays on the right, centred, with its label
+    inside; the pill grows with its label.
+  - **Media window chip** (`cooking-ax-photo.png`, `cooking-ax-clip.png`): the chip leaves the
+    window. Its text goes **under the window**, 8 pt below it, on the 20 pt inner edge, with no
+    fill and no box: Figtree 800, `.caption1`, suit `chipInk`, wrapping on as many lines as it
+    needs. This applies to *When it looks like this, move on*, to the clip's name and length and
+    to *Clip unavailable* (with its warning glyph). The clip's length never goes to a line on
+    its own without its dot (*· 6 s* stays together). The window keeps everything else: the
+    photo, the 60 pt play circle centred and uncovered, the expand button, the progress line,
+    and its 220 → 160 pt give-way.
+  - **Signal chip** (`cooking-ax-photo.png`, `cooking-ax-clip.png`): it reads *N more*
+    (*1 more*) instead of *N more ingredients*, and *More* instead of *More below*. The arrow,
+    the fade, the place, the tap and the rule for when it shows do not change.
 
 ### Behaviour
 
