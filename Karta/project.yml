@@ -26,6 +26,8 @@ targets:
       path: Info.plist
       properties:
         NSAlarmKitUsageDescription: Karta needs alarms so a Temporizador can ring while the phone is locked.
+        # Share links domain (#155 supplies the real value; unset = Share off).
+        KartaShareBaseURL: $(KARTA_SHARE_BASE_URL)
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}

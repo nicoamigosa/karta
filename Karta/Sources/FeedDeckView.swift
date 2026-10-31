@@ -15,6 +15,9 @@ struct FeedScreen: View {
     @State private var cookbookOpen = false
     @State private var reverseFromCookbook = false
     @State private var unsaveOrigin: UnsaveOrigin = .feedReverse
+    /// The payload currently in the native share sheet; nil while Share is
+    /// switched off or no sheet is up.
+    @State private var presentedShare: PresentedShare?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -51,6 +54,12 @@ struct FeedScreen: View {
                         onUnsaveFromGrid: { row in
                             unsaveOrigin = .cookbookGrid
                             store.send(.unsaveRecipe(row.recipeID))
+                        },
+                        onShare: { row in
+                            if let recipe = recipes.first(where: { $0.id == row.recipeID }),
+                               let payload = ShareLinks.payload(for: recipe, in: store) {
+                                presentedShare = PresentedShare(payload: payload)
+                            }
                         },
                         onUndo: { toast in
                             store.send(.undoUnsave)
@@ -114,7 +123,10 @@ struct FeedScreen: View {
                     recipe: recipe,
                     clips: clips,
                     manifest: manifest,
-                    store: store
+                    store: store,
+                    onShare: { payload in
+                        presentedShare = PresentedShare(payload: payload)
+                    }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -135,6 +147,20 @@ struct FeedScreen: View {
         .background(KartaDesign.ColorToken.paper)
         .foregroundStyle(KartaDesign.ColorToken.ink)
         .preferredColorScheme(.light)
+        .sheet(item: $presentedShare) { presented in
+            ShareSheetView(
+                payload: presented.payload,
+                image: ShareLinks.image(for: presented.payload.photo, manifest: manifest)
+            )
+        }
+        .onOpenURL { openRecipeLink($0) }
+        // Universal links arrive as NSUserActivity once #155's Associated
+        // Domains entry exists; `onOpenURL` keeps custom-scheme opens working.
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+            if let url = activity.webpageURL {
+                openRecipeLink(url)
+            }
+        }
         .task {
             do {
                 let seed = SeedResourceAdapter()
@@ -151,6 +177,20 @@ struct FeedScreen: View {
 }
 
 private extension FeedScreen {
+    /// One shared link: the store resolves it (reverse/Apertura, gone
+    /// notice, not offered, ignored); the shell only mirrors the outcome.
+    func openRecipeLink(_ url: URL) {
+        switch store.openRecipeLink(url, recipes: recipes, at: Date()) {
+        case .gone:
+            // "The app opens the Feed": close the cookbook over it.
+            cookbookOpen = false
+        case .reverse:
+            reverseFromCookbook = cookbookOpen
+        case .notOffered, .ignored:
+            break
+        }
+    }
+
     var reverseTransition: AnyTransition {
         reduceMotion
             ? .opacity
@@ -160,6 +200,63 @@ private extension FeedScreen {
 
 private struct SystemClock: KartaClock {
     var now: Date { Date() }
+}
+
+/// What `.sheet(item:)` presents: the contract's `SharePayload` isn't
+/// Identifiable, so the shell wraps it.
+private struct PresentedShare: Identifiable {
+    let payload: SharePayload
+    var id: URL { payload.url }
+}
+
+/// The one-shot notice after opening the link of a recipe that is no
+/// longer in the catalogue (`share-recipe-gone.png`): the cookbook box
+/// glyph in `card`, *This recipe is no longer on Karta* over *Here's your
+/// deck instead.* on `ink` — the Undo toast's recipe without a button; it
+/// leaves on its own after 5 s.
+private struct RecipeGoneToastView: View {
+    let notice: RecipeGoneNotice
+    let onExpire: () -> Void
+
+    var body: some View {
+        HStack(spacing: KartaDesign.space.toastPadding) {
+            CookbookBoxGlyph(ink: KartaDesign.ColorToken.card)
+                .frame(
+                    width: KartaDesign.space.doorGlyph + 6,
+                    height: KartaDesign.space.doorGlyph + 6
+                )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(notice.title)
+                    .font(KartaDesign.FontToken.toastTitle())
+                    .foregroundStyle(KartaDesign.ColorToken.card)
+                Text(notice.message)
+                    .font(KartaDesign.FontToken.toastSecondLine())
+                    .foregroundStyle(KartaDesign.ColorToken.creamLine)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, KartaDesign.space.toastPadding)
+        .padding(.leading, KartaDesign.space.toastLeading)
+        .padding(.trailing, KartaDesign.space.toastPadding)
+        .background(
+            KartaDesign.ColorToken.ink,
+            in: RoundedRectangle(
+                cornerRadius: KartaDesign.space.toastRadius,
+                style: .continuous
+            )
+        )
+        .shadow(
+            color: KartaDesign.ColorToken.frontShadow,
+            radius: KartaDesign.elevation.frontShadowRadius,
+            y: KartaDesign.elevation.buttonShadowY
+        )
+        .accessibilityElement(children: .combine)
+        .task(id: notice) {
+            try? await Task.sleep(for: .seconds(KartaDesign.space.toastDuration))
+            guard !Task.isCancelled else { return }
+            onExpire()
+        }
+    }
 }
 
 /// The feed surface shared by both Mundos: the header row (wordmark, filter
@@ -247,6 +344,22 @@ private struct FeedSurface: View {
                         world: world,
                         filters: store.state.effectiveFeedFilters
                     ))
+                }
+
+                // The recipe-gone toast, 12 pt below the header row and
+                // 22 pt from the sides (`share-recipe-gone.png`).
+                if let notice = store.state.recipeGoneNotice {
+                    VStack(spacing: 0) {
+                        RecipeGoneToastView(
+                            notice: notice,
+                            onExpire: { store.send(.dismissRecipeGoneNotice) }
+                        )
+                        .padding(.top, headerClearance(in: geometry)
+                                 + KartaDesign.space.cardGap)
+                        .padding(.horizontal, KartaDesign.space.toastSideMargin)
+                        Spacer(minLength: 0)
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 if mundoMenuOpen || filterPanelOpen {
