@@ -424,9 +424,20 @@ Signed off on 2026-10-20 by the founder (#7). Reference: canvas page *Signed
 off*, rows *Save + cookbook (#7)*; the rounds behind each choice are on the
 pages *Cookbook · round 1*, *Save · round 1*, *Intolerance tag · round 1* and
 *Cookbook door · round 1*. PNGs: `screens/feed-cookbook-door.png`,
-`screens/cookbook-*.png` and `screens/reverse-{saved,cookbook-full,unsaved-undo,unsaved-undo-ceiling,intolerance}.png`.
+`screens/cookbook-*.png` and `screens/reverse-{cookbook-full,intolerance}.png`.
 Product context: `CONTEXT.md` → **Cookbook**, **Repertorio**, **Por
 probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
+
+**Reopened by the shopping list (#11, signed off on 2026-10-31).** A saved recipe's pill no
+longer reads **Saved** and no longer unsaves: it adds the recipe to the shopping list
+(*The shopping list* below). Removing moves to the cookbook, where several recipes can be
+removed at once. The bullets **Save pill, saved state**, **Unsaving** and **Undo, never a
+confirmation** below are rewritten for that. Three PNGs of #7 are gone:
+`reverse-saved.png` (replaced by `shopping-reverse-add.png`), `reverse-unsaved-undo.png` and
+`reverse-unsaved-undo-ceiling.png` (a reverse can no longer unsave, so those states do not
+exist; the cookbook toast is `cookbook-removed-undo.png` for one recipe and
+`shopping-cookbook-removed.png` for several). `reverse-intolerance.png` still draws the pill
+as **Saved**: the text wins, and it reads **Add to list**.
 
 - **Shape:** paper background, 58 pt top and 22 pt side padding, 18 pt
   between blocks. Under the header, a switch shows one half at a time:
@@ -471,14 +482,19 @@ probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
   preference, not part of the user snapshot (ADR 0010).
 - **Save pill, saved state** (canvas page *Save · round 1*, board *S2*):
   same shape as the default pill; fill and border take the suit's `chip`,
-  label and icon its `chipInk`, and the 2 pt edge the suit's new `chipEdge`. The
-  label reads **Saved** and the box icon shows a check instead of the slot.
+  label and icon its `chipInk`, and the 2 pt edge the suit's new `chipEdge`.
+  *Since #11:* the tint still says the recipe is saved, but the pill is now the way to the
+  shopping list. It reads **Add to list** with the 16 pt list icon
+  (`shopping-reverse-add.png`), or **On your list** with a check once the recipe is on the
+  list (`shopping-reverse-on-list.png`). Tapping it never unsaves. Details in *The shopping
+  list* → *Adding a recipe*. On the free plan it reads **Add to list** too and opens the
+  invitation sheet of *The shopping list* → *On the free plan*.
 - **Save animation** (board *M1 · into the box*), about 800 ms: the box
   icon's lid opens, a small card in the suit's `back` colour drops into the
   box, the lid closes, the pill tints to the saved state with a 1.07 bump
-  and the check draws in. A success haptic when the card lands. Unsaving is
-  instant, with no animation. **Reduce Motion:** the pill cross-fades to the
-  saved state; no lid, no drop.
+  and the check draws in, then the label cross-fades to **Add to list** (or **On your list**
+  when *Add recipes when I save them* is on). A success haptic when the card lands.
+  **Reduce Motion:** the pill cross-fades to the saved state; no lid, no drop.
 - **Save with the cookbook full** (board *K3*): the pill keeps its default
   look; tapping it saves nothing and opens a bottom sheet over a scrim: a fan
   of seven card backs in their suit colours, **Your cookbook is full**, the
@@ -498,23 +514,36 @@ probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
   line ends with an underlined **Go unlimited** (Figtree 800 `ink`) that
   opens the paywall. On premium the same line names the plan instead of the
   count (*Premium and the paywall* below).
-- **Unsaving**, two ways: tap **Saved** on the reverse (the pill goes back to
-  **Save** at once, no animation), or long-press a card in the cookbook grid
-  for the native iOS context menu: **Share** (*Share* below), then the
-  destructive **Remove from cookbook**. Unsaving never deletes the recipe's cooked history: saving it
-  again puts it straight back in Your repertoire.
+- **Unsaving** (rewritten by #11) happens only in the cookbook grid, two ways:
+  - **Select** (`shopping-cookbook-door.png`, `shopping-cookbook-select.png`): a tactile
+    pill in the cookbook header, left of the shopping-list button (34 pt high, 14 pt side
+    padding, Figtree 700 14 pt). It shows whenever the cookbook holds a recipe. Tapping it
+    enters selection mode:
+    - the pill turns into a pressed **Done** (`ink` fill, `inkEdge` edge) and the list and
+      cookbook buttons hide;
+    - every card shows a 26 pt circle 6 pt from its top-left corner (2 pt white ring over a
+      30 % `inkEdge` fill). Tapping a card toggles it: a selected card has the circle filled
+      `ink` with a `card` check and a 2.5 pt `ink` ring around the card; the others drop to
+      75 % opacity. The switch still changes halves and keeps the selection;
+    - a bar floats 22 pt from the sides and 12 pt above the bottom safe area: `ink` fill,
+      radius 18, the toast shadow, **N selected** (Figtree 800 15 pt `card`) and one cream
+      **Remove** pill with a trash icon. Remove is the only action. With nothing selected
+      the bar reads **Select recipes** and the pill sits at 45 %.
+    - **Remove** removes every selected recipe, leaves selection mode and shows the toast
+      below (`shopping-cookbook-removed.png`). **Done** leaves without removing.
+  - **Long press** on a card, as before: the native context menu with **Share** (*Share*
+    below), then the destructive **Remove from cookbook**. Kept by default (founder not
+    asked) so one recipe can still go without entering selection mode.
+
+  Unsaving never deletes the recipe's cooked history: saving it again puts it straight back
+  in Your repertoire. It never touches the shopping list either.
 - **Undo, never a confirmation** (canvas page *Save · round 1*, boards
-  *U1–U3*): every unsave shows a toast near the bottom for a few seconds,
-  `ink` fill, **Removed from cookbook** over the recipe's name, and a cream
-  **Undo** pill. After a downgrade the second line states the new ceiling
-  ("Your cookbook now holds 22 recipes"). Undo puts everything back,
-  ceiling included.
-  - From a reverse opened **in the cookbook**: the reverse closes (the card
-    flips back into its slot), the card leaves the grid, then the toast
-    appears. **Undo** returns the card to its slot and opens the reverse
-    again; that reopening is not an Apertura.
-  - From a reverse opened **in the Feed**: the user stays on the reverse;
-    the pill goes back to **Save** and the toast appears there.
+  *U1–U3*): every removal shows a toast near the bottom for about 5 seconds,
+  `ink` fill, and a cream **Undo** pill. One recipe: **Removed from cookbook** over the
+  recipe's name. Several: **2 recipes removed** over their names, cut with "and N more"
+  past what fits on one line. After a downgrade the second line states the new ceiling
+  ("Your cookbook now holds 22 recipes"). Undo puts everything back, slots and ceiling
+  included. A reverse no longer unsaves, so the two reverse cases signed in #7 are gone.
 - **A saved recipe with a new Intolerancia** (canvas page *Intolerance tag ·
   round 1*, boards *T1 · crimson fill, no icon* and *R2 · crimson fill, no
   icon*): it stays in the cookbook, openable and cookable (`CONTEXT.md` →
@@ -934,7 +963,13 @@ way in is something the user taps; each opens the same paywall.
    *The Mundo menu*. Icon: a 30 pt `brand` circle with a 20 pt sparkle in `card`; the line
    under the name reads *Unlimited cookbook, lists* (pending #153, question 6).
 
-Ways 2–4 are hidden during the trial and on premium. After a downgrade they come back.
+5. **The shopping list** (#11, `shopping-free.png`): on the free plan, **Add to list** on a
+   saved recipe and the list button in the cookbook open the invitation sheet *Let Karta
+   write your list*, whose **See plans** grows into the paywall as K3 does (*The shopping
+   list* → *On the free plan*).
+
+Ways 2–4 are hidden during the trial and on premium. After a downgrade they come back. Way 5
+is the shopping list itself: during the trial and on premium it simply works.
 
 ### The paywall
 
@@ -1062,7 +1097,8 @@ new ceiling, and the next save opens K3 with the downgrade copy
 - Not drawn: the paywall at larger text sizes. The renewal line and the footer must stay
   visible next to the button, so ask before letting them scroll away.
 - Decided: the sixth-save "toast already shown" flag lives in the user snapshot (ADR 0010).
-- The shopping list itself, its button and how a free user meets it belong to #11.
+- The shopping list, its button and how a free user meets it: *The shopping list* below
+  (#11).
 
 ## Share
 
@@ -1183,6 +1219,193 @@ counts it (*More below*).
   sees.
 - To check on a device: that iOS shows the two-line title in the sheet header. If it cuts it to
   one line, ask before dropping the servings line.
+
+## The shopping list
+
+Signed off on 2026-10-31 by the founder (#11). The two rounds are each in their own artifact:
+*Karta lista de la compra* (<https://claude.ai/artifact/6vEzcqQn4jERjk2K5yhqMS>, rows Lugar B,
+Raciones A, Agrupar C, En casa C and AX1 A) and *Karta lista ronda 2*
+(<https://claude.ai/artifact/PY4w9fw1Hty7Zwxnay7jR5>, rows Interruptor C, Al guardar A, Reverso
+B, Quitar A with **Remove** only, Carrito A, Gratis B and Vacío A). Product context: `CONTEXT.md`
+→ **Lista de la compra**, **Clave de compra**, **Pasillo**, **Básico de despensa**; ADR 0017
+(structured quantities), 0007, 0010; PRD story 41. The list is **premium only**.
+
+Rules marked **(default)** were proposed with the rounds and not answered by the founder: they
+stand until he changes them.
+
+All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `shopping-cookbook-door.png` | the cookbook with **Select** and the list button, with its badge |
+| `shopping-list.png` | the list: aisles, totals, recipe chips and the switch |
+| `shopping-list-got-it.png` | some rows ticked, under **Got it · 5**, with **Done shopping** |
+| `shopping-list-done-undo.png` | after **Done shopping**, with Undo |
+| `shopping-reverse-add.png` | a saved recipe: **Add to list** |
+| `shopping-add-sheet.png` | the sheet that adds it, with what you have unticked |
+| `shopping-reverse-on-list.png` | the recipe on the list: **On your list** and the toast |
+| `shopping-ask-auto.png` | the one-time question: add recipes as you save them? |
+| `shopping-save-auto.png` | saving with the switch on: the toast with **Review** |
+| `shopping-cookbook-select.png` | selection mode in the cookbook, **Remove** only |
+| `shopping-cookbook-removed.png` | after removing two recipes, with Undo |
+| `shopping-free.png` | the free plan: *Let Karta write your list* |
+| `shopping-empty.png` | nothing on the list |
+| `shopping-ax1.png` | the list at Dynamic Type AX1 |
+
+### The door
+
+- The list lives in the cookbook, not in the feed header: in the cookbook header a 40 pt
+  tactile circle with an 18 pt list icon (three lines with ticks) sits left of the pressed
+  cookbook door, 10 pt apart (`shopping-cookbook-door.png`). The feed header does not change.
+- **Badge:** the number of rows left to buy, as the filter badge (20 pt `brand` circle, 2 pt
+  `paper` ring, Figtree 800 11 pt `card`, offset −5 / −5). No badge when nothing is left or on
+  the free plan.
+- Tapping it opens the list in place of the cookbook. On the list, the list button is the
+  pressed one (`ink` fill, `card` icon) and the cookbook door is not pressed; tapping the
+  door goes back to the cookbook and tapping the pressed list button goes back to For You,
+  as the door does.
+
+### The list
+
+`shopping-list.png`. Paper background, the cookbook header, then, 22 pt from the sides and
+10 pt apart:
+
+1. **Shopping list**, Fraunces 700 28 pt, over one line in Figtree 600 14 pt `inkMuted`:
+   *3 recipes · 11 to buy* (*6 left to buy* once something is ticked).
+2. **Recipe chips**: one per recipe on the list, wrapping. 30 pt high, radius 999, `card`
+   fill, 1 pt `line`, Figtree 700 12.5 pt: a 9 pt dot in the suit's `back`, the name and an
+   11 pt ✕ in `inkMuted`. ✕ takes the recipe off the list: its rows lose that recipe's
+   share, rows left with no recipe go, and the signed toast says **Removed from your list**
+   over the name, with **Undo**.
+3. **The switch row** *Add recipes when I save them* (*Adding as you save* below).
+4. **The aisles**, in this fixed order and only when they have a row: **Produce**, **Meat &
+   fish**, **Dairy & eggs**, **Bakery**, **Pantry**, **Spices**, **Frozen**, **Other**
+   (ADR 0017). Heading: Figtree 800 12 pt, tracking 1.6, `brandEdge`, uppercase, 12 pt above
+   and 4 pt below.
+5. **Rows**, one per Clave de compra, 44 pt minimum, 1 pt `track` rule below: a 24 pt
+   checkbox (radius 7, 2 pt `line` border, `card` fill), 10 pt gap, the name (Figtree 700
+   15 pt, the catalogue's exact variety) over the recipes it comes from (Figtree 600 11.5 pt
+   `inkMuted`, joined by " · ", one line, cut with "…"), and on the right the **total**
+   (Figtree 500 14 pt `inkMuted`, never cut). Order within an aisle: the order the recipes
+   were added, then the recipe's own order.
+
+**Totals** (Raciones A, Agrupar C; ADR 0017). There is no servings control: each recipe goes
+on the list for the servings it declares. The total adds up the shares with the same Clave
+de compra and the same unit: two recipes with *1 medium* yellow onion give **2 medium**. Units
+are never converted: *1/2 cup* and *for frying* are shown as **1/2 cup + for frying**, with
+measured parts first and in recipe order. Unmeasured shares with the same wording appear once
+(*to taste*). The approximate weight of a quantity (*about 1 1/2 lb*) is never on the list.
+Its form (*packed*, *grated*) follows the total when every share has the same one (*2 cups
+packed*), and is dropped otherwise. When two recipes name the same Clave de compra
+differently, the row uses the name of the first recipe added.
+
+### Ticking and Done shopping
+
+`shopping-list-got-it.png`, `shopping-list-done-undo.png`.
+
+- Tapping a row ticks it: the checkbox fills `ink` with a 13 pt `card` check, the name and
+  the total turn `#B39A86` and are struck through, and the row moves to the bottom of the list,
+  under **Got it · 5**: a 1 pt `line` rule on each side of a centred check (14 pt) and the
+  text, Figtree 700 13 pt `inkMuted`, no capitals. It is a divider, never an aisle heading.
+  Tapping a ticked row unticks it and it goes back to its aisle. Ticks survive closing the app
+  (ADR 0010).
+- **Done shopping**, the primary button, is pinned 12 pt above the bottom safe area, over a
+  `paper` fade, while at least one row is ticked. It removes the ticked rows; a recipe with
+  no row left leaves the list. The signed toast says **5 items cleared** over the first
+  names ("Potatoes, eggs, basil and 2 more"), with **Undo**, which puts them back ticked.
+- There is no confirmation anywhere on the list; every removal has Undo.
+
+### Adding a recipe
+
+The list only takes **saved** recipes, from their reverse. An unsaved recipe shows **Save**
+as before.
+
+1. **Add to list** (`shopping-reverse-add.png`): the saved pill of *Save and the cookbook*,
+   tinted in the suit's chip colours, with the list icon.
+2. Tapping it opens the sheet **Add to your list** (`shopping-add-sheet.png`): the sheet of
+   K3 (`card`, radius 28 at the top, grabber), Fraunces 700 26 pt title, *Untick what you
+   already have.* in Figtree 600 14 pt `inkMuted`, then one row per visible ingredient with
+   the recipe's own quantity, and the primary **Add 2 to list** (the ticked count; *Add 1 to
+   list*; with nothing ticked it reads **Nothing to add** at 45 %).
+   - Ticked by default: everything, except **(default)** the Básicos de despensa (the
+     closed list shared with Leftovers, #9: salt, pepper, cooking oils, flour, sugar, yeast)
+     and **(default)** what Leftovers (#9) says is left over from an explicit Cocinado in
+     its window. That row says why under its name, Figtree 700 11.5 pt `brandEdge`: *Left
+     from your Lentil Stew*.
+   - **(default)** Optional ingredients are not on the sheet. An ingredient hidden by an
+     Intolerancia is never anywhere (`CONTEXT.md` → Ingrediente opcional).
+   - Swiping the sheet down or tapping the scrim adds nothing.
+3. After **Add**, the pill reads **On your list** with a check, and the signed toast says
+   **Added to your list** over *2 items · Spanish Tortilla*, with **See list**, which opens
+   the list (`shopping-reverse-on-list.png`). Tapping **On your list** takes the recipe off
+   the list, as its ✕ chip does, with Undo.
+
+### Adding as you save
+
+- The switch row on the list (`shopping-list.png`): `card` fill, 1 pt `line`, radius 16,
+  10 × 12 pt padding (14 pt left): **Add recipes when I save them** (Figtree 800 14.5 pt)
+  over *Ingredients go on this list as you save.* (Figtree 600 12.5 pt `inkMuted`) and a
+  51 × 31 pt switch, `ink` when on, `track` when off. It starts **off**. The app has no
+  settings screen; this row is the only place for the setting. It is not drawn on the empty
+  list.
+- **Asked once** (`shopping-ask-auto.png`): after the first recipe ever added to the list,
+  when the add toast has gone, the K3 sheet asks **Add recipes as you save them?** with the
+  list icon in a 72 pt `chip` circle, *Every recipe you save will put its ingredients on your
+  list. You can turn this off in your list.*, the primary **Yes, every time** (switch on) and
+  the tactile **Only when I ask** (switch stays off). Closing it any other way leaves the
+  switch off. It never shows again.
+- **Saving with the switch on** (`shopping-save-auto.png`): Save works as signed; when the
+  animation ends, the recipe is on the list with the default ticks of the sheet above, the
+  pill reads **On your list**, and the signed toast says **Saved · 2 items on your list**
+  over what went in and what did not (*Potatoes and eggs. You have the rest.*), with
+  **Review**, which opens the sheet with the current choice; its button then reads **Update
+  list**. With nothing to add, the toast reads **Saved · nothing to buy**, the recipe does not
+  go on the list and the pill reads **Add to list**. On the free plan the sixth-save toast of #14 is untouched: the
+  switch only exists on premium.
+- **(default)** Removing a recipe from the cookbook never touches the list.
+
+### On the free plan
+
+`shopping-free.png`. **Add to list** and the list button look the same as on premium. Either
+opens the K3 sheet over the current screen, never a wall: the list icon in a 72 pt `chip`
+circle, **Let Karta write your list** (Fraunces 700 28 pt), *Add a recipe and Premium puts
+what you need on one list, sorted by aisle and added up.*, the primary **See plans**, which
+grows into the paywall as K3 does (*Premium and the paywall* → *Ways in*, way 5), and the
+tactile **Not now**. The recipe stays saved. The switch and the badge do not exist on the free
+plan.
+
+**(default) After a downgrade** (ADR 0007) the list stays as it was: it can be read, ticked,
+cleared and its chips removed; the switch turns off by itself; adding a recipe opens the sheet
+above.
+
+### Empty
+
+`shopping-empty.png`. The cookbook's empty state, centred in the free space under the header,
+with no title: the list icon at 64 pt in a thin `#C9B79C` stroke, **Nothing on your list**
+(Fraunces 700 22 pt) and *Tap Add to list on a saved recipe and its ingredients land here,
+sorted by aisle.* (Figtree 600 15 / 22 pt `inkMuted`). No button.
+
+### Text size
+
+The list follows Dynamic Type: the title → `.title`, names → `.body`, totals and recipe lines
+→ `.subheadline`, headings → `.caption` bold. From **AX1** (`shopping-ax1.png`) a row no longer
+keeps one line: the name wraps on as many lines as it needs, the total moves under it aligned
+with the name, and the recipe line is hidden. The checkbox grows to 32 pt. The recipe chips
+become one row that scrolls sideways. **Done shopping** stays pinned. A name is never cut on
+the list.
+
+### Open decisions and default rules
+
+- **(default)** One list only. Several named lists are a later decision.
+- **(default)** The sheet and saving with the switch on untick the Básicos de despensa and
+  what Leftovers says is left over. The staples list is the one proposed in #9 (question 3);
+  if #9 changes it, it changes here too.
+- **(default)** A recipe that leaves the catalogue keeps its rows on the list until they are
+  bought or removed; its chip shows the name without a dot.
+- **(default)** The long-press **Remove from cookbook** stays next to **Select**.
+- Not in #11: sending the list to someone else (Messages). Ask before adding it.
+- #153 (question 6) can now drop the "pending" on the paywall's **Shopping list** line and on
+  *Unlimited cookbook, lists*: the feature is designed.
 
 ## Suits (Course icons)
 

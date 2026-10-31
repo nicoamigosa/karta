@@ -41,8 +41,25 @@ _Avoid_: foto de proceso, imagen del paso, Foto (que es sólo la de la receta)
 **Cantidad**:
 Cuánto de un ingrediente pide la receta o un Paso. Se lee delante del nombre, así que nunca
 repite una palabra de él: `5` *Large eggs*, no `5 large` *Large eggs*. Una cantidad que repite el
-nombre invalida la receta.
+nombre invalida la receta. La de la receta es un número con su unidad, o una cantidad sin
+medida como *to taste*; la de un Paso es texto.
 _Avoid_: medida, porción
+
+**Clave de compra**:
+El producto que se compra para un ingrediente (`yellow-onion`), común a todas las recetas que
+lo usan. Dos ingredientes con la misma clave son una sola línea en la Lista de la compra.
+_Avoid_: id del ingrediente, nombre normalizado
+
+**Pasillo**:
+La sección de la tienda en la que se compra un ingrediente, de un vocabulario cerrado
+(*Produce*, *Dairy & eggs*, *Pantry*…). Ordena la Lista de la compra.
+_Avoid_: categoría, sección
+
+**Básico de despensa**:
+Un ingrediente que se da por hecho que hay en casa (sal, pimienta, aceites, harina, azúcar,
+levadura), de una lista cerrada. No cuenta como sobra en Leftovers y entra desmarcado al
+añadir una receta a la Lista de la compra.
+_Avoid_: despensa como inventario, staple
 
 **Foto**:
 La imagen principal de una receta. Puede ser real o generada, pero siempre la aprueba la
@@ -250,6 +267,12 @@ Lo que Karta deduce de las Aperturas, los guardados y las Vistas sin Apertura de
 para ordenar el Feed. Nunca se pregunta: no hay calibración (ADR 0016). Sólo reordena recetas
 que ya son seguras para ella; nunca hace aparecer ni desaparecer ninguna.
 _Avoid_: calibración, like, favorito, preferencias
+
+**Lista de la compra**:
+Lo que hay que comprar para las recetas guardadas que la usuaria añadió, sumado por Clave de
+compra y ordenado por Pasillo. Es una sola, es premium y no es un inventario: no recuerda lo
+que hay en casa.
+_Avoid_: lista de ingredientes, carrito, despensa
 
 ### Cocina
 
