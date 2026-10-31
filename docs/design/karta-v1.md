@@ -1227,7 +1227,7 @@ Signed off on 2026-10-31 by the founder (#11). The two rounds are each in their 
 Raciones A, Agrupar C, En casa C and AX1 A) and *Karta lista ronda 2*
 (<https://claude.ai/artifact/PY4w9fw1Hty7Zwxnay7jR5>, rows Interruptor C, Al guardar A, Reverso
 B, Quitar A with **Remove** only, Carrito A, Gratis B and Vacío A). Product context: `CONTEXT.md`
-→ **Lista de la compra**, **Clave de compra**, **Pasillo**, **Básico de despensa**; ADR 0015
+→ **Lista de la compra**, **Clave de compra**, **Pasillo**, **Básico de despensa**; ADR 0017
 (structured quantities), 0007, 0010; PRD story 41. The list is **premium only**.
 
 Rules marked **(default)** were proposed with the rounds and not answered by the founder: they
@@ -1280,7 +1280,7 @@ All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched
 3. **The switch row** *Add recipes when I save them* (*Adding as you save* below).
 4. **The aisles**, in this fixed order and only when they have a row: **Produce**, **Meat &
    fish**, **Dairy & eggs**, **Bakery**, **Pantry**, **Spices**, **Frozen**, **Other**
-   (ADR 0015). Heading: Figtree 800 12 pt, tracking 1.6, `brandEdge`, uppercase, 12 pt above
+   (ADR 0017). Heading: Figtree 800 12 pt, tracking 1.6, `brandEdge`, uppercase, 12 pt above
    and 4 pt below.
 5. **Rows**, one per Clave de compra, 44 pt minimum, 1 pt `track` rule below: a 24 pt
    checkbox (radius 7, 2 pt `line` border, `card` fill), 10 pt gap, the name (Figtree 700
@@ -1289,7 +1289,7 @@ All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched
    (Figtree 500 14 pt `inkMuted`, never cut). Order within an aisle: the order the recipes
    were added, then the recipe's own order.
 
-**Totals** (Raciones A, Agrupar C; ADR 0015). There is no servings control: each recipe goes
+**Totals** (Raciones A, Agrupar C; ADR 0017). There is no servings control: each recipe goes
 on the list for the servings it declares. The total adds up the shares with the same Clave
 de compra and the same unit: two recipes with *1 medium* yellow onion give **2 medium**. Units
 are never converted: *1/2 cup* and *for frying* are shown as **1/2 cup + for frying**, with

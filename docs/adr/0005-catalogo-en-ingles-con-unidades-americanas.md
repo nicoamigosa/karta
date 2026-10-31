@@ -1,6 +1,6 @@
 # El catálogo se escribe en inglés con unidades americanas, sin capa de conversión
 
-_(Sustituido en parte por el ADR 0015: la cantidad de cada ingrediente de la receta pasa a ser
+_(Sustituido en parte por el ADR 0017: la cantidad de cada ingrediente de la receta pasa a ser
 dato estructurado. Sigue sin haber conversión de unidades ni escalado.)_
 
 El seed estaba en español con unidades métricas (`500 g`, `200 ml`, `2 tazas cocidas`) y
