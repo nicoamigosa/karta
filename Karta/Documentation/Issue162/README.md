@@ -9,7 +9,7 @@ and read back before shooting.
 
 Environment: iPhone 17 simulator, iOS 27.0
 (E0224A22-F874-4B8C-83FB-EB084492C493), Xcode 27.0 (27A266a), tested at
-commit `727dab7` on `ralph/issue-162`. Every capture is a real app
+commit `b9bb7a5` on `ralph/issue-162`. Every capture is a real app
 launch seeded with `SIMCTL_CHILD_KARTA_SEED=<name>`; premium seeds are
 applied by `DebugSeeds.afterPremiumLaunch` after
 `PremiumController.start()` so the launch-time entitlement report does
