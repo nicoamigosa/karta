@@ -260,6 +260,9 @@ struct MundoMenuView: View {
     let store: KartaStore
     let onSelect: (World) -> Void
     let onDismiss: () -> Void
+    /// The Go Premium way in — shown only while the core offers it
+    /// (free plan; hidden on trial and premium).
+    var onGoPremium: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -318,6 +321,51 @@ struct MundoMenuView: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            if let onGoPremium, store.showsGoPremium {
+                Divider()
+                    .overlay(KartaDesign.ColorToken.line)
+
+                Button {
+                    onDismiss()
+                    onGoPremium()
+                } label: {
+                    HStack(spacing: KartaDesign.space.mundoRowPadding) {
+                        GoPremiumGlyph()
+                            .frame(
+                                width: KartaDesign.space.mundoRowIcon + 4,
+                                height: KartaDesign.space.mundoRowIcon + 4
+                            )
+
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(PremiumPlan.goPremiumTitle)
+                                .font(KartaDesign.FontToken.mundoName())
+                                .foregroundStyle(KartaDesign.ColorToken.ink)
+                            Text("Unlimited cookbook, lists")
+                                .font(KartaDesign.FontToken.mundoLine())
+                                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                                .lineLimit(1)
+                        }
+
+                        Spacer(minLength: 0)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(KartaDesign.ColorToken.ink)
+                            .frame(
+                                width: KartaDesign.space.mundoRowCheck,
+                                height: KartaDesign.space.mundoRowCheck
+                            )
+                    }
+                    .padding(KartaDesign.space.mundoRowPadding)
+                    .frame(height: KartaDesign.space.mundoRowHeight)
+                    .contentShape(RoundedRectangle(
+                        cornerRadius: KartaDesign.space.mundoRowRadius,
+                        style: .continuous
+                    ))
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(KartaDesign.space.mundoMenuPadding)
         .frame(width: KartaDesign.space.mundoMenuWidth)
@@ -348,6 +396,19 @@ struct MundoMenuView: View {
             radius: KartaDesign.elevation.menuShadowRadius,
             y: KartaDesign.elevation.menuShadowY
         )
+    }
+}
+
+/// The Go Premium row icon (`premium-world-menu.png`): a 30 pt `brand`
+/// circle with a 20 pt sparkle in `card`.
+struct GoPremiumGlyph: View {
+    var body: some View {
+        Image(systemName: "sparkle")
+            .font(.system(size: 20, weight: .bold))
+            .foregroundStyle(KartaDesign.ColorToken.card)
+            .frame(width: 30, height: 30)
+            .background(Circle().fill(KartaDesign.ColorToken.brand))
+        .accessibilityHidden(true)
     }
 }
 

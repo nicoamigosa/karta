@@ -5,6 +5,9 @@ import KartaPresentation
 
 struct FeedScreen: View {
     let store: KartaStore
+    /// The shell's StoreKit bridge: entitlement at launch, the four ways in,
+    /// purchase and restore.
+    let premium: PremiumController
 
     @State private var recipes: [Recipe] = []
     // An empty clip library cannot fail validation; clips load with the seed.
@@ -74,7 +77,8 @@ struct FeedScreen: View {
                                store.cookbook.isSaved(toast.recipeID) {
                                 store.send(.pushRoute(.recipeDetail(recipeID: toast.recipeID)))
                             }
-                        }
+                        },
+                        premium: premium
                     )
                     .transition(.opacity)
                 } else {
@@ -88,7 +92,8 @@ struct FeedScreen: View {
                         },
                         onOpenCard: {
                             reverseFromCookbook = false
-                        }
+                        },
+                        premium: premium
                     )
                     .transition(.opacity)
                 }
@@ -115,9 +120,30 @@ struct FeedScreen: View {
                     unsaveToast: store.unsaveToast(recipes: recipes),
                     onUndo: {
                         store.send(.undoUnsave)
-                    }
+                    },
+                    premium: premium
                 )
                 .transition(reverseTransition)
+            }
+
+            // The paywall from the other three ways in rises over the feed;
+            // the K3 sheet grows into it inside the reverse instead.
+            if let paywall = store.state.paywall,
+               case .cap = paywall.entry {} else if let paywall = store.state.paywall {
+                PaywallView(paywall: paywall, store: store, premium: premium)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            // Restore-with-nothing toast: no pill, at the top of the screen.
+            if let toast = store.state.restoreToast {
+                VStack {
+                    RestoreToastView(toast: toast) {
+                        store.send(.paywall(.dismissRestoreToast))
+                    }
+                    .padding(.top, KartaDesign.space.cardGap)
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             if let session = store.session,
@@ -290,6 +316,7 @@ private struct FeedSurface: View {
     let store: KartaStore
     let onOpenCookbook: () -> Void
     let onOpenCard: () -> Void
+    let premium: PremiumController
 
     @State private var mundoMenuOpen = DebugSeeds.opensMundoMenu
     @State private var filterPanelOpen = DebugSeeds.opensFilterPanel
@@ -401,7 +428,8 @@ private struct FeedSurface: View {
                                 MundoMenuView(
                                     store: store,
                                     onSelect: { store.send(.selectWorld($0)) },
-                                    onDismiss: { closeMenu() }
+                                    onDismiss: { closeMenu() },
+                                    onGoPremium: { Task { await premium.open(entry: .worldMenu) } }
                                 )
                                 .padding(.top, headerClearance(in: geometry)
                                          + KartaDesign.space.mundoMenuTopGap)

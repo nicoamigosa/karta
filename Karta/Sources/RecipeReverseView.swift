@@ -20,6 +20,8 @@ struct RecipeReverseView: View {
     let unsaveToast: UnsaveToast?
     /// Called when the reverse's own Undo pill restores the removal.
     let onUndo: () -> Void
+    /// The shell's StoreKit bridge: opens the paywall from K3 and See plans.
+    let premium: PremiumController
 
     @State private var showFullSheet = false
 
@@ -91,7 +93,26 @@ struct RecipeReverseView: View {
             .padding(.horizontal, KartaDesign.space.reverseCardX)
             .padding(.vertical, KartaDesign.space.reverseCardY)
 
-            if let toast = unsaveToast {
+            if let toast = store.state.pendingSaveToast {
+                // The one-time sixth-save toast sits in the Undo spot, with
+                // See plans in place of the Undo pill.
+                VStack {
+                    Spacer()
+                    SaveToastView(toast: toast, onSeePlans: {
+                        store.send(.dismissSaveToast)
+                        Task { await premium.open(entry: .sixthSaveToast) }
+                    }, onExpire: {
+                        store.send(.dismissSaveToast)
+                    })
+                }
+                .padding(
+                    .bottom,
+                    KartaDesign.space.reverseCardY + KartaDesign.space.cardBottom
+                        + KartaDesign.space.ctaHeight + KartaDesign.space.cardGap
+                )
+                .padding(.horizontal, KartaDesign.space.reverseCardX + KartaDesign.space.cardX)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if let toast = unsaveToast {
                 VStack {
                     Spacer()
                     UnsaveToastView(toast: toast, onUndo: {
@@ -109,12 +130,16 @@ struct RecipeReverseView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            if showFullSheet, let full = store.blockedByCap {
+            if let paywall = store.state.paywall,
+               case .cap = paywall.entry {
+                // K3 grows into the paywall: the same sheet keeps the fan
+                // and the count, the rest cross-fades.
+                PaywallView(paywall: paywall, store: store, premium: premium)
+            } else if showFullSheet, let full = store.blockedByCap {
                 CookbookFullSheet(
                     presentation: full,
                     onUnlock: {
-                        // Paywall hook — the paywall itself is issue #14.
-                        PaywallHook.open()
+                        Task { await premium.open(entry: .cap(recipe)) }
                     },
                     onDismiss: {
                         showFullSheet = false
@@ -123,7 +148,9 @@ struct RecipeReverseView: View {
             }
         }
         .animation(.easeOut(duration: 0.25), value: store.state.pendingUnsave != nil)
+        .animation(.easeOut(duration: 0.25), value: store.state.pendingSaveToast != nil)
         .animation(.easeOut(duration: 0.3), value: showFullSheet)
+        .animation(.easeOut(duration: 0.3), value: store.state.paywall != nil)
     }
 
     /// The crimson note under the title block for a saved recipe carrying a
