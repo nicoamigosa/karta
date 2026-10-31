@@ -38,8 +38,9 @@ Board (left) and simulator capture (right) in each `compare-*.png`.
 - `compare-cookbook-menu.png` — vs `share-cookbook-menu.png` (`repertoire`
   seed, long-press on the Pesto Pasta card): **Share** with the share glyph
   above destructive *Remove from cookbook*.
-- `compare-share-sheet.png` — vs `share-sheet.png`: the sheet header shows
-  the Foto thumbnail and the name over the `karta.app` domain line. The
+- `compare-share-sheet.png` — vs `share-sheet.png`: the sheet opens at the
+  medium detent (`.presentationDetents([.medium, .large])`) and its header
+  shows the Foto thumbnail and the name over the `karta.app` domain line. The
   second title line (*Serves 4 · 35 min · Easy*) is set in
   `LPLinkMetadata.title` (U+2028, asserted by
   `ShareSheetTests.linkMetadata`) but the iOS 27.0 simulator collapses it
@@ -47,7 +48,8 @@ Board (left) and simulator capture (right) in each `compare-*.png`.
   (Open decisions in the PR).
 - `compare-recipe-gone.png` — vs `share-recipe-gone.png` (`share-gone`
   seed, which drives `openRecipeLink` with an id absent from the
-  catalogue): the Feed with the toast 12 pt below the header row and
+  catalogue; links arriving before the seed loads are held in
+  `pendingLink` until `isLoaded`): the Feed with the toast 12 pt below the header row and
   22 pt from the sides — cookbook box glyph in `card`, *This recipe is no
   longer on Karta* over *Here's your deck instead.*, no button, 5 s.
 
