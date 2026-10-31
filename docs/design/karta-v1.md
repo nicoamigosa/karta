@@ -876,7 +876,7 @@ new ceiling, and the next save opens K3 with the downgrade copy
   Leftovers, Terms and privacy, Family Sharing.
 - Not drawn: the paywall at larger text sizes. The renewal line and the footer must stay
   visible next to the button, so ask before letting them scroll away.
-- Not decided: where the "toast already shown" flag for the sixth save lives (ADR 0010).
+- Decided: the sixth-save "toast already shown" flag lives in the user snapshot (ADR 0010).
 - The shopping list itself, its button and how a free user meets it belong to #11.
 
 ## Share
