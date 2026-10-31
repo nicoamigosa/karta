@@ -14,6 +14,7 @@ public struct UserSnapshot: Equatable, Sendable {
     public let cookHistory: [CookEntry]
     public let tasteCalibration: TasteCalibration
     public let cookingSession: CookingSession?
+    public let shareCardHistory: ShareCardHistory
     public let hasShownAlarmPermissionSheet: Bool
 
     public init(
@@ -23,8 +24,10 @@ public struct UserSnapshot: Equatable, Sendable {
         cookHistory: [CookEntry] = [],
         tasteCalibration: TasteCalibration = TasteCalibration(),
         cookingSession: CookingSession? = nil,
-        hasShownAlarmPermissionSheet: Bool = false
+        hasShownAlarmPermissionSheet: Bool = false,
+        shareCardHistory: ShareCardHistory = ShareCardHistory()
     ) {
+        self.shareCardHistory = shareCardHistory
         self.profile = profile
         self.cookbook = cookbook
         self.viewHistory = viewHistory
@@ -55,7 +58,8 @@ public struct UserSnapshot: Equatable, Sendable {
                 likedIDs: tasteCalibration.likedIDs
             ),
             cookingSession: cookingSession.map(CookingSessionDTO.init),
-            hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet
+            hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet,
+            shareCardHistory: ShareCardHistoryDTO(shareCardHistory)
         )
 
         let encoder = JSONEncoder()
@@ -166,6 +170,7 @@ private struct UserSnapshotDTO: Codable {
     let cookingSession: CookingSessionDTO?
     // Optional so synthesized Codable uses decodeIfPresent for older snapshots.
     let hasShownAlarmPermissionSheet: Bool?
+    let shareCardHistory: ShareCardHistoryDTO?
 
     func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
         // Intolerances are safety-critical: a snapshot that does not state them
@@ -217,8 +222,28 @@ private struct UserSnapshotDTO: Codable {
                 likedIDs: tasteCalibration?.likedIDs ?? []
             ),
             cookingSession: retainedSession,
-            hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet ?? false
+            hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet ?? false,
+            shareCardHistory: try shareCardHistory?.domainValue ?? ShareCardHistory()
         )
+    }
+}
+
+private struct ShareCardHistoryDTO: Codable {
+    let shownRecipeIDs: [String]
+    let consecutiveDismissals: Int
+
+    init(_ history: ShareCardHistory) {
+        shownRecipeIDs = history.shownRecipeIDs.sorted()
+        consecutiveDismissals = history.consecutiveDismissals
+    }
+
+    var domainValue: ShareCardHistory {
+        get throws {
+            guard consecutiveDismissals >= 0 else { throw SnapshotDecodingError.invalidValue }
+            return ShareCardHistory(
+                shownRecipeIDs: Set(shownRecipeIDs), consecutiveDismissals: consecutiveDismissals
+            )
+        }
     }
 }
 

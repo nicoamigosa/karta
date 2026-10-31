@@ -5,6 +5,37 @@ import Testing
 @Suite("User snapshot")
 struct UserSnapshotTests {
 
+    @Test("Version 1 snapshots without sharing memory restore the empty state")
+    func legacyShareCardHistory() throws {
+        let data = Data(#"{"version":1,"profile":{"intolerances":["dairy"],"householdSize":2}}"#.utf8)
+        let restored = try #require(UserSnapshot.restore(from: data).snapshot)
+        #expect(restored.shareCardHistory == ShareCardHistory())
+        #expect(restored.profile.intolerances == [.dairy])
+    }
+
+    @Test("Invalid sharing memory preserves the original snapshot")
+    func invalidShareCardHistory() {
+        let data = Data(#"{"version":1,"profile":{"intolerances":[],"householdSize":2},"shareCardHistory":{"shownRecipeIDs":[],"consecutiveDismissals":-1}}"#.utf8)
+        let result = UserSnapshot.restore(from: data)
+        #expect(result.snapshot == nil)
+        #expect(result.preservedData == data)
+    }
+
+    @Test("Share-card memory round-trips without losing shown recipes or the dismissal streak")
+    func roundTripsShareCardHistory() throws {
+        var history = ShareCardHistory()
+        history.close(for: "one", as: .dismissed)
+        history.close(for: "two", as: .dismissed)
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [.dairy], householdSize: 2),
+            shareCardHistory: history
+        )
+        let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot)
+        #expect(restored.shareCardHistory.shownRecipeIDs == ["one", "two"])
+        #expect(restored.shareCardHistory.consecutiveDismissals == 2)
+        #expect(restored == snapshot)
+    }
+
     @Test("A snapshot without Cierre fields restores on its original Paso")
     func legacySessionStaysOnPaso() throws {
         let data = Data(#"{"version":1,"profile":{"intolerances":[],"householdSize":2},"cookingSession":{"recipeID":"r1","steps":[{"text":"Prepare"},{"text":"Serve"}],"currentIndex":1,"lastStepReachedAt":20}}"#.utf8)
