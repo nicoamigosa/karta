@@ -11,11 +11,15 @@ enum DebugSeeds {
     @MainActor
     static func store() -> KartaStore {
         guard let name = ProcessInfo.processInfo.environment["KARTA_SEED"] else {
-            return KartaStore(state: KartaState(
+            var plain = KartaState(
                 safetyProfile: SafetyProfile(intolerances: [])
-            ))
+            )
+            plain.shareBaseURL = ShareLinks.baseURL
+            return KartaStore(state: plain)
         }
-        let store = KartaStore(state: state(for: name))
+        var seeded = state(for: name)
+        seeded.shareBaseURL = ShareLinks.baseURL
+        let store = KartaStore(state: seeded)
         switch name {
         case "undo-ceiling":
             // Premium downgrade: a >7 ceiling dropping to the free floor, so
@@ -32,6 +36,16 @@ enum DebugSeeds {
         case "undo-grid":
             // Plain removal inside the cookbook: toast names the recipe.
             store.send(.unsaveRecipe("caesar-salad"))
+        case "share-gone":
+            // Opening a link to a recipe that is not in the catalogue:
+            // the Feed with the recipe-gone toast (needs a base URL).
+            if let base = ShareLinks.baseURL {
+                _ = store.openRecipeLink(
+                    base.appending(path: "not-a-recipe"),
+                    recipes: [],
+                    at: Date()
+                )
+            }
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
              "cooking-timer-paused",
@@ -282,6 +296,14 @@ enum DebugSeeds {
             return KartaState(
                 onboarding: Self.onboarded(intolerances: Set(Allergen.allCases)),
                 safetyProfile: SafetyProfile(intolerances: Set(Allergen.allCases))
+            )
+        case "share-gone":
+            // The Feed after a link to a recipe that is not in the
+            // catalogue; the notice itself is sent in `store()` once the
+            // base URL is on the state.
+            return KartaState(
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
             )
         case "leftovers":
             // The Leftovers Mundo open on its placeholder until #9 lands.

@@ -325,6 +325,18 @@ enum KartaDesign {
                 .weight(.medium)
         }
 
+        /// Share card message "Pass this card on" (Fraunces 700, 18/22,
+        /// scales as `.title3`).
+        static func shareMessage() -> Font {
+            display(size: 18, relativeTo: .title3, weight: 700)
+        }
+
+        /// Share pill label (Figtree 700, 14, scales as `.subheadline`).
+        static func sharePillLabel() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .subheadline)
+                .weight(.bold)
+        }
+
         private static func display(
             name: String = "Fraunces",
             size: CGFloat,
@@ -659,6 +671,44 @@ enum KartaDesign {
         /// The one-second tick that refreshes countdown presentations while
         /// any Temporizador exists.
         static let timerTickSeconds: TimeInterval = 1
+    }
+
+    /// The share card on the finish card (`docs/design/karta-v1.md` →
+    /// *The share card*): floats over the bottom of the Foto at default
+    /// sizes and sits in the scroll between Foto and Finish from AX1.
+    enum shareCard {
+        static let sideInset: CGFloat = 20
+        /// Clearance above the bottom zone's rule when it floats.
+        static let bottomGap: CGFloat = 12
+        static let radius: CGFloat = 18
+        static let edge: CGFloat = 2
+        static let padTop: CGFloat = 16
+        static let padLeading: CGFloat = 14
+        static let padTrailing: CGFloat = 12
+        static let padBottom: CGFloat = 12
+        static let grabberWidth: CGFloat = 32
+        static let grabberHeight: CGFloat = 4
+        static let grabberTopGap: CGFloat = 5
+        /// The two card backs in miniature, fanned as in the deck.
+        static let miniWidth: CGFloat = 24
+        static let miniHeight: CGFloat = 34
+        static let miniRadius: CGFloat = 5
+        static let miniFrontOffset: CGFloat = 8
+        static let miniRotation: Double = 8
+        static let miniFrameInset: CGFloat = 2.5
+        static let messageGap: CGFloat = 12
+        static let pillHeight: CGFloat = 38
+        static let pillPadX: CGFloat = 12
+        static let pillIcon: CGFloat = 16
+        /// From AX1: 14 pt under the Foto and the pill's gap under the message.
+        static let axTopGap: CGFloat = 14
+        static let axPillGap: CGFloat = 12
+        /// Enters ~400 ms after the answer, rising 12 pt over 300 ms.
+        static let appearDelay: TimeInterval = 0.4
+        static let appearDuration: TimeInterval = 0.3
+        static let appearRise: CGFloat = 12
+        /// It leaves on its own after 8 s unless VoiceOver has focus on it.
+        static let timeout: TimeInterval = 8
     }
 
     enum elevation {

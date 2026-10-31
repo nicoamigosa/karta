@@ -13,6 +13,7 @@ struct CookbookScreen: View {
     let onClose: () -> Void
     let onOpenRecipe: (CookbookPresentation.Row) -> Void
     let onUnsaveFromGrid: (CookbookPresentation.Row) -> Void
+    let onShare: (CookbookPresentation.Row) -> Void
     let onUndo: (UnsaveToast) -> Void
 
     @AppStorage("cookbook.lastHalf") private var lastHalf = CookbookHalf.wantToTry.rawValue
@@ -179,6 +180,15 @@ struct CookbookScreen: View {
                             onOpenRecipe(row)
                         }
                         .contextMenu {
+                            // Share sits above Remove while the app has a
+                            // base URL; with none it never appears.
+                            if canShare(row) {
+                                Button {
+                                    onShare(row)
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                            }
                             Button(role: .destructive) {
                                 onUnsaveFromGrid(row)
                             } label: {
@@ -191,6 +201,14 @@ struct CookbookScreen: View {
         .scrollIndicators(.hidden)
         // The card shadow must not be clipped by the scroll bounds.
         .scrollClipDisabled()
+    }
+
+    /// The contract decides whether this row can share (needs a base URL
+    /// and a recipe still in the catalogue).
+    private func canShare(_ row: CookbookPresentation.Row) -> Bool {
+        guard let recipe = recipes.first(where: { $0.id == row.recipeID })
+        else { return false }
+        return ShareLinks.payload(for: recipe, in: store) != nil
     }
 
     private func emptyState(title: String, body: String) -> some View {

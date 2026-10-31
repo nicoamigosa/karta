@@ -17,6 +17,9 @@ struct CookingSessionView: View {
     let clips: TechniqueClipLibrary
     let manifest: MediaAssetManifest
     let store: KartaStore
+    /// Present the native share sheet for a payload (shell-owned; the card
+    /// only reports the tap).
+    let onShare: (SharePayload) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // Read so the body re-evaluates on Dynamic Type changes: the Fraunces
@@ -53,19 +56,26 @@ struct CookingSessionView: View {
     /// The technique clip's playback: resolution, load and phases live in
     /// `ClipPlaybackController` (shell), fed by `MediaLoadStateMachine` (#45).
     @State private var clipController: ClipPlaybackController
+    /// Set ~400 ms after the share offer appears, so the card can rise in.
+    @State private var shareCardEntered = false
+    /// VoiceOver focus on the share card: the 8 s timeout never fires while
+    /// the card has focus.
+    @AccessibilityFocusState private var shareCardFocused: Bool
 
     init(
         session: CookingSession,
         recipe: Recipe,
         clips: TechniqueClipLibrary,
         manifest: MediaAssetManifest,
-        store: KartaStore
+        store: KartaStore,
+        onShare: @escaping (SharePayload) -> Void
     ) {
         self.session = session
         self.recipe = recipe
         self.clips = clips
         self.manifest = manifest
         self.store = store
+        self.onShare = onShare
         _clipController = State(initialValue: ClipPlaybackController(
             resolver: MediaResolver(manifest: manifest, baseURL: nil),
             loadDelay: DebugSeeds.clipLoadDelay
@@ -547,6 +557,20 @@ struct CookingSessionView: View {
                     .padding(.top, KartaDesign.cooking.sectionGap)
                     .padding(.horizontal, KartaDesign.cooking.mediaInset)
 
+                // From AX1 the share card is scroll content between the Foto
+                // and Finish, 14 pt under the Foto and 20 pt from the sides
+                // (`share-finish-card-ax1.png`); it never times out here.
+                if bottomZoneScrolls, let payload = finish.sharePayload {
+                    ShareCardView(
+                        payload: payload,
+                        course: recipe.primaryCourse,
+                        stacked: true,
+                        onShare: { share(payload) }
+                    )
+                    .padding(.top, KartaDesign.shareCard.axTopGap)
+                    .padding(.horizontal, KartaDesign.shareCard.sideInset)
+                }
+
                 Spacer(minLength: KartaDesign.cooking.freeSpaceMin)
 
                 if bottomZoneScrolls {
@@ -576,6 +600,81 @@ struct CookingSessionView: View {
                 }
             }
         }
+        .overlay(alignment: .bottom) {
+            // The floating share card: over the bottom of the Foto, 20 pt
+            // from the sides and 12 pt above the bottom zone's rule; it
+            // never covers Finish (`share-finish-card.png`).
+            if !bottomZoneScrolls, let payload = finish.sharePayload,
+               shareCardEntered {
+                ShareCardView(
+                    payload: payload,
+                    course: recipe.primaryCourse,
+                    focused: $shareCardFocused,
+                    onShare: { share(payload) },
+                    onDismiss: { closeShareCard(as: .dismissed) }
+                )
+                .padding(.horizontal, KartaDesign.shareCard.sideInset)
+                .padding(.bottom, shareCardBottomInset)
+                .transition(shareCardTransition)
+            }
+        }
+        .onChange(of: finish.sharePayload?.url, initial: true) { _, offered in
+            shareCardEntered = false
+            guard offered != nil else { return }
+            Task { @MainActor in
+                try? await Task.sleep(
+                    for: .seconds(KartaDesign.shareCard.appearDelay)
+                )
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: KartaDesign.shareCard.appearDuration)) {
+                    shareCardEntered = true
+                }
+            }
+        }
+        .task(id: finish.sharePayload?.url) {
+            // The floating card leaves on its own after 8 s; the timeout
+            // holds while VoiceOver has focus on it. Finish counts as a
+            // dismissal through `.exitCooking` in the reducer.
+            guard finish.sharePayload != nil, !bottomZoneScrolls else { return }
+            var idle: TimeInterval = 0
+            while !Task.isCancelled, idle < KartaDesign.shareCard.timeout {
+                try? await Task.sleep(for: .seconds(0.25))
+                guard !Task.isCancelled else { return }
+                if !shareCardFocused { idle += 0.25 }
+            }
+            closeShareCard(as: .dismissed)
+        }
+    }
+
+    /// Every exit of the floating card animates it back downwards, the way
+    /// it entered (`docs/design/karta-v1.md` → *The share card*).
+    private func closeShareCard(as action: ShareCardHistory.Close) {
+        withAnimation(.easeOut(duration: KartaDesign.shareCard.appearDuration)) {
+            store.send(.closeShareCard(action))
+        }
+    }
+
+    /// The gap that keeps the floating share card 12 pt above the bottom
+    /// zone's rule: rule (1 pt) + top gap + Finish height + bottom gap.
+    private var shareCardBottomInset: CGFloat {
+        1 + KartaDesign.cooking.bottomZoneTopGap
+            + KartaDesign.cooking.finishHeight
+            + KartaDesign.cooking.bottomZoneVGap
+            + KartaDesign.shareCard.bottomGap
+    }
+
+    private var shareCardTransition: AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .offset(y: KartaDesign.shareCard.appearRise)
+                .combined(with: .opacity)
+    }
+
+    /// The cook tapped **Share**: the offer counts as shared (the core
+    /// resets the dismissal count) and the shell presents the sheet.
+    private func share(_ payload: SharePayload) {
+        closeShareCard(as: .shared)
+        onShare(payload)
     }
 
     private func finishTitle(_ finish: CookingFinishPresentation) -> String {
