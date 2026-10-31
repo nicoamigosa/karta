@@ -38,8 +38,8 @@ Notes:
   reverse; every other entry renders in the feed overlay, which still
   sits above an open reverse — that is why `premium-paywall-entry` shows
   the paywall over the recipe.
-- The celebration honours Reduce Motion (fade instead of falling card
-  backs, covered by `ReduceMotionTests` + the `welcome` seed); captures
-  here show the motion variant.
+- The celebration honours Reduce Motion (a single fade instead of the
+  falling card backs, via `accessibilityReduceMotion` in
+  `PaywallView.swift`); captures here show the motion variant.
 - Terms of Use / Privacy Policy footer links point at the
   `PremiumLinks` placeholders pending the real pages.
