@@ -12,6 +12,8 @@ public struct KartaState: Equatable, Sendable {
     public fileprivate(set) var lastSaveResult: SaveResult?
     /// Transient Undo receipt; the shell dismisses it when its toast expires.
     public fileprivate(set) var pendingUnsave: Cookbook.UnsaveUndo?
+    /// Unknown until the shell reports the App Store result for this launch. Never persisted.
+    public fileprivate(set) var entitlement: Entitlement?
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
     public var viewHistory: ViewHistory
@@ -191,6 +193,8 @@ public enum KartaAction: Sendable {
     case recordOpen(recipeID: String, at: Date)
     /// Record an emitted Cocinado with its date supplied by the shell.
     case recordCook(CookEntry)
+    case entitlementChanged(Entitlement)
+    @available(*, deprecated, message: "Report entitlementChanged(.free) instead")
     case downgradeCookbookToFree
     case onboarding(OnboardingAction)
     case startCooking(Recipe, startedAt: TimeInterval)
@@ -262,9 +266,16 @@ public enum KartaReducer {
         case let .recordCook(entry):
             state.cookHistory.append(entry)
         case .downgradeCookbookToFree:
+            reduce(&state, action: .entitlementChanged(.free))
+        case let .entitlementChanged(entitlement):
+            guard state.entitlement != entitlement else { return }
+            state.entitlement = entitlement
             state.lastSaveResult = nil
             state.pendingUnsave = nil
-            state.cookbook.downgradeToFree()
+            switch entitlement {
+            case .free: state.cookbook.downgradeToFree()
+            case .trial, .premium: state.cookbook.liftCupo()
+            }
         case let .onboarding(action):
             let previousFilters = state.effectiveFeedFilters
             switch action {
