@@ -3,6 +3,8 @@ options:
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
+  # xcodegen has no storeKitConfiguration on TestAction: insert it post-gen.
+  postGenCommand: sh scripts/wire-storekit-scheme.sh
 packages:
   KartaCore:
     path: ../KartaCore
@@ -21,6 +23,10 @@ targets:
           - clips
       - path: Resources/clips
         type: folder
+        buildPhase: resources
+      # The local StoreKit config: the scheme selects it for Debug and
+      # tests; SKTestSession(configurationFileNamed:) reads it back.
+      - path: Karta.storekit
         buildPhase: resources
     info:
       path: Info.plist
@@ -87,6 +93,9 @@ targets:
     platform: iOS
     sources:
       - path: Tests
+      # The local StoreKit file: SKTestSession reads it from the test bundle.
+      - path: Karta.storekit
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.karta.KartaTests
@@ -102,6 +111,10 @@ schemes:
       targets:
         Karta: all
         KartaAlarmWidget: all
+    run:
+      config: Debug
+      storeKitConfiguration: Karta.storekit
     test:
       targets:
         - KartaTests
+      storeKitConfiguration: Karta.storekit

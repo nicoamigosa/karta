@@ -11,11 +11,6 @@ struct CookbookFullSheet: View {
     let onUnlock: () -> Void
     let onDismiss: () -> Void
 
-    /// Seven card backs cycling the four suits, like the PNG's fan.
-    private let fanSuits: [Course] = [
-        .dinner, .lunch, .breakfast, .dinner, .dessert, .lunch, .dinner
-    ]
-
     var body: some View {
         ZStack(alignment: .bottom) {
             KartaDesign.ColorToken.scrim
@@ -32,7 +27,7 @@ struct CookbookFullSheet: View {
                     )
                     .padding(.top, KartaDesign.space.cardGap)
 
-                fan
+                CardBacksFan()
 
                 Text("Your cookbook is full")
                     .font(KartaDesign.FontToken.cardTitle())
@@ -43,7 +38,7 @@ struct CookbookFullSheet: View {
                     .tracking(KartaDesign.type.rankUnitTracking)
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
 
-                Text("Free cookbooks hold 7 recipes. Go unlimited to keep every recipe you like.")
+                Text(presentation.explanation)
                     .font(KartaDesign.FontToken.sheetBody())
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                     .multilineTextAlignment(.center)
@@ -115,31 +110,5 @@ struct CookbookFullSheet: View {
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .accessibilityAddTraits(.isModal)
-    }
-
-    private var fan: some View {
-        HStack(spacing: -KartaDesign.space.rankGap) {
-            ForEach(Array(fanSuits.enumerated()), id: \.offset) { index, course in
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(KartaDesign.suit(course).back)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .stroke(
-                                KartaDesign.ColorToken.card,
-                                lineWidth: KartaDesign.elevation.backFrameLineWidth
-                            )
-                            .padding(3)
-                    }
-                    .frame(
-                        width: KartaDesign.space.fanCardWidth,
-                        height: KartaDesign.space.fanCardHeight
-                    )
-                    .rotationEffect(.degrees(Double(index - 3) * 6))
-                    .offset(y: abs(index - 3) > 0 ? 2 : 0)
-                    .zIndex(-Double(abs(index - 3)))
-            }
-        }
-        .frame(height: KartaDesign.space.fanCardHeight + 8)
-        .accessibilityHidden(true)
     }
 }
