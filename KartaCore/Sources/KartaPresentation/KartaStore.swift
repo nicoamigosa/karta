@@ -8,6 +8,9 @@ private enum FeedPolicy {
 
 /// The value state shared by the presentation store and its pure reducer.
 public struct KartaState: Equatable, Sendable {
+    /// Transient purchase sheet and one-shot restore notice; never persisted.
+    public internal(set) var paywall: Paywall?
+    public internal(set) var restoreToast: RestoreToast?
     /// Outcome of the latest save attempt, including counts when blocked.
     public fileprivate(set) var lastSaveResult: SaveResult?
     /// Transient Undo receipt; the shell dismisses it when its toast expires.
@@ -191,6 +194,7 @@ public struct KartaState: Equatable, Sendable {
 
 /// Inputs accepted by the presentation state machine.
 public enum KartaAction: Sendable {
+    case paywall(PaywallAction)
     case saveRecipe(String)
     case unsaveRecipe(String)
     case undoUnsave
@@ -252,6 +256,8 @@ public enum KartaReducer {
 
     public static func reduce(_ state: inout KartaState, action: KartaAction) {
         switch action {
+        case let .paywall(action):
+            reducePaywall(&state, action: action)
         case let .saveRecipe(id):
             state.pendingSaveToast = nil
             state.pendingUnsave = nil

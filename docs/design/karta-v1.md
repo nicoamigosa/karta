@@ -853,6 +853,29 @@ cap is saved behind it (the pill reads **Saved**):
 - Opened from a way in without a recipe (the Mundo menu, the cupo line), the line drops the
   first sentence. Not drawn.
 
+### Presentation contract (#161)
+
+`KartaAction.paywall` opens the transient `KartaState.paywall` with its way in and the
+shell's App Store products. Products carry their billed Decimal price, display price,
+currency code, locale identifier and trial status. Yearly starts selected even if its
+product is unavailable; no purchase can start until the selected product is present.
+NumberFormatter formats the yearly monthly equivalent on Linux (USD/en_US and EUR/de_DE
+are covered), so no extra formatting callback is needed. The savings badge requires both
+products in the same currency and floors the whole-percent saving.
+
+The shell sends the purchase/restore actions around its StoreKit call, uses `isDisabled`
+and `canClose` for interaction and dismissal, and uses `canPurchase` before starting a
+purchase. Closing, swiping and scrim taps all send `close`. Pending can finish through
+`purchaseSucceeded` while the sheet is open; after it closes, the shell still reports the
+App Store entitlement through `entitlementChanged`. Closing discards the K3 save intent.
+No paywall state or product data is persisted.
+
+The no-trial product case follows #161's subscribe button and renewal-only line, pending
+#153 question 2; it does not assume an available trial. `Paywall.features` centralizes the
+three signed lines; removing `.shoppingList` from that list drops the pending feature
+(#153 question 6). Footer labels are centralized; destinations remain shell configuration
+pending #153 question 7. `PremiumPlan.name` remains the shared placeholder.
+
 ### Premium in the cookbook
 
 The cupo line under the switch names the plan, with **Manage** underlined; **Manage** opens

@@ -227,6 +227,12 @@ El plan que reconoce el App Store: gratuito, prueba con fecha de fin o Premium. 
 conocerlo es desconocido; nunca condiciona las Intolerancias, los Filtros ni la cocina.
 _Avoid_: suscripción como sinónimo de plan, premium como permiso de seguridad
 
+**Paywall**:
+La hoja que la usuaria abre para elegir entre el plan anual y el mensual de Premium.
+El App Store comunica los precios, la disponibilidad de prueba y el resultado; la hoja
+muestra la compra, la restauración y la celebración sin decidir el Entitlement por sí sola.
+_Avoid_: pantalla de bloqueo, muro de pago como sinónimo de Cupo
+
 **Cupo**:
 El techo de recetas distintas que caben en el Cookbook. Vale siete en el nivel gratuito, no
 existe en premium, y al degradar queda fijado en lo que hubiera acumulado. Nunca sube al
