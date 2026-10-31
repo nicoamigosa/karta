@@ -273,6 +273,8 @@ Order, top to bottom (all left-aligned on the 20 pt inner edge unless stated):
   with an icon and a label: *Good*, *Not great*, *Add photo*. No emoji.
 - After an answer the title becomes *Cooked. Enjoy it!* and the three buttons give way to
   **Finish** (the primary button, 56 pt), which ends the session without asking.
+- After **Good**, the share card may rise over the bottom of the Foto (*Share*, below), never
+  over **Finish**.
 - The answer is the only explicit Cocinado (ADR 0008); a session that ends without it is left
   to the inferred one.
 
@@ -347,7 +349,8 @@ Text follows Dynamic Type, scaled relative to: Resumen and the finish-card title
 `.largeTitle`; the timer digits and *Time's up* → `.title1`; Detalle, ingredient rows and
 **Finish** → `.body`; *FOR THIS STEP* and the media chip → `.caption1`; the timer label
 (*TIMER*, *LEFT*, *PAUSED*) → `.caption2`; the outcome labels, the swipe hint and the signal chip
-→ `.footnote`. Buttons and circles keep their size and grow only if their label needs it.
+→ `.footnote`. Buttons and circles keep their size and grow only if their label needs it. The
+share card has its own roles (*Share* → *Text size*).
 
 - **Up to xxxL** the rules above apply as they are.
 - **From AX1 to AX5** nothing stays pinned at the bottom: the Temporizador, and on the finish
@@ -497,8 +500,8 @@ probar**, **Cupo**, **Intolerancia**; ADR 0007, 0008.
   count (*Premium and the paywall* below).
 - **Unsaving**, two ways: tap **Saved** on the reverse (the pill goes back to
   **Save** at once, no animation), or long-press a card in the cookbook grid
-  for the native iOS context menu with one destructive item, **Remove from
-  cookbook**. Unsaving never deletes the recipe's cooked history: saving it
+  for the native iOS context menu: **Share** (*Share* below), then the
+  destructive **Remove from cookbook**. Unsaving never deletes the recipe's cooked history: saving it
   again puts it straight back in Your repertoire.
 - **Undo, never a confirmation** (canvas page *Save · round 1*, boards
   *U1–U3*): every unsave shows a toast near the bottom for a few seconds,
@@ -875,6 +878,126 @@ new ceiling, and the next save opens K3 with the downgrade copy
   visible next to the button, so ask before letting them scroll away.
 - Not decided: where the "toast already shown" flag for the sixth save lives (ADR 0010).
 - The shopping list itself, its button and how a free user meets it belong to #11.
+
+## Share
+
+Signed off on 2026-10-30 by the founder (#13). The six rounds behind it are each in their own
+artifact: *Karta · Share round 1* (<https://claude.ai/artifact/Ap7SyFAfJcSL2zMYRLDbFh>, row
+Otros sitios B), *round 2* (<https://claude.ai/artifact/E7JgVRUNvM77mLNA8PJ3Ak>, rows Enlace B and
+Cabecera B), *round 3* (<https://claude.ai/artifact/6J16SJPWMctYJ3YVWo5Yob>), *round 4*
+(<https://claude.ai/artifact/Kkt6HaCzTYQb9DcBJxR7Gq>, row Retirada A), *round 5*
+(<https://claude.ai/artifact/USNAKZxrg1ZDUxZxnGMjgb>) and *round 6*
+(<https://claude.ai/artifact/WpvZh8qN3EQcpQkeQnxJFE>, Tarjeta A and Mensaje 1, with its AX1
+board). Copies sit on the canvas page *Signed off*. Product context: PRD story 46;
+`CONTEXT.md` → **Apertura**, **Intolerancia**; ADR 0010, 0011. Built in #156 (the KartaCore contract) and #157
+(iOS).
+
+**Hidden until the domain exists.** Everything below needs a domain that serves the link
+(#155). The provisional domain is `karta.app`, still to be confirmed. Until the domain is
+live, the app shows no share card and the cookbook menu keeps its one item: Share is switched
+off, never half-working (a text without a link would give the receiver nothing to open).
+
+All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `share-finish-card.png` | the share card on the finish card, after **Good** |
+| `share-finish-card-ax1.png` | the same at Dynamic Type AX1, scrolled to the end |
+| `share-cookbook-menu.png` | the cookbook context menu with **Share** |
+| `share-sheet.png` | the iOS share sheet and its header |
+| `share-link-messages.png`, `share-link-whatsapp.png` | the link as it arrives in Messages and WhatsApp |
+| `share-link-image.png` | the link image itself, 1200 × 630 |
+| `share-recipe-gone.png` | opening the link of a recipe that is no longer in the catalogue |
+
+There is no share button on the Card or on the reverse.
+
+### The share card
+
+- **When:** on the finish card, right after the cook taps **Good**, as the title turns into
+  *Cooked. Enjoy it!* and **Finish** appears. Never after *Not great*, never in the middle of a
+  session, never anywhere else.
+- **Where:** it floats over the bottom of the Foto, 20 pt from the sides of the card and 12 pt
+  above the rule of the bottom zone. It never covers **Finish** and dims nothing.
+- **Look:** `card` fill, 1 pt `line` border, radius 18, the button edge (`buttonEdge`, 2 pt) plus
+  the toast's drop shadow; padding 16 pt on top, 12 pt on the right and bottom, 14 pt on the
+  left. A grabber, 32 × 4 pt in `line`, sits centred 5 pt from the top. In one row:
+  - two **card backs in miniature**, 24 × 34 pt, radius 5, fanned as in the deck: the back one
+    in the suit's `edge`, turned −8°, the front one in the suit's `back`, turned 8° and 8 pt to
+    the right; each with a 1 pt `card` inner frame 2.5 pt in (the deck's back, small);
+  - 12 pt after them, **Pass this card on** in Fraunces 700, 18 / 22 pt, `ink`, one line;
+  - on the right, a tactile **Share** pill like Save (38 pt high, 12 pt padding, the share
+    glyph `square.and.arrow.up` at 16 pt, Figtree 700 14 pt `ink`).
+- **Share** opens the share sheet (below) and the card goes away. When the sheet closes, the
+  cook is back on the finish card with nothing new on it: no toast and no confirmation, whatever
+  she chose in the sheet.
+- **Closing it without sharing** (there is no ✕): swipe it down; or tap **Finish**, which ends
+  the session as before; or wait: it leaves on its own after 8 s. With VoiceOver it offers a
+  *Dismiss* action (and the escape gesture) and never leaves on its own while it has focus.
+- **Motion:** it rises 12 pt and fades in over 300 ms, about 400 ms after the answer; it leaves
+  the same way, downwards. **Reduce Motion:** fade only.
+- **How often** (a default rule: the founder has not confirmed it yet, so it may change): it
+  shows only after **Good**, at most once per recipe, and after three dismissals in a row it
+  never shows again. A dismissal is any close without tapping **Share** (swipe, **Finish**,
+  timeout); tapping **Share** resets the count. Sharing from the cookbook is not affected. The
+  recipes it has shown for and the count live in the user snapshot (ADR 0010), like the alarm
+  permission flag.
+
+### In the cookbook
+
+Long-pressing a card in the cookbook grid opens the native context menu with **Share** (share
+glyph) above the destructive **Remove from cookbook** (`share-cookbook-menu.png`). It opens
+the same share sheet. This is the only way to share a recipe outside the cooking session.
+
+### What is shared
+
+- **The payload:** the line *Spanish Tortilla on Karta* (`<name> on Karta`) and the link
+  `https://karta.app/r/spanish-tortilla` (`/r/<recipe id>`; the id never changes after launch,
+  ADR 0011). Nothing else: no ingredients, no steps.
+- **The sheet header** (`share-sheet.png`): the recipe's Foto as the thumbnail and a two-line
+  title, the name over *Serves 4 · 35 min · Easy* (servings · minutes · difficulty). iOS adds
+  the domain under it; that line is not ours.
+- **The link image** (`share-link-image.png`), 1200 × 630, made for each recipe from the
+  catalogue: the suit's `back` fills it; inset 7 % sits a `card` face (radius 52 at this size,
+  the card edge) holding the Foto on the left (44 % of its width, radius 34) and, on the right, the rank
+  (*35 MIN*) with the suit label, the name in `cardTitle`, the chips *Serves 4* and *Easy* in
+  the suit's chip colours, and the wordmark at the bottom right. Its title is the recipe name
+  and its description *A recipe card from Karta*.
+- **How it arrives:** Messages shows the image, the name and the domain
+  (`share-link-messages.png`); WhatsApp adds the description (`share-link-whatsapp.png`). The
+  line *Spanish Tortilla on Karta* travels with it.
+
+### Opening a link
+
+- **With Karta installed**, the link opens the app on the reverse of that recipe, over the
+  current Mundo. It counts as an **Apertura**, like a tap on a Card.
+- **Without Karta**, the link goes straight to Karta's App Store page. After installing, the
+  app starts as usual; it does not remember the link.
+- **A recipe that is no longer in the catalogue** (`share-recipe-gone.png`): the app opens the
+  Feed and shows a toast 12 pt below the header row, 22 pt from the sides: the toast of *Save and
+  the cookbook* without a button, the box icon in `card`, **This recipe is no longer on Karta**
+  over *Here's your deck instead.* It leaves on its own after 5 s. Without Karta the link goes
+  to the App Store as above, with no notice.
+
+### Text size
+
+The share card follows Dynamic Type: the message → `.title3`, the Share pill → `.subheadline`.
+The card backs keep their size. **From AX1** (`share-finish-card-ax1.png`) the card stops
+floating: it takes its place at the end of the scroll, between the Foto and **Finish**, 14 pt
+under the Foto and 20 pt from the sides. The message wraps on as many lines as it needs and the
+pill moves under it, aligned with the message. It does not time out or swipe away there; it goes
+when the session ends. It is content like any other, so the signal of *When a Paso does not fit*
+counts it (*More below*).
+
+### Open decisions
+
+- #155: confirm `karta.app`, the minimal page per recipe with the link image that redirects
+  to the App Store, the universal-links file and Associated Domains. Until then Share stays off.
+- The frequency rule above is a default the founder has not confirmed.
+- Not drawn: opening the link of a recipe that contains one of the receiver's Intolerancias.
+  Karta never offers it (`CONTEXT.md` → Intolerancia); ask before choosing what the receiver
+  sees.
+- To check on a device: that iOS shows the two-line title in the sheet header. If it cuts it to
+  one line, ask before dropping the servings line.
 
 ## Suits (Course icons)
 
