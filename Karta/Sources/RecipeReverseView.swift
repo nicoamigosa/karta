@@ -23,7 +23,7 @@ struct RecipeReverseView: View {
     /// The shell's StoreKit bridge: opens the paywall from K3 and See plans.
     let premium: PremiumController
 
-    @State private var showFullSheet = false
+    @State private var showFullSheet = DebugSeeds.opensCapSheet
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)

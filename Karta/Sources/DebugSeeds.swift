@@ -24,7 +24,7 @@ enum DebugSeeds {
         case "undo-ceiling":
             // Premium downgrade: a >7 ceiling dropping to the free floor, so
             // the Undo toast shows "Your cookbook now holds N recipes".
-            store.send(.downgradeCookbookToFree)
+            store.send(.entitlementChanged(.free))
             store.send(.unsaveRecipe("banana-pancakes"))
             store.send(.pushRoute(.recipeDetail(recipeID: "banana-pancakes")))
         case "intolerance":
@@ -66,7 +66,170 @@ enum DebugSeeds {
     /// down (#8's `feed-world-menu.png` board): menu openness is shell state,
     /// not store state, so it cannot ride `KartaState`.
     static var opensMundoMenu: Bool {
-        ProcessInfo.processInfo.environment["KARTA_SEED"] == "world-menu"
+        ["world-menu", "premium-world-menu"]
+            .contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
+    }
+
+    /// Whether the seed asks for the cookbook sheet already open
+    /// (premium cupo-line boards).
+    static var opensCookbook: Bool {
+        [
+            "premium-cookbook-go-unlimited", "premium-cookbook-trial",
+            "premium-cookbook-premium"
+        ].contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
+    }
+
+    /// Whether the seed asks for the CookbookFullSheet over the recipe
+    /// reverse (the "Unlock unlimited cookbook" boards).
+    static var opensCapSheet: Bool {
+        [
+            "premium-k3-unlock", "premium-paywall-entry",
+            "premium-cookbook-full-downgraded"
+        ].contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
+    }
+
+    /// Store actions a premium seed needs AFTER `PremiumController.start()`:
+    /// the launch-time `entitlementChanged` report would otherwise overwrite
+    /// the seeded entitlement. Called from `KartaApp` once start() returns.
+    @MainActor
+    static func afterPremiumLaunch(into store: KartaStore) {
+        let name = ProcessInfo.processInfo.environment["KARTA_SEED"] ?? ""
+        guard name.hasPrefix("premium-") else { return }
+
+        let plans = PremiumSeeds.plans
+        let recipes = (try? SeedResourceAdapter().loadRecipes()) ?? []
+
+        // Every paywall path starts free so the `.open` guards pass.
+        if name != "premium-cookbook-trial" && name != "premium-cookbook-premium" {
+            store.send(.entitlementChanged(.free))
+        }
+
+        // The paywall boards all sit over the recipe reverse reached from K3:
+        // a full cookbook, an unsaved recipe open, the cap way in.
+        func openCapPaywall(using plans: [Paywall.Product]) {
+            for recipe in recipes.prefix(7) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            guard let unsaved = recipes.first(where: {
+                !store.cookbook.isSaved($0.id)
+            }) else { return }
+            store.send(.pushRoute(.recipeDetail(recipeID: unsaved.id)))
+            store.send(.paywall(.open(.cap(unsaved), plans: plans)))
+        }
+
+        switch name {
+        case "premium-paywall":
+            openCapPaywall(using: plans)
+        case "premium-paywall-buying":
+            openCapPaywall(using: plans)
+            store.send(.paywall(.purchaseStarted))
+        case "premium-paywall-error":
+            openCapPaywall(using: plans)
+            store.send(.paywall(.purchaseStarted))
+            store.send(.paywall(.purchaseFailed))
+        case "premium-paywall-pending":
+            openCapPaywall(using: plans)
+            store.send(.paywall(.purchaseStarted))
+            store.send(.paywall(.purchasePending))
+        case "premium-paywall-no-trial":
+            openCapPaywall(using: PremiumSeeds.plansNoTrial)
+        case "premium-paywall-restore-empty":
+            openCapPaywall(using: plans)
+            store.send(.paywall(.restoreStarted))
+            store.send(.paywall(.restoreFoundNothing))
+        case "premium-welcome":
+            openCapPaywall(using: plans)
+            store.send(.paywall(.purchaseStarted))
+            store.send(.paywall(.purchaseSucceeded(.trial(
+                endsAt: Date().addingTimeInterval(7 * 24 * 60 * 60)
+            ))))
+        case "premium-save-toast":
+            for recipe in recipes.prefix(6) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            if let recipe = recipes.first {
+                store.send(.pushRoute(.recipeDetail(recipeID: recipe.id)))
+            }
+        case "premium-cookbook-go-unlimited", "premium-cookbook-trial",
+             "premium-cookbook-premium":
+            // The cupo line only appears once two spots or fewer remain.
+            for recipe in recipes.prefix(6) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            if name == "premium-cookbook-trial" {
+                store.send(.entitlementChanged(.trial(
+                    endsAt: Date().addingTimeInterval(7 * 24 * 60 * 60)
+                )))
+            } else if name == "premium-cookbook-premium" {
+                store.send(.entitlementChanged(.premium))
+            }
+        case "premium-paywall-entry":
+            // The paywall rising over the recipe reverse (3 OF 7 board):
+            // entry is not .cap, so it renders over whatever is open.
+            for recipe in recipes.prefix(3) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            if let recipe = recipes.first {
+                store.send(.pushRoute(.recipeDetail(recipeID: recipe.id)))
+            }
+            store.send(.paywall(.open(.cupoLine, plans: plans)))
+        case "premium-k3-unlock":
+            for recipe in recipes.prefix(7) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            if let unsaved = recipes.first(where: {
+                !store.cookbook.isSaved($0.id)
+            }) {
+                store.send(.pushRoute(.recipeDetail(recipeID: unsaved.id)))
+                store.send(.saveRecipe(unsaved.id))
+            }
+        case "premium-cookbook-full-downgraded":
+            // Premium dropped with more kept than the free floor: the cap
+            // settles at 23 and the sheet quotes it (board *K3 downgraded*).
+            store.send(.entitlementChanged(.premium))
+            for index in 0..<23 {
+                store.send(.saveRecipe("seed-kept-\(index)"))
+            }
+            store.send(.entitlementChanged(.free))
+            if let unsaved = recipes.first {
+                store.send(.pushRoute(.recipeDetail(recipeID: unsaved.id)))
+                store.send(.saveRecipe(unsaved.id))
+            }
+        default:
+            break
+        }
+    }
+
+    /// Play-app stand-ins for the two storefront products, shaped exactly
+    /// like `Paywall.Product` reads them — display strings come from the
+    /// .storekit configuration in real launches.
+    enum PremiumSeeds {
+        static var plans: [Paywall.Product] {
+            [
+                Paywall.Product(
+                    plan: .yearly, price: 49.99, displayPrice: "$49.99",
+                    currencyCode: "USD", localeIdentifier: "en_US",
+                    trial: .available(days: 7)
+                ),
+                Paywall.Product(
+                    plan: .monthly, price: 6.99, displayPrice: "$6.99",
+                    currencyCode: "USD", localeIdentifier: "en_US",
+                    trial: .available(days: 7)
+                )
+            ]
+        }
+
+        static var plansNoTrial: [Paywall.Product] {
+            plans.map {
+                Paywall.Product(
+                    plan: $0.plan, price: $0.price,
+                    displayPrice: $0.displayPrice,
+                    currencyCode: $0.currencyCode,
+                    localeIdentifier: $0.localeIdentifier,
+                    trial: .used
+                )
+            }
+        }
     }
 
     /// Whether the seed asks the feed to open with the filter panel already
@@ -331,6 +494,15 @@ enum DebugSeeds {
                 safetyProfile: SafetyProfile(intolerances: [])
             )
         default:
+            if name.hasPrefix("premium-") {
+                // The premium seeds drive every flow through store actions
+                // in `afterPremiumLaunch`; all they need is a past-onboarding
+                // state.
+                return KartaState(
+                    onboarding: Self.onboarded(),
+                    safetyProfile: SafetyProfile(intolerances: [])
+                )
+            }
             return KartaState(safetyProfile: SafetyProfile(intolerances: []))
         }
     }

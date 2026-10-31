@@ -43,6 +43,7 @@ struct KartaApp: App {
                         if !isTestHost {
                             await controller.start()
                         }
+                        DebugSeeds.afterPremiumLaunch(into: store)
                     }
             }
         }

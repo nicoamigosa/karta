@@ -38,7 +38,7 @@ struct CookbookFullSheet: View {
                     .tracking(KartaDesign.type.rankUnitTracking)
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
 
-                Text("Free cookbooks hold 7 recipes. Go unlimited to keep every recipe you like.")
+                Text(presentation.explanation)
                     .font(KartaDesign.FontToken.sheetBody())
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                     .multilineTextAlignment(.center)

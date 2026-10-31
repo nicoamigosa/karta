@@ -154,24 +154,24 @@ struct PaywallView: View {
                         ForEach(paywall.plans, id: \.plan) { product in
                             planRow(product)
                         }
-                        .overlay(alignment: .topTrailing) {
-                            if let badge = paywall.savingsBadge {
-                                Text(badge)
-                                    .font(KartaDesign.FontToken.paywallBadge())
-                                    .tracking(1)
-                                    .foregroundStyle(KartaDesign.ColorToken.card)
-                                    .padding(.vertical, KartaDesign.paywall.badgePadY)
-                                    .padding(.horizontal, KartaDesign.paywall.badgePadX)
-                                    .background(
-                                        KartaDesign.ColorToken.brand,
-                                        in: RoundedRectangle(
-                                            cornerRadius: KartaDesign.paywall.badgeRadius,
-                                            style: .continuous
-                                        )
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        if let badge = paywall.savingsBadge {
+                            Text(badge)
+                                .font(KartaDesign.FontToken.paywallBadge())
+                                .tracking(1)
+                                .foregroundStyle(KartaDesign.ColorToken.card)
+                                .padding(.vertical, KartaDesign.paywall.badgePadY)
+                                .padding(.horizontal, KartaDesign.paywall.badgePadX)
+                                .background(
+                                    KartaDesign.ColorToken.brand,
+                                    in: RoundedRectangle(
+                                        cornerRadius: KartaDesign.paywall.badgeRadius,
+                                        style: .continuous
                                     )
-                                    .padding(.trailing, KartaDesign.paywall.badgeTrailing)
-                                    .offset(y: -KartaDesign.paywall.badgePadY - 8)
-                            }
+                                )
+                                .padding(.trailing, KartaDesign.paywall.badgeTrailing)
+                                .offset(y: -KartaDesign.paywall.badgePadY - 8)
                         }
                     }
                 }

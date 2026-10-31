@@ -15,7 +15,7 @@ struct FeedScreen: View {
     @State private var manifest = MediaAssetManifest([:])
     @State private var isLoaded = false
     @State private var loadError: String?
-    @State private var cookbookOpen = false
+    @State private var cookbookOpen = DebugSeeds.opensCookbook
     @State private var reverseFromCookbook = false
     @State private var unsaveOrigin: UnsaveOrigin = .feedReverse
     /// The payload currently in the native share sheet; nil while Share is
