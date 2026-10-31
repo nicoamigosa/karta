@@ -547,6 +547,10 @@ iPhone 17 (402 × 874 pt) with the safe areas hatched:
 | `feed-filters-applied.png` | the feed with two filters applied (badge) |
 | `feed-empty-filters.png` | nothing matches the applied filters |
 | `feed-empty-profile.png` | nothing matches the Intolerancias, with no filter applied (ADR 0004) |
+| `feed-filters-household.png` | the panel with the **COOKING FOR** block, added in #10 (2026-10-31) |
+
+The other panel PNGs were drawn before #10 and do not show **COOKING FOR**; the text and
+`feed-filters-household.png` win.
 
 `feed-header.png` replaces the header of `feed-cookbook-door.png`; the door itself does not
 change. Product terms: `CONTEXT.md` → **Mundo**, **Filtros**, **Intolerancia**, **Dieta**,
@@ -561,6 +565,8 @@ change. Product terms: `CONTEXT.md` → **Mundo**, **Filtros**, **Intolerancia**
 │ │ [Dairy][ Egg ][Fish][Gluten][Nuts]││  multi-choice track, saved as you tap
 │ │ Saved as you tap. Reset and …    ││
 │ └──────────────────────────────────┘│
+│ COOKING FOR                  PEOPLE │  single-choice, saved as you tap (#10)
+│ [ 1 | 2 | 3 | 4 | 5+ ]              │
 │ READY IN                    MINUTES │
 │ [ Any | 20 | 30 | 45 | 60 ]         │  single-choice track
 │ DIFFICULTY                          │
@@ -631,16 +637,21 @@ change. Product terms: `CONTEXT.md` → **Mundo**, **Filtros**, **Intolerancia**
      order: **Dairy**, **Egg**, **Fish**, **Gluten**, **Nuts** (`Allergen.allCases`). Under it,
      one line in Figtree 600 13 / 18 pt `inkMuted`: *Saved as you tap. Reset and Clear never
      touch it.*
-  3. **READY IN**, with *MINUTES* on the right: a single-choice track **Any · 20 · 30 · 45 ·
+  3. **COOKING FOR** (added in #10, `feed-filters-household.png`), with *PEOPLE* on the
+     right, outside any block like the filters below it: a single-choice track **1 · 2 · 3 ·
+     4 · 5+** (the Hogar; **5+** is stored as 5). Under it, one line in Figtree 600 13 / 18 pt
+     `inkMuted`: *Saved as you tap. Every size still shows up.* It has no **Any**: the Hogar
+     was answered in the first open (*First open* below), so one segment is always chosen.
+  4. **READY IN**, with *MINUTES* on the right: a single-choice track **Any · 20 · 30 · 45 ·
      60** (`maxMinutes` nil, 20, 30, 45, 60).
-  4. **DIFFICULTY**: a single-choice track **Any · Easy · Up to medium** (`maxDifficulty` nil,
+  5. **DIFFICULTY**: a single-choice track **Any · Easy · Up to medium** (`maxDifficulty` nil,
      `easy`, `medium`).
-  5. **PRACTICAL**, with *ANY NUMBER* on the right: a multi-choice track **One pan · Oven ·
+  6. **PRACTICAL**, with *ANY NUMBER* on the right: a multi-choice track **One pan · Oven ·
      Make ahead · Shareable** (`one-pan`, `oven`, `make-ahead`, `shareable`). A recipe must
      have every tag that is on.
-  6. **DIET**: a single-choice track **Any · Vegetarian · Vegan** (vegan recipes also match
+  7. **DIET**: a single-choice track **Any · Vegetarian · Vegan** (vegan recipes also match
      Vegetarian).
-  7. Footer: **Show N recipes** (*Show 1 recipe* for one), the primary button: `brand` fill,
+  8. Footer: **Show N recipes** (*Show 1 recipe* for one), the primary button: `brand` fill,
      54 pt high, radius 18, Figtree 800 17 pt `card`, 3 pt `brandEdge` plus the soft shadow.
 - Course is **not** a filter on this screen.
 - **Section headings**: Figtree 800 12 pt, tracking 1.2, `inkMuted`, 8 pt above their track.
@@ -671,6 +682,9 @@ change. Product terms: `CONTEXT.md` → **Mundo**, **Filtros**, **Intolerancia**
   Figtree 800 13 pt `ink`:
   - added: *Saved. Gluten is now hidden everywhere. Reset and Clear never touch it.*
   - removed: *Saved. Gluten recipes can show up again.*
+- **The Hogar is not part of the draft either** (#10). Tapping a size saves it at once, like an
+  Intolerancia; it only reorders (ADR 0006), so N never changes with it. It is not a filter:
+  Reset, Clear and the empty states never change it, and it never counts in the badge.
 - The panel is the same in both Mundos and edits the same filters.
 
 ### Empty states
@@ -703,9 +717,11 @@ and the bottom safe area, 36 pt from the sides. The header stays as it is, badge
 
 ### Fit, text size and scroll
 
-- Measured on an iPhone 17 at the default text size: the panel ends at 727 pt (745 pt with the
-  confirmation line), at least 95 pt above the bottom safe area. Its height is never fixed: it hugs its
-  content, up to the top of the bottom safe area.
+- Measured on an iPhone 17 at the default text size: before #10 the panel ended at 727 pt (745 pt
+  with the confirmation line). With **COOKING FOR** it ends at about 823 pt, and with the
+  confirmation line it reaches the top of the bottom safe area (840 pt,
+  `feed-filters-household.png`). Its height is never fixed: it hugs its content, up to the top
+  of the bottom safe area.
 - **When it does not fit** (a smaller phone, a larger text size), the panel stops at the top of
   the bottom safe area and the body scrolls under the pinned footer. Hidden content is always
   signalled: a 32 pt fade from transparent to `card` right above the footer, and the scroll
@@ -720,6 +736,152 @@ and the bottom safe area, 36 pt from the sides. The header stays as it is, badge
   `track` container with the same 4 pt inset; the chosen or on rows keep their colours, and an
   on multi-choice row adds a check at the right. Not drawn: an implementation that needs more
   than this asks under *Open decisions*.
+
+## First open and onboarding
+
+Signed off on 2026-10-31 by the founder (#10). The rounds are in two artifacts: *Karta
+Onboarding ronda 1* (<https://claude.ai/artifact/Fy1kpZPsBUr91ggcWtpbuY>), rows Intolerancias A
+and Hogar A; and *Karta Onboarding ronda 2* (<https://claude.ai/artifact/CyuR3oFUdrcTFmjhUescpY>),
+rows Recorrido B, Encaje A, Seguridad C, Saltar A and AX1 A. In round 1 the founder also dropped
+the taste-calibration screen: the order of the feed learns from Vistas, Aperturas and saves
+(ADR 0016). Product context: `CONTEXT.md` → **Intolerancia**, **Hogar**, **Baraja segura**,
+**Gusto**; ADR 0004, 0006, 0015, 0016.
+
+All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `onboarding-safe-deck.png` | the Baraja segura with its banner, before answering |
+| `onboarding-tour-cookbook.png` | the tour, stop 1: the cookbook door |
+| `onboarding-tour-world.png` | the tour, stop 2: the Mundo pill |
+| `onboarding-tour-filters.png` | the tour, stop 3: the filter button, which stays |
+| `onboarding-panel-empty.png` | the first-run panel as it opens: nothing chosen, button off |
+| `onboarding-panel.png` | the first-run panel with Dairy and a Hogar of 4 |
+| `onboarding-panel-none.png` | the first-run panel answering "none" with a Hogar of 2 |
+| `onboarding-tour-ax1.png` | stop 3 at Dynamic Type AX1 |
+| `onboarding-panel-ax1.png` | the first-run panel at AX1 |
+
+```
+ karta            (≡) [For You ▾] (□)    header as signed (#8)
+┌─────────────────────────────────────┐  banner: 8 pt below the header row
+│ ⛉ Free of all five allergens until  │
+│   you tell us yours.       Set mine │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐  deck: 14 pt below the banner
+│ 50 MIN                       dinner │  only recipes with no allergen at all
+│ …                                   │
+```
+
+**No welcome screen, no calibration, no paywall.** The app opens straight on the deck. Nothing
+about premium appears (*Premium and the paywall* → *Ways in*).
+
+### Before she answers: the Baraja segura
+
+Seguridad C (ADR 0015). Until the Intolerancias are answered, every surface that proposes
+recipes offers only the **Baraja segura**: reviewed recipes with no allergen at all
+(`contains: []`). She can pass cards, open them, save and cook as usual.
+
+- **The banner** (`onboarding-safe-deck.png`), on every Mundo, 8 pt below the header row and
+  22 pt from the sides: `card` fill, 1 pt `line`, radius 14, 2 pt `buttonEdge`, 9 × 12 pt
+  padding, 9 pt gap. An 18 pt shield (`ink`), then *Free of all five allergens until you tell us
+  yours.* in Figtree 700 13 / 17 pt `ink`, wrapping on two lines, and on the right **Set mine**
+  in Figtree 800 13 pt `ink`, underlined in `line`. Tapping anywhere on the banner opens the
+  first-run panel. The deck starts 14 pt below the banner instead of 20 pt below the header row.
+- The banner disappears for good the moment the answer is saved; the deck then starts at the
+  top of the personal feed (ADR 0009).
+- If no recipe in the catalog has an empty `contains`, the deck shows the signed **No recipes
+  fit your intolerances yet** state (`feed-empty-profile.png`) with all five allergens named,
+  and **Check my intolerances** opens the first-run panel. Not drawn.
+
+### The tour
+
+Recorrido B and Saltar A. A spotlight walks the header from right to left and stops on the
+filter button, where the allergens live. It is not a tutorial pop-up: one bubble at a time, no
+**Next** button.
+
+- **Spotlight:** everything is dimmed with `tourScrim` (`inkEdge` at 52 %) except a hole around the control,
+  6 pt larger than it on every side (52 × 52 pt for the circles, 124 × 52 pt for the pill),
+  with a 3 pt `brand` ring.
+- **Bubble:** `card` fill, radius 16, 12 × 14 pt padding, 230 pt wide, the 2 pt `buttonEdge`
+  plus a drop shadow (0, 18, 30, −10, black at 45 %). Its top is 14 pt below the spotlight and
+  a 12 pt pointer (a square turned 45°) sits on its top edge, centred under the control. It
+  stays 22 pt from the screen edges. Title Fraunces 700 19 pt `ink`; one line in Figtree 700
+  15 / 20 pt `ink`; the step (*1 OF 3*) in Figtree 800 11 pt, tracking 1.2, `inkMuted`.
+- **Stops**, each 1.2 s, the spotlight moving between them in 300 ms on the deck curve
+  `(0.22, 1, 0.36, 1)` while the bubble cross-fades:
+  1. **Cookbook door** (`onboarding-tour-cookbook.png`): **Your cookbook** · *What you save
+     lives here.*
+  2. **Mundo pill** (`onboarding-tour-world.png`): **For You or Leftovers** · *Switch decks
+     here.*
+  3. **Filter button** (`onboarding-tour-filters.png`): **Start here** · *Tell us what you
+     never eat. We'll never show it.* This stop **stays**: the spotlight ring pulses every
+     1.4 s (a second ring grows to 145 % and fades).
+- **Skipping:** during stops 1 and 2, *Tap anywhere to skip to the filter* sits 48 pt above
+  the bottom safe area in Figtree 700 14 pt `card`, centred. Any tap jumps to stop 3. At stop 3,
+  tapping the filter button opens the first-run panel; tapping anywhere else ends the tour
+  and leaves the Baraja segura with its banner.
+- **When it shows:** the whole tour once, on the first open. Until the Intolerancias are
+  answered, every cold launch shows stop 3 alone. Once answered it never shows again.
+- **Reduce Motion:** stops 1 and 2 are skipped; stop 3 fades in, with no pulse.
+- The signed entry nudge of the deck (*The deck*) waits until the tour has ended.
+
+### The first-run panel
+
+Encaje A, Intolerancias A and Hogar A. The filter button, until the Intolerancias are
+answered, opens the filter panel in its first-run form: the same geometry, relief, pointer and
+`scrim` as *The filter panel*, holding only the two questions (`onboarding-panel*.png`).
+
+1. **Title:** *Two quick questions* (Fraunces 700 24 pt) over *Change them anytime in
+   Filters.* (Figtree 600 15 / 22 pt `inkMuted`). No **Reset**.
+2. **NEVER SHOW ME**, the signed block. The line under the track:
+   - nothing chosen and no Hogar yet: *Tap any you never eat, or none.* (Figtree 600 13 / 18 pt
+     `inkMuted`);
+   - one or more allergens on: *Dairy will never show up. Change it anytime here.* (Figtree 800
+     13 pt `ink`; the allergens joined with commas and *and*);
+   - none on, once a Hogar is chosen: *Nothing hidden: you eat all five. Change it anytime
+     here.* (Figtree 800 13 pt `ink`), so she sees what the button will save.
+3. **COOKING FOR**, the track of *The filter panel*, with **no segment chosen** when the panel
+   opens. Line: *Every size still shows up. Yours come first.*
+4. **Footer:** **Show my cards** with an 18 pt arrow, the primary button. Off until a Hogar is
+   chosen: `track` fill, Figtree 800 17 pt `inkMuted`, no edge, no shadow, no arrow
+   (`onboarding-panel-empty.png`).
+
+Behaviour:
+
+- **Show my cards** saves both answers at once: the allergens that are on (an empty set is the
+  answer "none") and the Hogar. The panel closes, the banner goes and the feed starts at the
+  top. From then on the filter button opens the full panel, which now carries **COOKING FOR**.
+- **Closing without answering** (the filter button or the scrim) is allowed: she goes back to
+  the Baraja segura. The panel keeps what she tapped until the app quits; nothing is saved.
+- The Hogar has no default (rule by default, see below).
+
+### Text size
+
+- Text follows Dynamic Type: the bubble title → `.title3`, its line → `.body`, the step →
+  `.caption2`; the skip line and the banner → `.footnote`; *Two quick questions* → `.title2`,
+  its line → `.body`. Everything else as in *The filter panel*.
+- **From AX1** (`onboarding-tour-ax1.png`) the bubble takes the full width between the 22 pt
+  margins; its pointer stays centred under the control.
+- The first-run panel (`onboarding-panel-ax1.png`) follows *Fit, text size and scroll*: the
+  tracks switch to the stacked form, the body scrolls with the 32 pt fade and the flashed
+  scroll indicator, and **Show my cards** stays pinned.
+
+### Rules by default
+
+The founder did not answer these three in round 2; they are signed as proposed and can be
+reopened:
+
+1. The first-run panel can be closed without answering; she returns to the Baraja segura.
+2. The Hogar has no default value: **Show my cards** stays off until a size is chosen.
+3. In the full panel, **COOKING FOR** is saved as you tap, like the Intolerancias, and never
+   counts in the badge.
+
+### Open decisions
+
+- Not drawn: VoiceOver for the tour (proposed: each stop is announced as the bubble's text,
+  and a double tap anywhere acts as the skip).
+- Not drawn: the Baraja segura when the catalog has no recipe free of all five allergens.
+- Not drawn: the banner above the empty Leftovers Mundo (#9).
 
 ## Premium and the paywall
 

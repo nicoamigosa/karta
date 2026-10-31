@@ -71,7 +71,7 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 
 ### Onboarding
 27. As a new user, I want a minimal onboarding that asks only my **intolerances/allergies** (required) and **household size**, so that I can start fast without a long form.
-28. As a new user, I want a quick taste calibration that works like the real app (real vertical scroll, tap what appeals), so that my first feed isn't generic and I learn the gestures.
+28. As a new user, I want to land straight on the deck and see safe recipes even before I answer, while a short tour points me to the filter where I declare what I never eat, so that I reach my first recipe fast and my feed then learns my taste from what I open and save, with no calibration screen.
 29. As a new user, I want units and language inferred silently from my device locale, so that I'm not asked for GPS permission before I see value.
 30. As a celiac/allergic user, I want intolerance filtering to be reliable on every recipe, so that I can trust the app with my safety.
 
@@ -162,7 +162,8 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 
 ### Onboarding
 - Minimal: **intolerances (required) + household size (1 question).** Everything else (taste, skill, cuisines) is learned from behavior.
-- Taste calibration = **mini real-app flow** (real vertical scroll, tap what appeals) — teaches real gestures, does **not** consume the cookbook save cap.
+- **No welcome screen and no taste calibration** (2026-10-31, #10, ADR 0016). The app opens on the deck; a short tour ends on the filter button, where the two questions are answered. Taste is learned from opens, saves and scroll-pasts.
+- **Before the intolerances are answered**, every surface offers only the *Baraja segura*: reviewed recipes with no allergen at all (ADR 0015).
 - Units/language from **device locale** silently. **No GPS prompt.** No profile harvesting (iOS doesn't provide it).
 
 ### Platform & tech
@@ -189,7 +190,7 @@ Success is measured as **"the session ended in a decision"** (she entered cookin
 - **Cooking-mode state machine.** Test step navigation (next/prev/exit gestures), per-step ingredient display, and timer start/fire behavior as a state machine, independent of UI rendering.
 - **Success-event detection.** Test that "entered cooking mode," "reached last step," and the "how did it turn out?" response correctly emit the cooked/decision events, and that "probably cooked" inference fires on last-step + dwell.
 - **Freemium gating.** Test the save-cap boundary (free user blocked at the cap, premium unlimited) and that safety filters are reachable on the free tier.
-- **Onboarding output.** Test that minimal onboarding produces a non-generic first feed seed and that taste calibration does not consume the save cap.
+- **Onboarding output.** Test that before the intolerances are answered the feed offers only recipes with no allergen at all, that answering "none" and answering some allergens produce the right feeds, and that taste learned from opens, saves and scroll-pasts reorders only recipes that are already safe.
 - **Prior art:** none yet (greenfield). Establish the pure-function feed/query seam as the reference pattern for future logic tests.
 
 ## Out of Scope

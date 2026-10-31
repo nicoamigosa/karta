@@ -133,6 +133,12 @@ excepción es lo que ella guardó antes de declararla: esas recetas siguen en su
 un aviso de que contienen la Intolerancia, porque las eligió ella y puede cocinarlas para otros.
 _Avoid_: preferencia, restricción blanda
 
+**Baraja segura**:
+Lo que se le ofrece a la usuaria mientras no ha respondido a la pregunta de Intolerancias:
+sólo recetas revisadas sin ningún alérgeno. "Sin responder" no es "sin intolerancias": hasta
+que responde, Karta la trata como si las tuviera todas (ADR 0015).
+_Avoid_: feed por defecto, modo invitado
+
 **Revisión de alérgenos / Receta sin revisar**:
 Una receta revisada lleva un conjunto de alérgenos, incluso si está vacío; una receta sin revisar
 no es lo mismo que una receta revisada sin alérgenos. En el catálogo se escribe `contains: null`
@@ -142,8 +148,8 @@ revisar no llega a ninguna superficie, conforme al ADR 0002.
 _Avoid_: lista vacía como pendiente, `reviewedAt`
 
 **Hogar**:
-Para cuántas personas cocina habitualmente la usuaria. Lo único que se pregunta en el
-onboarding además de las intolerancias.
+Para cuántas personas cocina habitualmente la usuaria. Lo único que se pregunta en la primera
+apertura además de las intolerancias, y se cambia luego junto a ellas.
 _Avoid_: familia, comensales
 
 ### Superficies
@@ -239,10 +245,11 @@ existe en premium, y al degradar queda fijado en lo que hubiera acumulado. Nunca
 borrar. Deshacer un borrado en el momento no cuenta como borrar: devuelve la receta y el
 techo tal como estaban._Avoid_: límite, paywall del cookbook
 
-**Calibración de gustos**:
-El mini-flujo de onboarding donde la usuaria toca las recetas que le atraen. Es un canal
-separado del Cookbook: un toque de calibración no es un guardado y nunca consume el cupo.
-_Avoid_: like, favorito
+**Gusto**:
+Lo que Karta deduce de las Aperturas, los guardados y las Vistas sin Apertura de la usuaria
+para ordenar el Feed. Nunca se pregunta: no hay calibración (ADR 0016). Sólo reordena recetas
+que ya son seguras para ella; nunca hace aparecer ni desaparecer ninguna.
+_Avoid_: calibración, like, favorito, preferencias
 
 ### Cocina
 
