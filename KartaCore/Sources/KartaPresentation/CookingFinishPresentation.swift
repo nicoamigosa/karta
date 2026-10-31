@@ -5,6 +5,8 @@ import KartaCore
 public struct CookingFinishPresentation: Equatable, Sendable {
     public let recipeName: String
     public let photo: MediaReference
+    /// Non-nil only while the finish card offers Share.
+    public let sharePayload: SharePayload?
     public let outcome: Outcome
     public let progress: [CookingStepPresentation.ProgressSegment]
 
@@ -13,7 +15,8 @@ public struct CookingFinishPresentation: Equatable, Sendable {
         case answered(CookOutcome)
     }
 
-    fileprivate init(recipe: Recipe, session: CookingSession, now: TimeInterval) {
+    fileprivate init(recipe: Recipe, session: CookingSession, now: TimeInterval, sharePayload: SharePayload?) {
+        self.sharePayload = sharePayload
         recipeName = recipe.name
         photo = recipe.heroPhoto
         if let event = session.cookedEvent, !event.wasInferred, let answer = event.outcome {
@@ -34,7 +37,9 @@ extension KartaState {
     public func cookingFinishPresentation(for recipe: Recipe, now: TimeInterval) -> CookingFinishPresentation? {
         guard let session, !session.isExited, session.isOnFinish,
               session.recipeID == recipe.id, canOpenRecipe(recipe) else { return nil }
-        return CookingFinishPresentation(recipe: recipe, session: session, now: now)
+        let payload = shareCardHistory.offersCard(for: session.cookedEvent)
+            ? RecipeShare(baseURL: shareBaseURL).payload(for: recipe) : nil
+        return CookingFinishPresentation(recipe: recipe, session: session, now: now, sharePayload: payload)
     }
 }
 

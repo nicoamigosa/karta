@@ -22,6 +22,93 @@ struct CookingFinishPresentationTests {
         )
     }
 
+    @Test("The restored dismissal streak controls the finish card and sharing resets it", arguments: [0, 1, 2, 3])
+    @MainActor
+    func restoredShareCardRule(dismissals: Int) throws {
+        var history = ShareCardHistory()
+        for index in 0..<dismissals { history.close(for: "old-\(index)", as: .dismissed) }
+        let snapshot = UserSnapshot(
+            profile: OnboardingProfile(intolerances: [], householdSize: 2),
+            shareCardHistory: history
+        )
+        let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot)
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(
+            safetyProfile: SafetyProfile(intolerances: []),
+            shareBaseURL: URL(string: "https://karta.app/r"),
+            shareCardHistory: restored.shareCardHistory
+        ))
+        store.send(.startCooking(recipe, startedAt: 100))
+        for time in [110.0, 120.0, 130.0] { store.send(.nextStep(now: time)) }
+        store.send(.respond(.thumbsUp))
+        #expect((store.cookingFinishPresentation(for: recipe, now: 130)?.sharePayload != nil) == (dismissals < 3))
+        store.send(.closeShareCard(.shared))
+        #expect(store.state.shareCardHistory.consecutiveDismissals == (dismissals < 3 ? 0 : 3))
+    }
+
+    @Test("Finish dismisses an offered share card")
+    @MainActor
+    func finishDismissesShareCard() {
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(
+            safetyProfile: SafetyProfile(intolerances: []),
+            shareBaseURL: URL(string: "https://karta.app/r")
+        ))
+        store.send(.startCooking(recipe, startedAt: 100))
+        for time in [110.0, 120.0, 130.0] { store.send(.nextStep(now: time)) }
+        store.send(.respond(.thumbsUp))
+        store.send(.exitCooking)
+        store.send(.exitCooking)
+        #expect(store.state.shareCardHistory.shownRecipeIDs == [recipe.id])
+        #expect(store.state.shareCardHistory.consecutiveDismissals == 1)
+    }
+
+    @Test("Closing the share card consumes this recipe only once", arguments: [false, true])
+    @MainActor
+    func closesShareCard(shared: Bool) throws {
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(
+            safetyProfile: SafetyProfile(intolerances: []),
+            shareBaseURL: URL(string: "https://karta.app/r")
+        ))
+        store.send(.startCooking(recipe, startedAt: 100))
+        for time in [110.0, 120.0, 130.0] { store.send(.nextStep(now: time)) }
+        store.send(.respond(.thumbsUp))
+        #expect(store.cookingFinishPresentation(for: recipe, now: 130)?.sharePayload != nil)
+        store.send(.closeShareCard(shared ? .shared : .dismissed))
+        store.send(.closeShareCard(shared ? .shared : .dismissed))
+        #expect(store.cookingFinishPresentation(for: recipe, now: 130)?.sharePayload == nil)
+        #expect(store.state.shareCardHistory.shownRecipeIDs == [recipe.id])
+        #expect(store.state.shareCardHistory.consecutiveDismissals == (shared ? 0 : 1))
+        store.send(.startCooking(recipe, startedAt: 200))
+        for time in [210.0, 220.0, 230.0] { store.send(.nextStep(now: time)) }
+        store.send(.respond(.thumbsUp))
+        #expect(store.cookingFinishPresentation(for: recipe, now: 230)?.sharePayload == nil)
+    }
+
+    @Test("The share card needs an available link and the explicit Good answer", arguments: [false, true])
+    @MainActor
+    func shareCardAfterGood(available: Bool) throws {
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(
+            safetyProfile: SafetyProfile(intolerances: []),
+            shareBaseURL: available ? URL(string: "https://karta.app/r") : nil
+        ))
+        store.send(.startCooking(recipe, startedAt: 100))
+        #expect(store.cookingFinishPresentation(for: recipe, now: 110) == nil)
+        for time in [110.0, 120.0, 400.0] { store.send(.nextStep(now: time)) }
+        #expect(store.cookingFinishPresentation(for: recipe, now: 400)?.sharePayload == nil)
+        store.send(.respond(.thumbsDown))
+        #expect(store.cookingFinishPresentation(for: recipe, now: 400)?.sharePayload == nil)
+        // A fresh session is needed because an explicit answer is final.
+        store.send(.startCooking(recipe, startedAt: 500))
+        for time in [510.0, 520.0, 530.0] { store.send(.nextStep(now: time)) }
+        store.send(.respond(.thumbsUp))
+        let finish = try #require(store.cookingFinishPresentation(for: recipe, now: 530))
+        #expect((finish.sharePayload != nil) == available)
+        #expect(finish.sharePayload?.title == (available ? "Tomato sauce" : nil))
+    }
+
     @Test("Cierre projects the recipe Foto and completed progress instead of a Paso")
     @MainActor
     func finishContent() throws {

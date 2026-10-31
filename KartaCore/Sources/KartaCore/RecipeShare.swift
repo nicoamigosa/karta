@@ -4,11 +4,17 @@ import Foundation
 /// stable reference URL that identifies the recipe. UI-independent and testable.
 public struct SharePayload: Equatable, Sendable {
     public let text: String
-    public let url: URL?
+    public let url: URL
+    public let title: String
+    public let subtitle: String
+    public let photo: MediaReference
 
-    public init(text: String, url: URL?) {
+    public init(text: String, url: URL, title: String, subtitle: String, photo: MediaReference) {
         self.text = text
         self.url = url
+        self.title = title
+        self.subtitle = subtitle
+        self.photo = photo
     }
 }
 
@@ -22,11 +28,35 @@ public struct RecipeShare: Sendable {
         self.baseURL = baseURL
     }
 
-    public func payload(for recipe: Recipe) -> SharePayload {
-        SharePayload(
-            text: "Check out \(recipe.name) on Karta",
-            url: referenceURL(for: recipe.id)
+    public func payload(for recipe: Recipe) -> SharePayload? {
+        guard let url = referenceURL(for: recipe.id) else { return nil }
+        return SharePayload(
+            text: "\(recipe.name) on Karta",
+            url: url,
+            title: recipe.name,
+            subtitle: "Serves \(recipe.servings) · \(recipe.totalMinutes) min · \(recipe.difficulty.rawValue.capitalized)",
+            photo: recipe.heroPhoto
         )
+    }
+
+    /// Recognizes one recipe-id segment under the injected base, without accepting
+    /// other origins or paths that merely start with the same letters.
+    public func recipeID(for url: URL) -> String? {
+        guard let baseURL,
+              let base = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
+              let link = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let host = base.host,
+              link.scheme?.lowercased() == base.scheme?.lowercased(),
+              link.host?.lowercased() == host.lowercased(), link.port == base.port,
+              link.user == nil, link.password == nil,
+              link.query == nil, link.fragment == nil else { return nil }
+        let prefix = base.percentEncodedPath.hasSuffix("/")
+            ? base.percentEncodedPath : base.percentEncodedPath + "/"
+        guard link.percentEncodedPath.hasPrefix(prefix) else { return nil }
+        let segment = String(link.percentEncodedPath.dropFirst(prefix.count))
+        guard !segment.isEmpty, !segment.contains("/"),
+              let id = segment.removingPercentEncoding, id != ".", id != ".." else { return nil }
+        return id
     }
 
     private func referenceURL(for recipeID: String) -> URL? {

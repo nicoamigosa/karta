@@ -17,6 +17,12 @@ public struct KartaState: Equatable, Sendable {
     public var viewHistory: ViewHistory
     /// All Cocinados, independent of whether their recipes are currently saved.
     public var cookHistory: [CookEntry]
+    /// Transient Feed notice, cleared by the shell after showing it.
+    public fileprivate(set) var recipeGoneNotice: RecipeGoneNotice?
+    /// Include this value when saving or restoring UserSnapshot.
+    public var shareCardHistory: ShareCardHistory
+    /// Injected configuration, never persisted; nil disables Share everywhere.
+    public var shareBaseURL: URL?
     public var session: CookingSession?
     /// Transient sheet visibility. Both OK and Open Settings dismiss it.
     public fileprivate(set) var showsAlarmPermissionSheet = false
@@ -146,12 +152,16 @@ public struct KartaState: Equatable, Sendable {
         navigation: AppNavigationState = AppNavigationState(),
         safetyProfile: SafetyProfile,
         filterDraft: FilterDraft = FilterDraft(),
-        hasShownAlarmPermissionSheet: Bool = false
+        hasShownAlarmPermissionSheet: Bool = false,
+        shareBaseURL: URL? = nil,
+        shareCardHistory: ShareCardHistory = ShareCardHistory()
     ) {
         self.cookbook = cookbook
         self.onboarding = onboarding
         self.viewHistory = viewHistory
         self.cookHistory = cookHistory
+        self.shareCardHistory = shareCardHistory
+        self.shareBaseURL = shareBaseURL
         self.session = session
         self.hasShownAlarmPermissionSheet = hasShownAlarmPermissionSheet
         // Automatic Cierre inference has a persisted date: its first arrival.
@@ -186,6 +196,10 @@ public enum KartaAction: Sendable {
     case startCooking(Recipe, startedAt: TimeInterval)
     case nextStep(now: TimeInterval)
     case previousStep
+    case dismissRecipeGoneNotice
+    /// Shared means tapping Share, regardless of what happens in the native sheet.
+    /// Swipe, timeout and VoiceOver dismissal all send dismissed.
+    case closeShareCard(ShareCardHistory.Close)
     case exitCooking
     case respond(CookOutcome)
     case inferProbablyCooked(now: TimeInterval)
@@ -283,7 +297,15 @@ public enum KartaReducer {
             }
         case .previousStep:
             state.session?.previous()
+        case .dismissRecipeGoneNotice:
+            state.recipeGoneNotice = nil
+        case let .closeShareCard(action):
+            guard state.shareBaseURL != nil, let session = state.session,
+                  !session.isExited, session.isOnFinish,
+                  state.shareCardHistory.offersCard(for: session.cookedEvent) else { return }
+            state.shareCardHistory.close(for: session.recipeID, as: action)
         case .exitCooking:
+            reduce(&state, action: .closeShareCard(.dismissed))
             state.session?.exit()
         case let .respond(outcome):
             if let event = state.session?.respond(outcome), let session = state.session {
@@ -399,5 +421,23 @@ public final class KartaStore {
     /// The shell-facing projection for the Card reverse, using the store's profile.
     public func reversePresentation(for recipe: Recipe) -> RecipeReversePresentation? {
         state.reversePresentation(for: recipe)
+    }
+
+    /// Resolve a shared link using current catalogue and safety state. Dates come
+    /// from the shell so an Apertura has the same deterministic history seam.
+    public func openRecipeLink(_ url: URL, recipes: [Recipe], at date: Date) -> RecipeLinkOpening {
+        guard let id = RecipeShare(baseURL: state.shareBaseURL).recipeID(for: url) else { return .ignored }
+        guard let recipe = recipes.first(where: { $0.id == id }) else {
+            state.navigation = AppNavigationState()
+            state.recipeGoneNotice = RecipeGoneNotice()
+            return .gone
+        }
+        // A shared link proposes a recipe, so saved-recipe warning exceptions
+        // never weaken the receiver's Intolerancias guarantee.
+        guard FeedFilters(intolerances: state.safetyProfile.intolerances).allows(recipe),
+              let reverse = state.reversePresentation(for: recipe) else { return .notOffered }
+        send(.recordOpen(recipeID: id, at: date))
+        send(.pushRoute(.recipeDetail(recipeID: id)))
+        return .reverse(reverse)
     }
 }
