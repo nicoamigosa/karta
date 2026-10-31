@@ -4,9 +4,12 @@ Ni `Cookbook`, ni `CookedEvent`, ni `OnboardingProfile` eran serializables y no 
 snapshot: cada consumidor tendría que inventarse su restauración, empezando por quien
 implemente la app iOS sin conocer ninguna de estas decisiones.
 
-Se persiste lo que es de la usuaria y duele perder: intolerancias y hogar, el Cookbook con su
-techo de cupo, el historial de vistas y cocinados con sus fechas, y los gustos de la
-calibración. No se persiste lo que se recalcula o caduca solo: la posición en el feed (ADR
+Se persiste lo que es de la usuaria y duele perder: intolerancias y hogar —o que todavía no
+los ha respondido, porque ya puede haber guardado recetas de la baraja segura (ADR 0015)—, el
+Cookbook con su techo de cupo, el historial de vistas, aperturas y cocinados con sus fechas, y
+si ya vio el recorrido de la primera apertura. Desde el ADR 0016 no hay calibración: los gustos
+de calibración que guardaron versiones anteriores se conservan intactos, aunque ya nada los
+lea. No se persiste lo que se recalcula o caduca solo: la posición en el feed (ADR
 0009), la frontera —que se calcula siempre contra los filtros vigentes— ni el feed mismo.
 
 Una sesión de cocina a medias **sí** se guarda, con su paso y sus temporizadores, en contra de
