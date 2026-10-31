@@ -15,6 +15,7 @@ public struct UserSnapshot: Equatable, Sendable {
     public let tasteCalibration: TasteCalibration
     public let cookingSession: CookingSession?
     public let shareCardHistory: ShareCardHistory
+    public let hasShownSaveToast: Bool
     public let hasShownAlarmPermissionSheet: Bool
 
     public init(
@@ -25,6 +26,7 @@ public struct UserSnapshot: Equatable, Sendable {
         tasteCalibration: TasteCalibration = TasteCalibration(),
         cookingSession: CookingSession? = nil,
         hasShownAlarmPermissionSheet: Bool = false,
+        hasShownSaveToast: Bool = false,
         shareCardHistory: ShareCardHistory = ShareCardHistory()
     ) {
         self.shareCardHistory = shareCardHistory
@@ -35,6 +37,7 @@ public struct UserSnapshot: Equatable, Sendable {
         self.tasteCalibration = tasteCalibration
         self.cookingSession = cookingSession
         self.hasShownAlarmPermissionSheet = hasShownAlarmPermissionSheet
+        self.hasShownSaveToast = hasShownSaveToast
     }
 
     /// Encode the snapshot without performing any storage I/O.
@@ -59,6 +62,7 @@ public struct UserSnapshot: Equatable, Sendable {
             ),
             cookingSession: cookingSession.map(CookingSessionDTO.init),
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet,
+            hasShownSaveToast: hasShownSaveToast,
             shareCardHistory: ShareCardHistoryDTO(shareCardHistory)
         )
 
@@ -170,6 +174,7 @@ private struct UserSnapshotDTO: Codable {
     let cookingSession: CookingSessionDTO?
     // Optional so synthesized Codable uses decodeIfPresent for older snapshots.
     let hasShownAlarmPermissionSheet: Bool?
+    let hasShownSaveToast: Bool?
     let shareCardHistory: ShareCardHistoryDTO?
 
     func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
@@ -223,6 +228,7 @@ private struct UserSnapshotDTO: Codable {
             ),
             cookingSession: retainedSession,
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet ?? false,
+            hasShownSaveToast: hasShownSaveToast ?? false,
             shareCardHistory: try shareCardHistory?.domainValue ?? ShareCardHistory()
         )
     }

@@ -14,6 +14,10 @@ public struct KartaState: Equatable, Sendable {
     public fileprivate(set) var pendingUnsave: Cookbook.UnsaveUndo?
     /// Unknown until the shell reports the App Store result for this launch. Never persisted.
     public fileprivate(set) var entitlement: Entitlement?
+    /// Raised after saving; the shell presents it when the save animation ends.
+    public fileprivate(set) var pendingSaveToast: SaveToast?
+    /// Persist when raised, even while the toast is still visible.
+    public fileprivate(set) var hasShownSaveToast: Bool
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
     public var viewHistory: ViewHistory
@@ -155,6 +159,7 @@ public struct KartaState: Equatable, Sendable {
         safetyProfile: SafetyProfile,
         filterDraft: FilterDraft = FilterDraft(),
         hasShownAlarmPermissionSheet: Bool = false,
+        hasShownSaveToast: Bool = false,
         shareBaseURL: URL? = nil,
         shareCardHistory: ShareCardHistory = ShareCardHistory()
     ) {
@@ -166,6 +171,7 @@ public struct KartaState: Equatable, Sendable {
         self.shareBaseURL = shareBaseURL
         self.session = session
         self.hasShownAlarmPermissionSheet = hasShownAlarmPermissionSheet
+        self.hasShownSaveToast = hasShownSaveToast
         // Automatic Cierre inference has a persisted date: its first arrival.
         // Reconnect that history entry so a resumed answer enriches it in place.
         if let session, session.cookedEvent?.wasInferred == true,
@@ -188,6 +194,7 @@ public enum KartaAction: Sendable {
     case saveRecipe(String)
     case unsaveRecipe(String)
     case undoUnsave
+    case dismissSaveToast
     case dismissUnsaveToast
     case recordView(recipeID: String, at: Date)
     case recordOpen(recipeID: String, at: Date)
@@ -246,17 +253,29 @@ public enum KartaReducer {
     public static func reduce(_ state: inout KartaState, action: KartaAction) {
         switch action {
         case let .saveRecipe(id):
+            state.pendingSaveToast = nil
             state.pendingUnsave = nil
             state.lastSaveResult = state.cookbook.save(id)
+            if state.lastSaveResult == .saved, state.entitlement == .free,
+               let ceiling = state.cookbook.saveCap,
+               ceiling - state.cookbook.savedIDs.count == 1,
+               !state.hasShownSaveToast {
+                state.hasShownSaveToast = true
+                state.pendingSaveToast = SaveToast(recipeID: id)
+            }
         case let .unsaveRecipe(id):
+            state.pendingSaveToast = nil
             state.lastSaveResult = nil
             state.pendingUnsave = state.cookbook.unsave(id)
         case .undoUnsave:
+            state.pendingSaveToast = nil
             state.lastSaveResult = nil
             if let removal = state.pendingUnsave {
                 state.cookbook.undoUnsave(removal)
             }
             state.pendingUnsave = nil
+        case .dismissSaveToast:
+            state.pendingSaveToast = nil
         case .dismissUnsaveToast:
             state.pendingUnsave = nil
         case let .recordView(recipeID, date):
@@ -270,6 +289,7 @@ public enum KartaReducer {
         case let .entitlementChanged(entitlement):
             guard state.entitlement != entitlement else { return }
             state.entitlement = entitlement
+            state.pendingSaveToast = nil
             state.lastSaveResult = nil
             state.pendingUnsave = nil
             switch entitlement {
