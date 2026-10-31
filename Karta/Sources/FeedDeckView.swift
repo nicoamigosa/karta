@@ -18,6 +18,10 @@ struct FeedScreen: View {
     /// The payload currently in the native share sheet; nil while Share is
     /// switched off or no sheet is up.
     @State private var presentedShare: PresentedShare?
+    /// A shared link that arrived before the catalogue finished loading:
+    /// resolving it early would report `gone` for recipes that exist, so it
+    /// waits for the seed.
+    @State private var pendingLink: URL?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -152,10 +156,13 @@ struct FeedScreen: View {
                 payload: presented.payload,
                 image: ShareLinks.image(for: presented.payload.photo, manifest: manifest)
             )
+            // Half height like `share-sheet.png`, expandable.
+            .presentationDetents([.medium, .large])
         }
         .onOpenURL { openRecipeLink($0) }
         // Universal links arrive as NSUserActivity once #155's Associated
-        // Domains entry exists; `onOpenURL` keeps custom-scheme opens working.
+        // Domains entry exists. No custom scheme is registered, so until
+        // then only NSUserActivity links reach the app.
         .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
             if let url = activity.webpageURL {
                 openRecipeLink(url)
@@ -169,6 +176,11 @@ struct FeedScreen: View {
                 clips = try DebugSeeds.clipLibrary(loading: seed)
                 manifest = try DebugSeeds.mediaManifest(loading: seed)
                 isLoaded = true
+                // A link that cold-launched the app waited for the seed.
+                if let url = pendingLink {
+                    pendingLink = nil
+                    openRecipeLink(url)
+                }
             } catch {
                 loadError = error.localizedDescription
             }
@@ -179,7 +191,13 @@ struct FeedScreen: View {
 private extension FeedScreen {
     /// One shared link: the store resolves it (reverse/Apertura, gone
     /// notice, not offered, ignored); the shell only mirrors the outcome.
+    /// A link that arrives before the catalogue loads is held — resolving
+    /// against an empty catalogue would report `gone` for existing recipes.
     func openRecipeLink(_ url: URL) {
+        guard isLoaded else {
+            pendingLink = url
+            return
+        }
         switch store.openRecipeLink(url, recipes: recipes, at: Date()) {
         case .gone:
             // "The app opens the Feed": close the cookbook over it.
@@ -359,6 +377,7 @@ private struct FeedSurface: View {
                         .padding(.horizontal, KartaDesign.space.toastSideMargin)
                         Spacer(minLength: 0)
                     }
+                    .ignoresSafeArea()
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
 

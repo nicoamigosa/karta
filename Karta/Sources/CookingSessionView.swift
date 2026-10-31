@@ -611,7 +611,7 @@ struct CookingSessionView: View {
                     course: recipe.primaryCourse,
                     focused: $shareCardFocused,
                     onShare: { share(payload) },
-                    onDismiss: { store.send(.closeShareCard(.dismissed)) }
+                    onDismiss: { closeShareCard(as: .dismissed) }
                 )
                 .padding(.horizontal, KartaDesign.shareCard.sideInset)
                 .padding(.bottom, shareCardBottomInset)
@@ -642,7 +642,15 @@ struct CookingSessionView: View {
                 guard !Task.isCancelled else { return }
                 if !shareCardFocused { idle += 0.25 }
             }
-            store.send(.closeShareCard(.dismissed))
+            closeShareCard(as: .dismissed)
+        }
+    }
+
+    /// Every exit of the floating card animates it back downwards, the way
+    /// it entered (`docs/design/karta-v1.md` → *The share card*).
+    private func closeShareCard(as action: ShareCardHistory.Close) {
+        withAnimation(.easeOut(duration: KartaDesign.shareCard.appearDuration)) {
+            store.send(.closeShareCard(action))
         }
     }
 
@@ -665,7 +673,7 @@ struct CookingSessionView: View {
     /// The cook tapped **Share**: the offer counts as shared (the core
     /// resets the dismissal count) and the shell presents the sheet.
     private func share(_ payload: SharePayload) {
-        store.send(.closeShareCard(.shared))
+        closeShareCard(as: .shared)
         onShare(payload)
     }
 

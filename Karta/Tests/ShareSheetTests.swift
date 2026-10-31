@@ -75,7 +75,13 @@ struct ShareSheetTests {
 
         state.shareBaseURL = URL(string: "https://karta.app")
         let on = KartaStore(state: state)
-        #expect(ShareLinks.payload(for: recipe, in: on)
-            == RecipeShare(baseURL: state.shareBaseURL).payload(for: recipe))
+        // Literal expectations, not the contract's expression again.
+        #expect(ShareLinks.payload(for: recipe, in: on) == SharePayload(
+            text: "Spanish Tortilla on Karta",
+            url: URL(string: "https://karta.app/spanish-tortilla")!,
+            title: "Spanish Tortilla",
+            subtitle: "Serves 4 · 35 min · Easy",
+            photo: .local("photos/spanish-tortilla")
+        ))
     }
 }

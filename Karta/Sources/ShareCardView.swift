@@ -58,11 +58,21 @@ struct ShareCardView: View {
                     sharePill
                 }
             }
+            // From AX1 the row is leading-aligned with the card's edge
+            // (`share-finish-card-ax1.png`).
+            .frame(maxWidth: stacked ? .infinity : nil, alignment: .leading)
             .padding(.top, KartaDesign.shareCard.padTop)
 
             if stacked {
+                // The pill moves under the message, aligned with it.
                 sharePill
                     .padding(.top, KartaDesign.shareCard.axPillGap)
+                    .padding(
+                        .leading,
+                        KartaDesign.shareCard.miniWidth
+                            + KartaDesign.shareCard.miniFrontOffset
+                            + KartaDesign.shareCard.messageGap
+                    )
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -109,48 +119,43 @@ struct ShareCardView: View {
     /// the right, each with a 1 pt `card` inner frame 2.5 pt in.
     private var miniatureBacks: some View {
         ZStack {
-            RoundedRectangle(
-                cornerRadius: KartaDesign.shareCard.miniRadius,
-                style: .continuous
-            )
-            .fill(suit.edge)
-            .rotationEffect(.degrees(-KartaDesign.shareCard.miniRotation))
+            miniBack(fill: suit.edge)
+                .rotationEffect(.degrees(-KartaDesign.shareCard.miniRotation))
 
-            RoundedRectangle(
-                cornerRadius: KartaDesign.shareCard.miniRadius,
-                style: .continuous
-            )
-            .fill(suit.back)
-            .rotationEffect(.degrees(KartaDesign.shareCard.miniRotation))
-            .offset(x: KartaDesign.shareCard.miniFrontOffset)
+            miniBack(fill: suit.back)
+                .rotationEffect(.degrees(KartaDesign.shareCard.miniRotation))
+                .offset(x: KartaDesign.shareCard.miniFrontOffset)
         }
         .frame(
             width: KartaDesign.shareCard.miniWidth
                 + KartaDesign.shareCard.miniFrontOffset,
             height: KartaDesign.shareCard.miniHeight
         )
-        .overlay {
-            miniFrame.rotationEffect(.degrees(-KartaDesign.shareCard.miniRotation))
-            miniFrame
-                .rotationEffect(.degrees(KartaDesign.shareCard.miniRotation))
-                .offset(x: KartaDesign.shareCard.miniFrontOffset)
-        }
     }
 
-    private var miniFrame: some View {
+    /// One miniature back: 24 × 34 with its 1 pt `card` frame drawn inside
+    /// it, 2.5 pt in from the edge.
+    private func miniBack(fill: Color) -> some View {
         RoundedRectangle(
             cornerRadius: KartaDesign.shareCard.miniRadius,
             style: .continuous
         )
-        .strokeBorder(
-            KartaDesign.ColorToken.card,
-            lineWidth: KartaDesign.elevation.backFrameLineWidth
-        )
+        .fill(fill)
+        .overlay {
+            RoundedRectangle(
+                cornerRadius: KartaDesign.shareCard.miniRadius
+                    - KartaDesign.shareCard.miniFrameInset,
+                style: .continuous
+            )
+            .strokeBorder(
+                KartaDesign.ColorToken.card,
+                lineWidth: KartaDesign.elevation.backFrameLineWidth
+            )
+            .padding(KartaDesign.shareCard.miniFrameInset)
+        }
         .frame(
-            width: KartaDesign.shareCard.miniWidth
-                - KartaDesign.shareCard.miniFrameInset * 2,
+            width: KartaDesign.shareCard.miniWidth,
             height: KartaDesign.shareCard.miniHeight
-                - KartaDesign.shareCard.miniFrameInset * 2
         )
     }
 
