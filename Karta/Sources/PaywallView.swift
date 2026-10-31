@@ -85,6 +85,11 @@ struct PaywallView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
 
+    /// Measured height of the scrolling content — the sheet hugs it
+    /// (karta-v1.md → *The paywall*: "The sheet hugs its content") and
+    /// only grows up to the space the ZStack offers at large text sizes.
+    @State private var scrollContentHeight: CGFloat = .infinity
+
     var body: some View {
         ZStack(alignment: .bottom) {
             KartaDesign.ColorToken.scrim
@@ -175,7 +180,13 @@ struct PaywallView: View {
                         }
                     }
                 }
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.size.height
+                } action: { newHeight in
+                    scrollContentHeight = newHeight
+                }
             }
+            .frame(maxHeight: scrollContentHeight)
             .scrollIndicators(.hidden)
             .scrollBounceBehavior(.basedOnSize)
             .opacity(paywall.isDisabled ? KartaDesign.paywall.disabledOpacity : 1)

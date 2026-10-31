@@ -341,7 +341,9 @@ struct MundoMenuView: View {
                             Text(PremiumPlan.goPremiumTitle)
                                 .font(KartaDesign.FontToken.mundoName())
                                 .foregroundStyle(KartaDesign.ColorToken.ink)
-                            Text("Unlimited cookbook, lists")
+                            Text(Paywall.features.contains(.shoppingList)
+                                 ? "Unlimited cookbook, lists"
+                                 : "Unlimited cookbook")
                                 .font(KartaDesign.FontToken.mundoLine())
                                 .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                                 .lineLimit(1)
