@@ -106,21 +106,63 @@ struct CookbookPresentationTests {
         #expect(allCooked.wantToTryCount == 0)
     }
 
-    @Test("Cupo count appears only within two slots of a finite ceiling", arguments: [
-        (4, 7, nil),
+    @Test("Free cupo links appear within two slots and above the normal ceiling", arguments: [
+        (0, 7, nil), (4, 7, nil),
         (5, 7, "5 of 7 saved on the free plan"),
         (6, 7, "6 of 7 saved on the free plan"),
         (7, 7, "7 of 7 saved on the free plan"),
         (23, 23, "23 of 23 saved on the free plan"),
-        (5, nil, nil), (7, nil, nil), (23, nil, nil),
-    ] as [(Int, Int?, String?)])
-    func cupoCount(count: Int, ceiling: Int?, expected: String?) {
-        let state = KartaState(
+    ] as [(Int, Int, String?)])
+    @MainActor
+    func freeCupo(count: Int, ceiling: Int, expected: String?) {
+        let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling),
             safetyProfile: SafetyProfile(intolerances: [])
-        )
+        ))
+        store.send(.entitlementChanged(.free))
+        let line = store.cookbookPresentation(recipes: []).cupoLine
+        #expect(line?.text == expected)
+        #expect(line?.link == (expected == nil ? nil : .goUnlimited))
+        #expect(line?.link?.title == (expected == nil ? nil : "Go unlimited"))
+        #expect(store.showsGoPremium)
+    }
 
-        #expect(state.cookbookPresentation(recipes: []).cupoCountLine == expected)
+    @Test("Cupo line names the reported plan and stays quiet while unknown", arguments: [
+        (nil, 0, 7, "0 of 7 saved on the free plan", nil),
+        (nil, 5, 7, "5 of 7 saved on the free plan", nil),
+        (nil, 23, 23, "23 of 23 saved on the free plan", nil),
+        (nil, 23, nil, nil, nil),
+        (.premium, 0, 7, "Premium", .manage),
+        (.premium, 23, 23, "Premium", .manage),
+        (.trial(endsAt: Date(timeIntervalSince1970: 1_793_923_200)), 0, 7,
+         "Free trial until Nov 6", .manage),
+        (.trial(endsAt: Date(timeIntervalSince1970: 1_793_923_200)), 23, 23,
+         "Free trial until Nov 6", .manage),
+    ] as [(Entitlement?, Int, Int?, String?, CookbookPresentation.CupoLine.Link?)])
+    @MainActor
+    func planCupo(entitlement: Entitlement?, count: Int, ceiling: Int?, text: String?,
+                  link: CookbookPresentation.CupoLine.Link?) {
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        if let entitlement { store.send(.entitlementChanged(entitlement)) }
+        let line = store.cookbookPresentation(recipes: [], timeZone: TimeZone(secondsFromGMT: 0)!).cupoLine
+        #expect(line?.text == text)
+        #expect(line?.link == link)
+        #expect(line?.link?.title == (link == nil ? nil : "Manage"))
+        #expect(!store.showsGoPremium)
+    }
+
+    @Test("Trial dates use the injected time zone", arguments: [
+        (0, "Free trial until Nov 6"), (-8 * 60 * 60, "Free trial until Nov 5"),
+    ])
+    @MainActor
+    func trialTimeZone(offset: Int, text: String) throws {
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        store.send(.entitlementChanged(.trial(endsAt: Date(timeIntervalSince1970: 1_793_923_200))))
+        let zone = try #require(TimeZone(secondsFromGMT: offset))
+        #expect(store.cookbookPresentation(recipes: [], timeZone: zone).cupoLine?.text == text)
     }
 
     @Test("Unsave toast and Undo preserve the Cookbook and cooking history", arguments: [
@@ -170,6 +212,9 @@ struct CookbookPresentationTests {
         #expect(full.savedCount == count)
         #expect(full.ceiling == count)
         #expect(full.countLabel == label)
+        #expect(full.explanation == (count == 7
+            ? "Free cookbooks hold 7 recipes. Go unlimited to keep every recipe you like."
+            : "Your cookbook keeps all 23 recipes on the free plan. Go unlimited to add more."))
         #expect(store.cookbook == cookbook)
         #expect(store.state.lastSaveResult == .blockedByCap(saved: count, ceiling: count))
 

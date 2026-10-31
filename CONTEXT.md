@@ -222,6 +222,11 @@ Las recetas del Cookbook que todavía no se han cocinado: lo que se guardó con 
 Una receta pasa sola al Repertorio con su primer Cocinado; nunca vuelve.
 _Avoid_: pendientes, wishlist, para luego
 
+**Entitlement**:
+El plan que reconoce el App Store: gratuito, prueba con fecha de fin o Premium. Hasta
+conocerlo es desconocido; nunca condiciona las Intolerancias, los Filtros ni la cocina.
+_Avoid_: suscripción como sinónimo de plan, premium como permiso de seguridad
+
 **Cupo**:
 El techo de recetas distintas que caben en el Cookbook. Vale siete en el nivel gratuito, no
 existe en premium, y al degradar queda fijado en lo que hubiera acumulado. Nunca sube al

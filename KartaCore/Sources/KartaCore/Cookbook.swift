@@ -94,6 +94,11 @@ public struct Cookbook: Equatable, Sendable {
         return .saved
     }
 
+    /// Lift the cupo for trial or premium without changing any saves.
+    public mutating func liftCupo() {
+        saveCap = nil
+    }
+
     /// Move an unlimited Cookbook to the free tier without deleting saves.
     /// The ceiling is fixed at the accumulated count, or the normal free cap
     /// when fewer than seven recipes were saved.

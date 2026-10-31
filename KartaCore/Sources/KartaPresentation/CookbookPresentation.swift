@@ -1,9 +1,30 @@
+import Foundation
 import KartaCore
 
 /// Both Cookbook halves, ready for the shell's grid. Which half is shown is
 /// a shell preference, not presentation state or part of the user snapshot.
 public struct CookbookPresentation: Equatable, Sendable {
-    public let cupoCountLine: String?
+    public let cupoLine: CupoLine?
+    /// Compatibility for the existing shell. New rendering uses cupoLine so only
+    /// its link is underlined and tappable.
+    @available(*, deprecated, message: "Use cupoLine.text and cupoLine.link")
+    public var cupoCountLine: String? { cupoLine?.text }
+
+    public struct CupoLine: Equatable, Sendable {
+        public let text: String
+        public let link: Link?
+
+        public enum Link: Equatable, Sendable {
+            case goUnlimited
+            case manage
+            public var title: String {
+                switch self {
+                case .goUnlimited: "Go unlimited"
+                case .manage: "Manage"
+                }
+            }
+        }
+    }
     public let repertoire: [Row]
     public let wantToTry: [Row]
     public var repertoireCount: Int { repertoire.count }
@@ -26,11 +47,31 @@ public struct CookbookPresentation: Equatable, Sendable {
         }
     }
 
-    fileprivate init(cookbook: Cookbook, cookHistory: [CookEntry], recipes: [Recipe], intolerances: Set<Allergen>) {
-        if let ceiling = cookbook.saveCap, ceiling - cookbook.savedIDs.count <= 2 {
-            cupoCountLine = "\(cookbook.savedIDs.count) of \(ceiling) saved on the free plan"
-        } else {
-            cupoCountLine = nil
+    fileprivate init(
+        cookbook: Cookbook, cookHistory: [CookEntry], recipes: [Recipe],
+        intolerances: Set<Allergen>, entitlement: Entitlement?, showsGoPremium: Bool,
+        timeZone: TimeZone
+    ) {
+        switch entitlement {
+        case let .trial(endsAt):
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = timeZone
+            formatter.dateFormat = "MMM d"
+            cupoLine = CupoLine(text: "Free trial until \(formatter.string(from: endsAt))", link: .manage)
+        case .premium:
+            cupoLine = CupoLine(text: PremiumPlan.name, link: .manage)
+        case .free, nil:
+            if let ceiling = cookbook.saveCap,
+               entitlement == nil || ceiling > Cookbook.freeSaveCap
+                || ceiling - cookbook.savedIDs.count <= 2 {
+                cupoLine = CupoLine(
+                    text: "\(cookbook.savedIDs.count) of \(ceiling) saved on the free plan",
+                    link: showsGoPremium ? .goUnlimited : nil
+                )
+            } else {
+                cupoLine = nil
+            }
         }
         let repertoireIDs = Set(cookbook.repertoireIDs(cookHistory: cookHistory))
         let wantToTryIDs = Set(cookbook.wantToTryIDs(cookHistory: cookHistory))
@@ -43,17 +84,18 @@ public struct CookbookPresentation: Equatable, Sendable {
 }
 
 extension KartaState {
-    public func cookbookPresentation(recipes: [Recipe]) -> CookbookPresentation {
+    public func cookbookPresentation(recipes: [Recipe], timeZone: TimeZone = .current) -> CookbookPresentation {
         CookbookPresentation(
             cookbook: cookbook, cookHistory: cookHistory, recipes: recipes,
-            intolerances: safetyProfile.intolerances
+            intolerances: safetyProfile.intolerances, entitlement: entitlement,
+            showsGoPremium: showsGoPremium, timeZone: timeZone
         )
     }
 }
 
 extension KartaStore {
-    public func cookbookPresentation(recipes: [Recipe]) -> CookbookPresentation {
-        state.cookbookPresentation(recipes: recipes)
+    public func cookbookPresentation(recipes: [Recipe], timeZone: TimeZone = .current) -> CookbookPresentation {
+        state.cookbookPresentation(recipes: recipes, timeZone: timeZone)
     }
 }
 
@@ -92,6 +134,12 @@ public struct CookbookFullPresentation: Equatable, Sendable {
     public let savedCount: Int
     public let ceiling: Int
     public var countLabel: String { "\(savedCount) OF \(ceiling) SAVED" }
+    public var explanation: String {
+        if ceiling > Cookbook.freeSaveCap {
+            return "Your cookbook keeps all \(ceiling) recipes on the free plan. Go unlimited to add more."
+        }
+        return "Free cookbooks hold \(Cookbook.freeSaveCap) recipes. Go unlimited to keep every recipe you like."
+    }
 }
 
 extension KartaState {
