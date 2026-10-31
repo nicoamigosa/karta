@@ -40,6 +40,9 @@ Notes:
   the paywall over the recipe.
 - The celebration honours Reduce Motion (a single fade instead of the
   falling card backs, via `accessibilityReduceMotion` in
-  `PaywallView.swift`); captures here show the motion variant.
+  `PaywallView.swift`). `sim-premium-welcome-reduce-motion.png` was
+  captured with `defaults write com.apple.Accessibility
+  ReduceMotionEnabled -bool true`; the resting frame is identical — the
+  difference is the animation, not the layout.
 - Terms of Use / Privacy Policy footer links point at the
   `PremiumLinks` placeholders pending the real pages.
