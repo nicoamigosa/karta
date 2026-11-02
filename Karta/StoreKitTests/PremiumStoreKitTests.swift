@@ -9,17 +9,23 @@ import KartaPresentation
 /// The Premium flow against the bundled `Karta.storekit` configuration,
 /// driven end to end through `PremiumController` and `PremiumService`:
 /// products, purchase, Ask to Buy, a forced failure, restore-empty, and
-/// the subscription expiring back to free (#162).
+/// the subscription expiring back to free.
+///
+/// This suite lives in its own test plan (`KartaStoreKit.xctestplan`),
+/// which the default `Karta` plan — and CI — do not run: the hosted
+/// runner's iOS 26.x simulator cannot host an `SKTestSession` at all
+/// (storekitd never attaches the Octane store; every override fails
+/// SKInternalErrorDomain Code=3 and products come back empty). It runs
+/// locally on iOS 27 until a hosted image with a working runtime exists
+/// — tracked in https://github.com/nicoamigosa/karta/issues/170.
 ///
 /// Serialized: one SKTestSession is live per process, so these must not
 /// race. A live session makes `Product.purchase()` run against the Octane
 /// test store — headless, no sign-in sheet. On a runtime where storekitd
-/// never attaches it (SKInternalErrorDomain Code=3 — seen on the iOS 26.5
-/// simulator; the iOS 27.0 sim works) products come back empty and every
-/// test fails on the `products` requirement instead of hanging: the gate
-/// reports the runtime honestly.
+/// never attaches it, every test still fails on the `products`
+/// requirement instead of hanging.
 @Suite("Premium on the local StoreKit configuration", .serialized)
-struct PremiumTests {
+struct PremiumStoreKitTests {
 
     /// The bundled configuration, copied into the test target by the
     /// project (the scheme selects it for Debug runs).

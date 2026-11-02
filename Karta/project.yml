@@ -105,6 +105,26 @@ targets:
       - target: Karta
       - package: KartaCore
         product: KartaPresentation
+  # The SKTestSession suite in its own target + test plan: the default
+  # `KartaTests` plan (what CI runs) excludes it because hosted runners
+  # cannot host an Octane test store — see
+  # https://github.com/nicoamigosa/karta/issues/170.
+  KartaStoreKitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: StoreKitTests
+      - path: Karta.storekit
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.karta.KartaStoreKitTests
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_VERSION: "6.0"
+    dependencies:
+      - target: Karta
+      - package: KartaCore
+        product: KartaPresentation
 schemes:
   Karta:
     build:
@@ -117,4 +137,12 @@ schemes:
     test:
       targets:
         - KartaTests
+        - KartaStoreKitTests
       storeKitConfiguration: Karta.storekit
+      # `KartaTests` is the plan CI runs (default). `KartaStoreKit` runs
+      # the SKTestSession suite locally where the simulator can host the
+      # Octane test store (see Karta/StoreKitTests).
+      testPlans:
+        - path: KartaTests.xctestplan
+          defaultPlan: true
+        - path: KartaStoreKit.xctestplan

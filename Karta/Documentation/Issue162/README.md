@@ -46,3 +46,19 @@ Notes:
   difference is the animation, not the layout.
 - Terms of Use / Privacy Policy footer links point at the
   `PremiumLinks` placeholders pending the real pages.
+- Test split: `KartaTests.xctestplan` (the default plan the scheme and
+  CI run) covers `PremiumController`'s outcome mapping through the
+  injected `Environment` seam — `Tests/PremiumControllerTests.swift`.
+  The live `SKTestSession` suite moved to the `KartaStoreKitTests`
+  target behind `KartaStoreKit.xctestplan`, which CI does not run:
+  the hosted `macos-26-arm64` image has no iOS 27 runtime and on iOS
+  26.x storekitd never attaches the Octane test store
+  (`SKInternalErrorDomain Code=3`). Issue
+  <https://github.com/nicoamigosa/karta/issues/170> tracks putting the
+  plan back in CI. Locally:
+
+  ```
+  xcodebuild -project Karta.xcodeproj -scheme Karta \
+    -destination 'id=E0224A22-F874-4B8C-83FB-EB084492C493' \
+    CODE_SIGNING_ALLOWED=NO -testPlan KartaStoreKit test
+  ```
