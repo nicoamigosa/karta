@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "02EC9344-031E-4B4C-BDE7-1B0033375002",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Karta.xcodeproj",
+      "identifier" : "C851352CE2D1FB7773C4EDC0",
+      "name" : "Karta"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Karta.xcodeproj",
+        "identifier" : "42191E0B0DB460C31B182C5C",
+        "name" : "KartaStoreKitTests"
+      }
+    }
+  ],
+  "version" : 1
+}

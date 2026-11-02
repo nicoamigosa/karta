@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import KartaCore
 import KartaPresentation
 
@@ -15,6 +16,10 @@ struct CookbookScreen: View {
     let onUnsaveFromGrid: (CookbookPresentation.Row) -> Void
     let onShare: (CookbookPresentation.Row) -> Void
     let onUndo: (UnsaveToast) -> Void
+    /// The cupo line's way in (Go unlimited → paywall, Manage → Apple).
+    let premium: PremiumController
+
+    @State private var showsManageSubscriptions = false
 
     @AppStorage("cookbook.lastHalf") private var lastHalf = CookbookHalf.wantToTry.rawValue
 
@@ -34,10 +39,9 @@ struct CookbookScreen: View {
                 switchView
             }
 
-            if let cupoCountLine = presentation.cupoCountLine {
-                Text(cupoCountLine)
+            if let cupoLine = presentation.cupoLine {
+                cupoView(cupoLine)
                     .font(KartaDesign.FontToken.cupoCount())
-                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                     .frame(maxWidth: .infinity)
             }
 
@@ -79,6 +83,35 @@ struct CookbookScreen: View {
             }
         }
         .animation(.easeOut(duration: 0.25), value: store.unsaveToast(recipes: recipes))
+        .manageSubscriptionsSheet(
+            isPresented: $showsManageSubscriptions,
+            subscriptionGroupID: PremiumProductIDs.subscriptionGroupID
+        )
+    }
+
+    /// The cupo line under the switch: only its link is underlined and
+    /// tappable — Go unlimited opens the paywall, Manage opens Apple's
+    /// manage-subscriptions sheet (`premium-cookbook-*.png`).
+    @ViewBuilder
+    private func cupoView(_ cupoLine: CookbookPresentation.CupoLine) -> some View {
+        if let link = cupoLine.link {
+            HStack(spacing: 0) {
+                Text(cupoLine.text + " · ")
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                Button(link.title) {
+                    switch link {
+                    case .goUnlimited: Task { await premium.open(entry: .cupoLine) }
+                    case .manage: showsManageSubscriptions = true
+                    }
+                }
+                .font(KartaDesign.FontToken.cupoCount())
+                .foregroundStyle(KartaDesign.ColorToken.ink)
+                .underline(color: KartaDesign.ColorToken.ink)
+            }
+        } else {
+            Text(cupoLine.text)
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+        }
     }
 
     /// The wordmark left and the door button right, pressed: same box icon,

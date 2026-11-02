@@ -325,6 +325,81 @@ enum KartaDesign {
                 .weight(.medium)
         }
 
+        /// Paywall count under the fan (Figtree 800, 12, tracking 2).
+        static func paywallCount() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .footnote)
+                .weight(.heavy)
+        }
+
+        /// Paywall headline (Fraunces 700, 27 → `.title2`).
+        static func paywallTitle() -> Font {
+            display(size: 27, relativeTo: .title2, weight: 700)
+        }
+
+        /// Celebration headline (Fraunces 700, 30 → `.title2`).
+        static func welcomeTitle() -> Font {
+            display(size: 30, relativeTo: .title2, weight: 700)
+        }
+
+        /// Paywall feature name (Figtree 800, 15).
+        static func paywallFeatureName() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// Paywall feature detail (Figtree 500, 13/17).
+        static func paywallFeatureDetail() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.medium)
+        }
+
+        /// Plan name (Figtree 800, 16).
+        static func paywallPlanName() -> Font {
+            .custom("Figtree", size: 16, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// Plan detail line (Figtree 600, 12.5).
+        static func paywallPlanDetail() -> Font {
+            .custom("Figtree", size: 12.5, relativeTo: .caption)
+                .weight(.semibold)
+        }
+
+        /// The billed price — the largest price on screen (Fraunces 700, 22).
+        static func paywallPlanPrice() -> Font {
+            display(size: 22, relativeTo: .title3, weight: 700)
+        }
+
+        /// Plan period (Figtree 600, 12).
+        static func paywallPlanPeriod() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .caption)
+                .weight(.semibold)
+        }
+
+        /// SAVE badge (Figtree 800, 10.5, tracking 1).
+        static func paywallBadge() -> Font {
+            .custom("Figtree", size: 10.5, relativeTo: .caption2)
+                .weight(.heavy)
+        }
+
+        /// The renewal line (Figtree 500, 12/16).
+        static func paywallRenewal() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .footnote)
+                .weight(.medium)
+        }
+
+        /// The footer links (Figtree 700, 12.5).
+        static func paywallFooter() -> Font {
+            .custom("Figtree", size: 12.5, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
+        /// The failed/pending note above the button (Figtree 700, 13.5/19).
+        static func paywallNote() -> Font {
+            .custom("Figtree", size: 13.5, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
         /// Share card message "Pass this card on" (Fraunces 700, 18/22,
         /// scales as `.title3`).
         static func shareMessage() -> Font {
@@ -506,6 +581,52 @@ enum KartaDesign {
         static let fanCardWidth: CGFloat = 26
         static let fanCardHeight: CGFloat = 34
         static let notNowHit: CGFloat = 48
+    }
+
+    /// The paywall sheet (`docs/design/karta-v1.md` → *Premium and the
+    /// paywall*): radius 28 at the top, 10 pt top and 22 pt side padding,
+    /// 12 pt above the bottom safe area, grabber 14 pt above the content and
+    /// 14 pt between blocks.
+    enum paywall {
+        static let topRadius: CGFloat = 28
+        static let topPadding: CGFloat = 10
+        static let sidePadding: CGFloat = 22
+        static let bottomGap: CGFloat = 12
+        static let grabberWidth: CGFloat = 38
+        static let grabberHeight: CGFloat = 5
+        static let grabberGap: CGFloat = 14
+        static let blockGap: CGFloat = 14
+        static let fanScale: CGFloat = 0.9
+        static let featureGap: CGFloat = 10
+        static let featureCircle: CGFloat = 36
+        static let featureIcon: CGFloat = 18
+        static let planHeight: CGFloat = 64
+        static let planGap: CGFloat = 10
+        static let planRadius: CGFloat = 16
+        static let planPadding: CGFloat = 16
+        static let planRadio: CGFloat = 22
+        static let planGapBetween: CGFloat = 12
+        static let badgeRadius: CGFloat = 7
+        static let badgeTrailing: CGFloat = 14
+        static let badgePadY: CGFloat = 4
+        static let badgePadX: CGFloat = 8
+        static let noteRadius: CGFloat = 14
+        static let notePadY: CGFloat = 10
+        static let notePadX: CGFloat = 12
+        /// The renewal line and the footer stay pinned under the button —
+        /// the fan, title, features and plans scroll above at larger sizes.
+        static let footerGap: CGFloat = 10
+        /// The celebration: 200 pt band, 92 pt circle, falling card backs.
+        static let welcomeBandHeight: CGFloat = 200
+        static let welcomeCircle: CGFloat = 92
+        static let welcomeIcon: CGFloat = 44
+        static let welcomeCardWidth: CGFloat = 16
+        static let welcomeCardHeight: CGFloat = 22
+        static let welcomeCardRadius: CGFloat = 3
+        static let welcomeCardFrame: CGFloat = 1
+        static let welcomeDuration: TimeInterval = 1.2
+        static let disabledOpacity: CGFloat = 0.45
+        static let spinner: CGFloat = 18
     }
 
     enum save {

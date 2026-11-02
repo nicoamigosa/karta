@@ -20,8 +20,10 @@ struct RecipeReverseView: View {
     let unsaveToast: UnsaveToast?
     /// Called when the reverse's own Undo pill restores the removal.
     let onUndo: () -> Void
+    /// The shell's StoreKit bridge: opens the paywall from K3 and See plans.
+    let premium: PremiumController
 
-    @State private var showFullSheet = false
+    @State private var showFullSheet = DebugSeeds.opensCapSheet
 
     private var suit: SuitTokens {
         KartaDesign.suit(recipe.primaryCourse)
@@ -91,7 +93,26 @@ struct RecipeReverseView: View {
             .padding(.horizontal, KartaDesign.space.reverseCardX)
             .padding(.vertical, KartaDesign.space.reverseCardY)
 
-            if let toast = unsaveToast {
+            if let toast = store.state.pendingSaveToast {
+                // The one-time sixth-save toast sits in the Undo spot, with
+                // See plans in place of the Undo pill.
+                VStack {
+                    Spacer()
+                    SaveToastView(toast: toast, onSeePlans: {
+                        store.send(.dismissSaveToast)
+                        Task { await premium.open(entry: .sixthSaveToast) }
+                    }, onExpire: {
+                        store.send(.dismissSaveToast)
+                    })
+                }
+                .padding(
+                    .bottom,
+                    KartaDesign.space.reverseCardY + KartaDesign.space.cardBottom
+                        + KartaDesign.space.ctaHeight + KartaDesign.space.cardGap
+                )
+                .padding(.horizontal, KartaDesign.space.reverseCardX + KartaDesign.space.cardX)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if let toast = unsaveToast {
                 VStack {
                     Spacer()
                     UnsaveToastView(toast: toast, onUndo: {
@@ -109,12 +130,18 @@ struct RecipeReverseView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            if showFullSheet, let full = store.blockedByCap {
-                CookbookFullSheet(
-                    presentation: full,
+            // K3 and the cap paywall are one sheet: it grows into the
+            // paywall (fan and count stay, the rest cross-fades) and
+            // closing it — scrim, swipe or the paywall's own close —
+            // discards K3's save intent and returns to the bare reverse.
+            if capPaywall != nil || (showFullSheet && store.blockedByCap != nil) {
+                CapSheet(
+                    presentation: store.blockedByCap,
+                    paywall: capPaywall,
+                    store: store,
+                    premium: premium,
                     onUnlock: {
-                        // Paywall hook — the paywall itself is issue #14.
-                        PaywallHook.open()
+                        Task { await premium.open(entry: .cap(recipe)) }
                     },
                     onDismiss: {
                         showFullSheet = false
@@ -123,7 +150,24 @@ struct RecipeReverseView: View {
             }
         }
         .animation(.easeOut(duration: 0.25), value: store.state.pendingUnsave != nil)
+        .animation(.easeOut(duration: 0.25), value: store.state.pendingSaveToast != nil)
         .animation(.easeOut(duration: 0.3), value: showFullSheet)
+        .animation(.easeOut(duration: 0.3), value: store.state.paywall != nil)
+        // The cap paywall closing (any path: Not now, scrim, swipe, or a
+        // store action) discards K3's save intent — the same sheet goes
+        // away entirely, it does not fall back to the cookbook-full copy.
+        .onChange(of: capPaywall != nil) { _, isOpen in
+            if !isOpen { showFullSheet = false }
+        }
+    }
+
+    /// The paywall only when it entered through the cap (`.cap`): the one
+    /// that shares K3's sheet. Non-cap entries render over the feed.
+    private var capPaywall: Paywall? {
+        guard let paywall = store.state.paywall, case .cap = paywall.entry else {
+            return nil
+        }
+        return paywall
     }
 
     /// The crimson note under the title block for a saved recipe carrying a
