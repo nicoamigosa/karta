@@ -83,7 +83,7 @@ enum DebugSeeds {
     /// reverse (the "Unlock unlimited cookbook" boards).
     static var opensCapSheet: Bool {
         [
-            "premium-k3-unlock", "premium-paywall-entry",
+            "premium-k3-unlock", "premium-k3-paywall-transition", "premium-paywall-entry",
             "premium-cookbook-full-downgraded"
         ].contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
     }
@@ -182,6 +182,24 @@ enum DebugSeeds {
             }) {
                 store.send(.pushRoute(.recipeDetail(recipeID: unsaved.id)))
                 store.send(.saveRecipe(unsaved.id))
+            }
+        case "premium-k3-paywall-transition":
+            // K3 → grown paywall → close back to the bare reverse, on a
+            // timer, for the transition recording.
+            for recipe in recipes.prefix(7) {
+                store.send(.saveRecipe(recipe.id))
+            }
+            if let unsaved = recipes.first(where: {
+                !store.cookbook.isSaved($0.id)
+            }) {
+                store.send(.pushRoute(.recipeDetail(recipeID: unsaved.id)))
+                store.send(.saveRecipe(unsaved.id))
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(2.5))
+                    store.send(.paywall(.open(.cap(unsaved), plans: plans)))
+                    try? await Task.sleep(for: .seconds(3.5))
+                    store.send(.paywall(.close))
+                }
             }
         case "premium-cookbook-full-downgraded":
             // Premium dropped with more kept than the free floor: the cap

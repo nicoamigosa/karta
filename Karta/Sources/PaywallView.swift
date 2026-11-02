@@ -82,14 +82,6 @@ struct PaywallView: View {
     let store: KartaStore
     let premium: PremiumController
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.openURL) private var openURL
-
-    /// Measured height of the scrolling content — the sheet hugs it
-    /// (karta-v1.md → *The paywall*: "The sheet hugs its content") and
-    /// only grows up to the space the ZStack offers at large text sizes.
-    @State private var scrollContentHeight: CGFloat = .infinity
-
     var body: some View {
         ZStack(alignment: .bottom) {
             KartaDesign.ColorToken.scrim
@@ -109,7 +101,12 @@ struct PaywallView: View {
                 if paywall.phase == .welcome {
                     WelcomeView(paywall: paywall, onDone: { close() })
                 } else {
-                    content
+                    PaywallSheetContent(
+                        paywall: paywall,
+                        store: store,
+                        premium: premium,
+                        onClose: { close() }
+                    )
                 }
             }
             .padding(.bottom, KartaDesign.paywall.bottomGap)
@@ -130,19 +127,43 @@ struct PaywallView: View {
         .accessibilityAddTraits(.isModal)
     }
 
-    /// Scrolling content (fan, count, title, features, plans) over the
-    /// pinned button/renewal/footer: they must stay visible at larger text
-    /// sizes (see *Open decisions* in the PR).
-    private var content: some View {
+    private func close() {
+        guard paywall.canClose else { return }
+        store.send(.paywall(.close))
+    }
+}
+
+/// The paywall's content below the grabber: scrolling (fan, count, title,
+/// features, plans) over the pinned note/button/renewal/footer. `CapSheet`
+/// renders it with `showsHeader: false` — there the fan and the count live
+/// in the shared sheet so they keep their identity while K3 grows into the
+/// paywall.
+struct PaywallSheetContent: View {
+    let paywall: Paywall
+    let store: KartaStore
+    let premium: PremiumController
+    var showsHeader = true
+    let onClose: () -> Void
+
+    @Environment(\.openURL) private var openURL
+
+    /// Measured height of the scrolling content — the sheet hugs it
+    /// (karta-v1.md → *The paywall*: "The sheet hugs its content") and
+    /// only grows up to the space the ZStack offers at large text sizes.
+    @State private var scrollContentHeight: CGFloat = .infinity
+
+    var body: some View {
         VStack(spacing: KartaDesign.paywall.blockGap) {
             ScrollView {
                 VStack(spacing: KartaDesign.paywall.blockGap) {
-                    CardBacksFan(scale: KartaDesign.paywall.fanScale)
+                    if showsHeader {
+                        CardBacksFan(scale: KartaDesign.paywall.fanScale)
 
-                    Text(paywall.countLabel)
-                        .font(KartaDesign.FontToken.paywallCount())
-                        .tracking(2)
-                        .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                        Text(paywall.countLabel)
+                            .font(KartaDesign.FontToken.paywallCount())
+                            .tracking(2)
+                            .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                    }
 
                     Text(paywall.title)
                         .font(KartaDesign.FontToken.paywallTitle())
@@ -355,7 +376,7 @@ struct PaywallView: View {
             case .ready, .failed:
                 Task { await premium.purchase() }
             case .pending, .welcome:
-                close()
+                onClose()
             case .buying, .restoring:
                 break
             }
@@ -437,11 +458,6 @@ struct PaywallView: View {
             .font(KartaDesign.FontToken.paywallFooter())
             .foregroundStyle(KartaDesign.ColorToken.inkMuted)
             .accessibilityHidden(true)
-    }
-
-    private func close() {
-        guard paywall.canClose else { return }
-        store.send(.paywall(.close))
     }
 }
 

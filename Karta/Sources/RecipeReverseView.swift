@@ -130,14 +130,16 @@ struct RecipeReverseView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            if let paywall = store.state.paywall,
-               case .cap = paywall.entry {
-                // K3 grows into the paywall: the same sheet keeps the fan
-                // and the count, the rest cross-fades.
-                PaywallView(paywall: paywall, store: store, premium: premium)
-            } else if showFullSheet, let full = store.blockedByCap {
-                CookbookFullSheet(
-                    presentation: full,
+            // K3 and the cap paywall are one sheet: it grows into the
+            // paywall (fan and count stay, the rest cross-fades) and
+            // closing it — scrim, swipe or the paywall's own close —
+            // discards K3's save intent and returns to the bare reverse.
+            if capPaywall != nil || (showFullSheet && store.blockedByCap != nil) {
+                CapSheet(
+                    presentation: store.blockedByCap,
+                    paywall: capPaywall,
+                    store: store,
+                    premium: premium,
                     onUnlock: {
                         Task { await premium.open(entry: .cap(recipe)) }
                     },
@@ -151,6 +153,21 @@ struct RecipeReverseView: View {
         .animation(.easeOut(duration: 0.25), value: store.state.pendingSaveToast != nil)
         .animation(.easeOut(duration: 0.3), value: showFullSheet)
         .animation(.easeOut(duration: 0.3), value: store.state.paywall != nil)
+        // The cap paywall closing (any path: Not now, scrim, swipe, or a
+        // store action) discards K3's save intent — the same sheet goes
+        // away entirely, it does not fall back to the cookbook-full copy.
+        .onChange(of: capPaywall != nil) { _, isOpen in
+            if !isOpen { showFullSheet = false }
+        }
+    }
+
+    /// The paywall only when it entered through the cap (`.cap`): the one
+    /// that shares K3's sheet. Non-cap entries render over the feed.
+    private var capPaywall: Paywall? {
+        guard let paywall = store.state.paywall, case .cap = paywall.entry else {
+            return nil
+        }
+        return paywall
     }
 
     /// The crimson note under the title block for a saved recipe carrying a
