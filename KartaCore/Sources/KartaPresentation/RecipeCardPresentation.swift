@@ -76,6 +76,7 @@ public enum DurationText {
 /// The non-UI values the shell needs to render a recipe card. Formatting lives
 /// here so the SwiftUI shell does not recreate domain presentation rules.
 public struct RecipeCardPresentation: Equatable, Sendable {
+    public let leftoversPill: String?
     public let recipeID: String
     public let name: String
     public let durationLabel: String
@@ -92,9 +93,11 @@ public struct RecipeCardPresentation: Equatable, Sendable {
     public init(
         recipe: Recipe,
         householdSize: Int,
-        intolerances: Set<Allergen>
+        intolerances: Set<Allergen>,
+        leftoversPill: String? = nil
     ) {
         precondition(householdSize > 0, "householdSize must be positive")
+        self.leftoversPill = leftoversPill
         self.recipeID = recipe.id
         self.name = recipe.name
         self.durationLabel = DurationText.format(minutes: recipe.totalMinutes)

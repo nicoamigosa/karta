@@ -16,8 +16,17 @@ struct StructuredIngredientDecodingTests {
     }
 
     private var onion: [String: Any] {
-        ["id": "onion", "name": "Yellow onion", "purchaseKey": "yellow-onion", "aisle": "produce",
+        ["id": "onion", "name": "Yellow onion", "purchaseKey": "yellow-onion", "shortName": "ingredient", "aisle": "produce",
          "quantity": ["amount": "1", "unit": "medium"]]
+    }
+
+    @Test("A missing, null or blank short name fails with its named error", arguments: ["missing", "null", "blank"])
+    func missingShortName(value: String) {
+        var ingredient = onion
+        ingredient["shortName"] = value == "missing" ? nil : (value == "null" ? NSNull() as Any : "  ")
+        #expect(throws: RecipeDecodingError.missingIngredientShortName(ingredientID: "onion")) {
+            try decode(ingredient)
+        }
     }
 
     @Test("A recipe decodes structured quantity, Clave de compra and Pasillo while steps stay text")

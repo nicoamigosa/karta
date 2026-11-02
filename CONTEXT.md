@@ -50,6 +50,11 @@ El producto que se compra para un ingrediente (`yellow-onion`), común a todas l
 lo usan. Dos ingredientes con la misma clave son una sola línea en la Lista de la compra.
 _Avoid_: id del ingrediente, nombre normalizado
 
+**Nombre corto**:
+El nombre editorial de un producto para explicar qué sobra de lo cocinado: *potatoes* para
+la Clave de compra de las patatas Yukon Gold. Va en minúsculas salvo nombres propios.
+_Avoid_: nombre abreviado automático, nombre normalizado
+
 **Pasillo**:
 La sección de la tienda en la que se compra un ingrediente, de un vocabulario cerrado
 (*Produce*, *Dairy & eggs*, *Pantry*…). Ordena la Lista de la compra.

@@ -18,7 +18,7 @@ struct FirstOpenContractTests {
     @Test("No recent cooks is not a filter-empty failure in Leftovers")
     func noRecentLeftovers() {
         let state = KartaState(safetyProfile: SafetyProfile(intolerances: []))
-        #expect(state.leftoversEmptyState(recipes: [recipe("safe")], clock: clock) == .none)
+        #expect(state.leftoversEmptyState(recipes: [recipe("safe")], clock: clock) == .nothingCooked)
     }
 
     @MainActor
@@ -47,7 +47,7 @@ struct FirstOpenContractTests {
         let catalog = [recipe("dairy", allergens: [.dairy])]
         let expected = FeedEmptyState.noMatchForProfile(allergens: "dairy, egg, fish, gluten and nuts")
         #expect(state.feedEmptyState(recipes: catalog, clock: clock) == expected)
-        #expect(state.leftoversEmptyState(recipes: catalog, clock: clock) == expected)
+        #expect(state.leftoversEmptyState(recipes: catalog, clock: clock) == .noMatchForProfile(allergens: "dairy, egg, fish, gluten and nuts"))
     }
 
     @Test("Tour skips, Reduce Motion and answered cold launches follow the signed stops")

@@ -33,6 +33,7 @@
         },
         "optional": false,
         "purchaseKey": "yukon-gold-potato",
+        "shortName": "potatoes",
         "aisle": "produce"
       },
       {
@@ -43,6 +44,7 @@
         },
         "optional": false,
         "purchaseKey": "large-egg",
+        "shortName": "eggs",
         "aisle": "dairy-and-eggs"
       },
       {
@@ -54,6 +56,7 @@
         },
         "optional": false,
         "purchaseKey": "yellow-onion",
+        "shortName": "onion",
         "aisle": "produce"
       },
       {
@@ -64,6 +67,7 @@
         },
         "optional": false,
         "purchaseKey": "extra-virgin-olive-oil",
+        "shortName": "olive oil",
         "aisle": "pantry"
       },
       {
@@ -74,6 +78,7 @@
         },
         "optional": false,
         "purchaseKey": "kosher-salt",
+        "shortName": "salt",
         "aisle": "spices"
       }
     ],
@@ -189,6 +194,7 @@
         },
         "optional": false,
         "purchaseKey": "chicken-breast",
+        "shortName": "chicken",
         "aisle": "meat-and-fish"
       },
       {
@@ -200,6 +206,7 @@
         },
         "optional": false,
         "purchaseKey": "full-fat-coconut-cream",
+        "shortName": "coconut cream",
         "aisle": "pantry"
       },
       {
@@ -211,6 +218,7 @@
         },
         "optional": false,
         "purchaseKey": "madras-curry-powder",
+        "shortName": "curry powder",
         "aisle": "spices"
       },
       {
@@ -222,6 +230,7 @@
         },
         "optional": false,
         "purchaseKey": "yellow-onion",
+        "shortName": "onion",
         "aisle": "produce"
       },
       {
@@ -234,6 +243,7 @@
         },
         "optional": false,
         "purchaseKey": "long-grain-white-rice",
+        "shortName": "rice",
         "aisle": "pantry"
       },
       {
@@ -248,6 +258,7 @@
           "dairy"
         ],
         "purchaseKey": "plain-greek-yogurt",
+        "shortName": "yogurt",
         "aisle": "dairy-and-eggs"
       }
     ],
@@ -356,6 +367,7 @@
         },
         "optional": false,
         "purchaseKey": "romaine-lettuce",
+        "shortName": "lettuce",
         "aisle": "produce"
       },
       {
@@ -367,6 +379,7 @@
         },
         "optional": false,
         "purchaseKey": "sourdough-bread",
+        "shortName": "bread",
         "aisle": "bakery"
       },
       {
@@ -379,6 +392,7 @@
         },
         "optional": false,
         "purchaseKey": "parmigiano-reggiano",
+        "shortName": "Parmigiano",
         "aisle": "dairy-and-eggs"
       },
       {
@@ -390,6 +404,7 @@
         },
         "optional": false,
         "purchaseKey": "caesar-dressing",
+        "shortName": "Caesar dressing",
         "aisle": "pantry"
       }
     ],
@@ -480,6 +495,7 @@
         },
         "optional": false,
         "purchaseKey": "spaghetti",
+        "shortName": "spaghetti",
         "aisle": "pantry"
       },
       {
@@ -492,6 +508,7 @@
         },
         "optional": false,
         "purchaseKey": "basil",
+        "shortName": "basil",
         "aisle": "produce"
       },
       {
@@ -504,6 +521,7 @@
         },
         "optional": false,
         "purchaseKey": "parmigiano-reggiano",
+        "shortName": "Parmigiano",
         "aisle": "dairy-and-eggs"
       },
       {
@@ -515,6 +533,7 @@
         },
         "optional": false,
         "purchaseKey": "english-walnut",
+        "shortName": "walnuts",
         "aisle": "pantry"
       },
       {
@@ -526,6 +545,7 @@
         },
         "optional": false,
         "purchaseKey": "extra-virgin-olive-oil",
+        "shortName": "olive oil",
         "aisle": "pantry"
       },
       {
@@ -536,6 +556,7 @@
         },
         "optional": false,
         "purchaseKey": "kosher-salt",
+        "shortName": "salt",
         "aisle": "spices"
       }
     ],
@@ -632,6 +653,7 @@
         },
         "optional": false,
         "purchaseKey": "brown-lentil",
+        "shortName": "lentils",
         "aisle": "pantry"
       },
       {
@@ -644,6 +666,7 @@
         },
         "optional": false,
         "purchaseKey": "spanish-chorizo",
+        "shortName": "chorizo",
         "aisle": "meat-and-fish"
       },
       {
@@ -655,6 +678,7 @@
         },
         "optional": false,
         "purchaseKey": "carrot",
+        "shortName": "carrots",
         "aisle": "produce"
       },
       {
@@ -666,6 +690,7 @@
         },
         "optional": false,
         "purchaseKey": "yukon-gold-potato",
+        "shortName": "potatoes",
         "aisle": "produce"
       },
       {
@@ -677,6 +702,7 @@
         },
         "optional": false,
         "purchaseKey": "yellow-onion",
+        "shortName": "onion",
         "aisle": "produce"
       },
       {
@@ -688,6 +714,7 @@
         },
         "optional": false,
         "purchaseKey": "sweet-paprika",
+        "shortName": "paprika",
         "aisle": "spices"
       }
     ],
@@ -779,6 +806,7 @@
         },
         "optional": false,
         "purchaseKey": "atlantic-salmon",
+        "shortName": "salmon",
         "aisle": "meat-and-fish"
       },
       {
@@ -789,6 +817,7 @@
         },
         "optional": false,
         "purchaseKey": "eureka-lemon",
+        "shortName": "lemon",
         "aisle": "produce"
       },
       {
@@ -799,6 +828,7 @@
         },
         "optional": false,
         "purchaseKey": "dill",
+        "shortName": "dill",
         "aisle": "produce"
       },
       {
@@ -810,6 +840,7 @@
         },
         "optional": false,
         "purchaseKey": "extra-virgin-olive-oil",
+        "shortName": "olive oil",
         "aisle": "pantry"
       },
       {
@@ -820,6 +851,7 @@
         },
         "optional": false,
         "purchaseKey": "kosher-salt",
+        "shortName": "salt",
         "aisle": "spices"
       }
     ],
@@ -907,6 +939,7 @@
         },
         "optional": false,
         "purchaseKey": "banana",
+        "shortName": "bananas",
         "aisle": "produce"
       },
       {
@@ -917,6 +950,7 @@
         },
         "optional": false,
         "purchaseKey": "large-egg",
+        "shortName": "eggs",
         "aisle": "dairy-and-eggs"
       },
       {
@@ -928,6 +962,7 @@
         },
         "optional": false,
         "purchaseKey": "all-purpose-flour",
+        "shortName": "flour",
         "aisle": "pantry"
       },
       {
@@ -939,6 +974,7 @@
         },
         "optional": false,
         "purchaseKey": "whole-milk",
+        "shortName": "milk",
         "aisle": "dairy-and-eggs"
       },
       {
@@ -950,6 +986,7 @@
         },
         "optional": false,
         "purchaseKey": "baking-powder",
+        "shortName": "baking powder",
         "aisle": "pantry"
       }
     ],
@@ -1076,6 +1113,7 @@
         },
         "optional": false,
         "purchaseKey": "flat-rice-noodle",
+        "shortName": "rice noodles",
         "aisle": "pantry"
       },
       {
@@ -1087,6 +1125,7 @@
         },
         "optional": false,
         "purchaseKey": "broccoli",
+        "shortName": "broccoli",
         "aisle": "produce"
       },
       {
@@ -1097,6 +1136,7 @@
         },
         "optional": false,
         "purchaseKey": "carrot",
+        "shortName": "carrots",
         "aisle": "produce"
       },
       {
@@ -1107,6 +1147,7 @@
         },
         "optional": false,
         "purchaseKey": "red-bell-pepper",
+        "shortName": "bell pepper",
         "aisle": "produce"
       },
       {
@@ -1118,6 +1159,7 @@
         },
         "optional": false,
         "purchaseKey": "soy-sauce",
+        "shortName": "soy sauce",
         "aisle": "pantry"
       }
     ],

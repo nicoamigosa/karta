@@ -968,6 +968,8 @@ first; the Frontera partitions before ranking. There is no ML or clock in Gusto.
 
 ## Leftovers
 
+Package consumer contract: [Leftovers contract](leftovers-contract.md) (#180).
+
 Signed off on 2026-11-02 by the founder (#9). The rounds are in four artifacts: *Karta
 Leftovers ronda 1* (<https://claude.ai/artifact/EHpwyVsmFFbPf7qCQqNgKR>), rows Origen A, Entrada
 C and Vacío A; *ronda 2* (<https://claude.ai/artifact/URqSXfGXqP5e2HVo5YScsG>), rows Por qué

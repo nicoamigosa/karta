@@ -22,7 +22,7 @@ struct CookingStepContractTests {
             "id": "eggs", "name": "Eggs", "heroPhotoURL": "local:eggs",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "breakfast", "contains": [],
-            "ingredients": [["id": "eggs", "name": "Large eggs", "quantity": structuredQuantity, "purchaseKey": "large-egg", "aisle": "dairy-and-eggs"]],
+            "ingredients": [["id": "eggs", "name": "Large eggs", "quantity": structuredQuantity, "purchaseKey": "large-egg", "shortName": "ingredient", "aisle": "dairy-and-eggs"]],
             "steps": [step],
         ]
         return try JSONDecoder().decode(Recipe.self, from: JSONSerialization.data(withJSONObject: object))

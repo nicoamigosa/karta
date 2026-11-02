@@ -8,6 +8,9 @@ private enum FeedPolicy {
 
 /// The value state shared by the presentation store and its pure reducer.
 public struct KartaState: Equatable, Sendable {
+    public internal(set) var leftoversToastHistory = LeftoversToastHistory()
+    internal var pendingLeftoversToast: LeftoversToast?
+
     public internal(set) var shoppingList = ShoppingList()
     public internal(set) var shoppingSheet: ShoppingAddSheet?
     public internal(set) var shoppingToast: ShoppingToast?
@@ -122,33 +125,15 @@ public struct KartaState: Equatable, Sendable {
         return FeedEmptyState(feed: feed, recipes: recipes, draft: filterDraft, safetyProfile: safetyProfile)
     }
 
-    /// Leftovers uses the same safety composition, Gusto and Frontera as For You.
-    /// The original ingredient-overlap order remains the stable final tie-break.
+    /// Leftovers ranks shared keys before Gusto and household and has no Frontera.
     public func leftoversFeed(recipes: [Recipe], clock: any KartaClock) -> Feed {
         let suggestions = LeftoversQuery.suggestions(
             recipes: recipes, cooks: cookHistory,
             recentWindow: PurchasePolicy.leftoversWindow, clock: clock,
-            filters: effectiveFeedFilters)
-        return FeedQuery.feed(
-            recipes: suggestions, views: viewHistory.entries,
-            recentWindow: FeedPolicy.recentViewWindow, clock: clock,
             filters: effectiveFeedFilters,
             tastePreferences: TastePreferences(recipes: recipes, history: viewHistory, savedIDs: cookbook.savedIDs),
             householdSize: onboarding.householdSize)
-    }
-
-    /// The signed profile-empty state takes precedence when no safe recipe
-    /// exists. Leftovers-specific empty presentation remains the shell's #9 contract.
-    public func leftoversEmptyState(recipes: [Recipe], clock: any KartaClock) -> FeedEmptyState {
-        let safety = FeedFilters(intolerances: safetyProfile.intolerances)
-        let unfiltered = LeftoversQuery.suggestions(
-            recipes: recipes, cooks: cookHistory,
-            recentWindow: PurchasePolicy.leftoversWindow, clock: clock, filters: safety)
-        if unfiltered.isEmpty && recipes.contains(where: safety.allows) {
-            return .none
-        }
-        return FeedEmptyState(feed: leftoversFeed(recipes: recipes, clock: clock),
-                              recipes: recipes, draft: filterDraft, safetyProfile: safetyProfile)
+        return Feed(newRecipes: suggestions, alreadySeenRecipes: [], hasFrontier: false)
     }
 
     /// Preview a Mundo with an uncommitted draft and the current safety
@@ -273,6 +258,8 @@ public enum KartaAction: Sendable {
     /// Swipe, timeout and VoiceOver dismissal all send dismissed.
     case closeShareCard(ShareCardHistory.Close)
     case exitCooking
+    case exitCookingContext(recipes: [Recipe], now: Date)
+    case closeLeftoversToast(LeftoversToastHistory.Close)
     case respond(CookOutcome)
     case inferProbablyCooked(now: TimeInterval)
     case startTimer(now: TimeInterval)
@@ -420,6 +407,7 @@ public enum KartaReducer {
                 state.navigation.discardAnchors()
             }
         case let .startCooking(recipe, startedAt):
+            state.pendingLeftoversToast = nil
             state.sessionCookHistoryIndex = nil
             state.session = recipe.cookingSession(
                 startedAt: startedAt,
@@ -442,6 +430,19 @@ public enum KartaReducer {
                   !session.isExited, session.isOnFinish,
                   state.shareCardHistory.offersCard(for: session.cookedEvent) else { return }
             state.shareCardHistory.close(for: session.recipeID, as: action)
+        case let .exitCookingContext(recipes, now):
+            guard state.session?.isExited == false else { return }
+            reduce(&state, action: .exitCooking)
+            offerLeftoversToast(&state, recipes: recipes, now: now)
+        case let .closeLeftoversToast(action):
+            guard state.pendingLeftoversToast != nil else { return }
+            if case .see = action, state.leftoversToast == nil { return }
+            state.leftoversToastHistory.close(as: action)
+            state.pendingLeftoversToast = nil
+            if case .see = action {
+                state.navigation.setAnchor(nil, for: .leftovers)
+                state.navigation.selectWorld(.leftovers)
+            }
         case .exitCooking:
             reduce(&state, action: .closeShareCard(.dismissed))
             state.session?.exit()
@@ -531,7 +532,9 @@ public final class KartaStore {
 
     /// Apply one presentation action through the pure reducer.
     public func send(_ action: Action) {
-        if case let .saveRecipe(id) = action, let clock {
+        if case .exitCooking = action, let clock {
+            KartaReducer.reduce(&state, action: .exitCookingContext(recipes: recipes, now: clock.now))
+        } else if case let .saveRecipe(id) = action, let clock {
             KartaReducer.reduce(&state, action: .saveRecipeContext(id, recipes: recipes, now: clock.now))
         } else if case let .shopping(shopping) = action, let clock {
             KartaReducer.reduce(&state, action: .shoppingContext(shopping, recipes: recipes, now: clock.now))
@@ -582,6 +585,7 @@ public final class KartaStore {
         guard let id = RecipeShare(baseURL: state.shareBaseURL).recipeID(for: url) else { return .ignored }
         guard let recipe = recipes.first(where: { $0.id == id }) else {
             state.navigation = AppNavigationState()
+            state.pendingLeftoversToast = nil
             state.recipeGoneNotice = RecipeGoneNotice()
             return .gone
         }
