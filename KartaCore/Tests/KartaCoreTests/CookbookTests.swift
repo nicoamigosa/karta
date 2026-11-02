@@ -78,6 +78,24 @@ struct CookbookSavingTests {
         #expect(cookbook.savedIDs.isEmpty)
     }
 
+    @Test("Batch removal restores every slot and the downgraded ceiling in one Undo")
+    func batchRemovalUndo() throws {
+        var cookbook = Cookbook(savedIDs: (0..<10).map { "r\($0)" }, saveCap: nil)
+        cookbook.downgradeToFree()
+        let original = cookbook
+
+        let result = cookbook.unsave(["r8", "r1", "r8", "missing"])
+        let removal = try #require(result)
+        #expect(removal.recipeIDs == ["r1", "r8"])
+        #expect(cookbook.savedIDs == ["r0", "r2", "r3", "r4", "r5", "r6", "r7", "r9"])
+        #expect(cookbook.saveCap == 8)
+        let restored = cookbook.undoUnsave(removal)
+        #expect(restored)
+        #expect(cookbook == original)
+        let repeated = cookbook.undoUnsave(removal)
+        #expect(!repeated)
+    }
+
     @Test("Immediate Undo restores the saved order and ceiling", arguments: [7, 23, nil] as [Int?])
     func undoRestoresCookbook(ceiling: Int?) throws {
         let original = Cookbook(savedIDs: ["first", "middle", "last"], saveCap: ceiling)

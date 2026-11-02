@@ -4,6 +4,13 @@ import KartaCore
 /// Both Cookbook halves, ready for the shell's grid. Which half is shown is
 /// a shell preference, not presentation state or part of the user snapshot.
 public struct CookbookPresentation: Equatable, Sendable {
+    public let isSelecting: Bool
+    public let selectedRecipeIDs: Set<String>
+    public let canSelect: Bool
+    public var selectionBarText: String {
+        selectedRecipeIDs.isEmpty ? "Select recipes" : "\(selectedRecipeIDs.count) selected"
+    }
+    public var canRemoveSelection: Bool { isSelecting && !selectedRecipeIDs.isEmpty }
     public let cupoLine: CupoLine?
     /// Compatibility for the existing shell. New rendering uses cupoLine so only
     /// its link is underlined and tappable.
@@ -50,8 +57,11 @@ public struct CookbookPresentation: Equatable, Sendable {
     fileprivate init(
         cookbook: Cookbook, cookHistory: [CookEntry], recipes: [Recipe],
         intolerances: Set<Allergen>, entitlement: Entitlement?, showsGoPremium: Bool,
-        timeZone: TimeZone
+        timeZone: TimeZone, isSelecting: Bool, selectedRecipeIDs: Set<String>
     ) {
+        self.canSelect = !cookbook.savedIDs.isEmpty
+        self.isSelecting = isSelecting
+        self.selectedRecipeIDs = selectedRecipeIDs.intersection(cookbook.savedIDs)
         switch entitlement {
         case let .trial(endsAt):
             let formatter = DateFormatter()
@@ -88,7 +98,8 @@ extension KartaState {
         CookbookPresentation(
             cookbook: cookbook, cookHistory: cookHistory, recipes: recipes,
             intolerances: safetyProfile.intolerances, entitlement: entitlement,
-            showsGoPremium: showsGoPremium, timeZone: timeZone
+            showsGoPremium: showsGoPremium, timeZone: timeZone,
+            isSelecting: isSelectingCookbook, selectedRecipeIDs: selectedCookbookRecipeIDs
         )
     }
 }
@@ -103,22 +114,30 @@ extension KartaStore {
 public struct UnsaveToast: Equatable, Sendable {
     public let title: String
     public let secondLine: String
-    public let recipeID: String
+    public let recipeIDs: [String]
+    /// Compatibility for the single-recipe removal shell.
+    public var recipeID: String { recipeIDs[0] }
 }
 
 extension KartaState {
     public func unsaveToast(recipes: [Recipe]) -> UnsaveToast? {
-        guard let removal = pendingUnsave else { return nil }
+        guard navigation.routes.isEmpty, let removal = pendingUnsave else { return nil }
         let secondLine: String
         if let previous = removal.previousCeiling, let current = removal.newCeiling,
            previous > Cookbook.freeSaveCap, current < previous {
             secondLine = "Your cookbook now holds \(current) recipes"
         } else {
-            guard let recipe = recipes.first(where: { $0.id == removal.recipeID }) else { return nil }
-            secondLine = recipe.name
+            let names = removal.recipeIDs.compactMap { id in
+                recipes.first(where: { $0.id == id })?.name
+            }
+            guard !names.isEmpty else { return nil }
+            secondLine = names.prefix(3).joined(separator: ", ")
+                + (names.count > 3 ? " and \(names.count - 3) more" : "")
         }
         return UnsaveToast(
-            title: "Removed from cookbook", secondLine: secondLine, recipeID: removal.recipeID
+            title: removal.recipeIDs.count == 1
+                ? "Removed from cookbook" : "\(removal.recipeIDs.count) recipes removed",
+            secondLine: secondLine, recipeIDs: removal.recipeIDs
         )
     }
 }

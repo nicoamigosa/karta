@@ -111,13 +111,21 @@ public struct Cookbook: Equatable, Sendable {
     /// normal free cap, so this does not free a slot above that floor.
     @discardableResult
     public mutating func unsave(_ id: String) -> UnsaveUndo? {
-        guard isSaved(id) else { return nil }
+        unsave([id])
+    }
+
+    /// Remove a selection atomically, recording unique IDs in saved order.
+    @discardableResult
+    public mutating func unsave(_ ids: [String]) -> UnsaveUndo? {
+        let requested = Set(ids)
+        let removed = savedIDs.filter { requested.contains($0) }
+        guard !removed.isEmpty else { return nil }
         let before = self
-        savedIDs.removeAll { $0 == id }
+        savedIDs.removeAll { requested.contains($0) }
         if let saveCap {
             self.saveCap = max(Self.freeSaveCap, min(saveCap, savedIDs.count))
         }
-        return UnsaveUndo(recipeID: id, before: before, after: self)
+        return UnsaveUndo(recipeIDs: removed, before: before, after: self)
     }
 
     /// Undo only the immediate removal; never overwrite subsequent Cookbook edits.
@@ -130,7 +138,9 @@ public struct Cookbook: Equatable, Sendable {
 
     /// Opaque, in-memory receipt for a removal. Not part of the persisted snapshot.
     public struct UnsaveUndo: Equatable, Sendable {
-        public let recipeID: String
+        public let recipeIDs: [String]
+        /// Compatibility for the single-recipe removal shell.
+        public var recipeID: String { recipeIDs[0] }
         public var previousCeiling: Int? { before.saveCap }
         public var newCeiling: Int? { after.saveCap }
         fileprivate let before: Cookbook

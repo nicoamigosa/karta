@@ -5,6 +5,53 @@ import KartaPresentation
 @Suite("Recipe reverse presentation")
 struct RecipeReversePresentationTests {
 
+    @Test("A reverse offers only saving, keeps the saved tint, and cannot remove")
+    @MainActor
+    func reverseNeverUnsaves() throws {
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        store.send(.pushRoute(.recipeDetail(recipeID: recipe.id)))
+        let unsaved = try #require(store.reversePresentation(for: recipe))
+        #expect(!unsaved.isSaved)
+        let action = try #require(unsaved.saveAction)
+        store.send(action)
+        let saved = try #require(store.reversePresentation(for: recipe))
+        #expect(saved.isSaved)
+        #expect(saved.saveAction == nil)
+        let routes = store.state.navigation.routes
+        // An older shell cannot remove from the open reverse either.
+        store.send(.unsaveRecipe(recipe.id))
+        #expect(store.cookbook.isSaved(recipe.id))
+        #expect(store.unsaveToast(recipes: [recipe]) == nil)
+        store.send(.undoUnsave)
+        #expect(store.state.navigation.routes == routes)
+        #expect(store.cookbook.isSaved(recipe.id))
+        store.send(.popRoute)
+        store.send(.unsaveRecipe(recipe.id))
+        #expect(!store.cookbook.isSaved(recipe.id))
+    }
+
+    @Test("A Cookbook removal toast never appears on a reverse and Undo never changes routes")
+    @MainActor
+    func cookbookToastStaysOffReverse() {
+        let recipe = recipe()
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: [recipe.id]),
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        store.send(.unsaveRecipe(recipe.id))
+        #expect(store.unsaveToast(recipes: [recipe]) != nil)
+        store.send(.pushRoute(.recipeDetail(recipeID: recipe.id)))
+        #expect(store.unsaveToast(recipes: [recipe]) == nil)
+        let routes = store.state.navigation.routes
+        store.send(.undoUnsave)
+        #expect(store.state.navigation.routes == routes)
+        #expect(store.cookbook.isSaved(recipe.id))
+    }
+
     @Test("A saved recipe opens with a warning after a new intolerance", arguments: [
         (Set<Allergen>(), nil),
         ([.dairy], "Contains dairy, one of your intolerances"),

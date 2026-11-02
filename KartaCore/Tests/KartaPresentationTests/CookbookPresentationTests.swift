@@ -256,6 +256,153 @@ struct CookbookPresentationTests {
         #expect(store.unsaveToast(recipes: [recipe("r1")]) == nil)
     }
 
+    @Test("Selection spans both halves, toggles recipes, and Done clears it")
+    @MainActor
+    func selectionAcrossHalves() {
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: ["cooked", "try"]),
+            cookHistory: [CookEntry(recipeID: "cooked", date: Date(timeIntervalSince1970: 1))],
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        let catalog = [recipe("cooked"), recipe("try")]
+        #expect(store.cookbookPresentation(recipes: catalog).canSelect)
+        #expect(!store.cookbookPresentation(recipes: catalog).isSelecting)
+        store.send(.beginCookbookSelection)
+        let empty = store.cookbookPresentation(recipes: catalog)
+        #expect(empty.isSelecting)
+        #expect(empty.selectionBarText == "Select recipes")
+        #expect(!empty.canRemoveSelection)
+
+        store.send(.toggleCookbookSelection("cooked"))
+        let repertoire = store.cookbookPresentation(recipes: catalog)
+        #expect(repertoire.selectedRecipeIDs == ["cooked"])
+        #expect(repertoire.selectionBarText == "1 selected")
+        #expect(repertoire.canRemoveSelection)
+        // The shell changes halves by choosing the other projected array.
+        #expect(repertoire.repertoire.map(\.recipeID) == ["cooked"])
+        #expect(store.cookbookPresentation(recipes: catalog).wantToTry.map(\.recipeID) == ["try"])
+        store.send(.toggleCookbookSelection("try"))
+        #expect(store.cookbookPresentation(recipes: catalog).selectionBarText == "2 selected")
+        #expect(store.cookbookPresentation(recipes: catalog).selectedRecipeIDs == ["cooked", "try"])
+        store.send(.toggleCookbookSelection("cooked"))
+        #expect(store.cookbookPresentation(recipes: catalog).selectedRecipeIDs == ["try"])
+        store.send(.endCookbookSelection)
+        let done = store.cookbookPresentation(recipes: catalog)
+        #expect(!done.isSelecting)
+        #expect(done.selectedRecipeIDs.isEmpty)
+        #expect(store.cookbook.savedIDs == ["cooked", "try"])
+    }
+
+    @Test("Remove selection shows one toast in saved order and Undo restores all slots", arguments: [
+        (1, "Removed from cookbook", "Recipe r0"),
+        (2, "2 recipes removed", "Recipe r0, Recipe r1"),
+        (3, "3 recipes removed", "Recipe r0, Recipe r1, Recipe r2"),
+        (5, "5 recipes removed", "Recipe r0, Recipe r1, Recipe r2 and 2 more"),
+    ])
+    @MainActor
+    func removeSelectionToast(count: Int, title: String, names: String) throws {
+        let ids = (0..<count).map { "r\($0)" }
+        let original = Cookbook(savedIDs: ["first"] + ids + ["last"])
+        let store = KartaStore(state: KartaState(
+            cookbook: original, safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        let catalog = ids.reversed().map { recipe($0) }
+        store.send(.beginCookbookSelection)
+        for id in ids.reversed() { store.send(.toggleCookbookSelection(id)) }
+        store.send(.removeCookbookSelection)
+
+        let toast = try #require(store.unsaveToast(recipes: catalog))
+        #expect(toast.title == title)
+        #expect(toast.secondLine == names)
+        #expect(toast.recipeIDs == ids)
+        #expect(store.cookbook.savedIDs == ["first", "last"])
+        #expect(!store.cookbookPresentation(recipes: catalog).isSelecting)
+        #expect(store.cookbookPresentation(recipes: catalog).selectedRecipeIDs.isEmpty)
+        store.send(.undoUnsave)
+        #expect(store.cookbook == original)
+        #expect(store.unsaveToast(recipes: catalog) == nil)
+        #expect(!store.cookbookPresentation(recipes: catalog).isSelecting)
+    }
+
+    @Test("Batch removal after downgrade lowers the ceiling to its floor and Undo restores it", arguments: [
+        (8, 7), (10, 7), (23, 19),
+    ])
+    @MainActor
+    func batchRemovalAfterDowngrade(count: Int, ceilingAfter: Int) throws {
+        let ids = (0..<count).map { "r\($0)" }
+        let history = [CookEntry(recipeID: "r1", date: Date(timeIntervalSince1970: 1))]
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: ids, saveCap: nil), cookHistory: history,
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        store.send(.entitlementChanged(.premium))
+        store.send(.entitlementChanged(.free))
+        let original = store.cookbook
+        store.send(.beginCookbookSelection)
+        for id in ["r6", "r1", "r3", "r0"] { store.send(.toggleCookbookSelection(id)) }
+        store.send(.removeCookbookSelection)
+
+        let toast = try #require(store.unsaveToast(recipes: ids.map { recipe($0) }))
+        #expect(toast.title == "4 recipes removed")
+        #expect(toast.secondLine == "Your cookbook now holds \(ceilingAfter) recipes")
+        #expect(store.cookbook.saveCap == ceilingAfter)
+        #expect(store.cookbook.savedIDs.count == count - 4)
+        #expect(store.state.userSnapshot.cookbook == store.cookbook)
+        #expect(store.state.cookHistory == history)
+        store.send(.undoUnsave)
+        #expect(store.cookbook == original)
+        #expect(store.cookbook.saveCap == count)
+        #expect(store.state.cookHistory == history)
+    }
+
+    @Test("Saving again after batch removal returns explicit and inferred cooks to Repertorio", arguments: [false, true])
+    @MainActor
+    func batchRemovalKeepsCookedHistory(wasInferred: Bool) {
+        let history = [CookEntry(recipeID: "cooked", date: Date(timeIntervalSince1970: 1), wasInferred: wasInferred)]
+        let store = KartaStore(state: KartaState(
+            cookbook: Cookbook(savedIDs: ["cooked", "try"]), cookHistory: history,
+            safetyProfile: SafetyProfile(intolerances: [])
+        ))
+        let catalog = [recipe("cooked"), recipe("try")]
+        store.send(.beginCookbookSelection)
+        store.send(.toggleCookbookSelection("cooked"))
+        store.send(.toggleCookbookSelection("try"))
+        store.send(.removeCookbookSelection)
+        #expect(store.cookbook.savedIDs.isEmpty)
+        #expect(store.state.userSnapshot.cookHistory == history)
+        store.send(.saveRecipe("cooked"))
+        #expect(store.cookbookPresentation(recipes: catalog).repertoire.map(\.recipeID) == ["cooked"])
+        #expect(store.cookbookPresentation(recipes: catalog).wantToTry.isEmpty)
+        #expect(store.state.cookHistory == history)
+    }
+
+    @Test("Selection requires saved recipes and stays out of the persisted snapshot")
+    @MainActor
+    func selectionGuardsAndPersistence() {
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let catalog = [recipe("saved")]
+        store.send(.beginCookbookSelection)
+        #expect(!store.cookbookPresentation(recipes: catalog).canSelect)
+        #expect(!store.cookbookPresentation(recipes: catalog).isSelecting)
+        store.send(.saveRecipe("saved"))
+        // A saved slot still belongs to the Cookbook if its catalogue entry is temporarily unavailable.
+        #expect(store.cookbookPresentation(recipes: []).canSelect)
+        store.send(.toggleCookbookSelection("saved"))
+        #expect(store.cookbookPresentation(recipes: catalog).selectedRecipeIDs.isEmpty)
+        store.send(.beginCookbookSelection)
+        store.send(.toggleCookbookSelection("missing"))
+        store.send(.removeCookbookSelection)
+        #expect(store.cookbookPresentation(recipes: catalog).isSelecting)
+        #expect(store.cookbookPresentation(recipes: catalog).selectedRecipeIDs.isEmpty)
+        #expect(store.cookbook.savedIDs == ["saved"])
+        #expect(store.unsaveToast(recipes: catalog) == nil)
+        store.send(.toggleCookbookSelection("saved"))
+        let restored = KartaStore(state: KartaState(snapshot: store.state.userSnapshot))
+        #expect(restored.cookbook.savedIDs == ["saved"])
+        #expect(!restored.cookbookPresentation(recipes: catalog).isSelecting)
+        #expect(restored.cookbookPresentation(recipes: catalog).selectedRecipeIDs.isEmpty)
+    }
+
     private func recipe(_ id: String, review: AllergenReview = .reviewed([])) -> Recipe {
         Recipe(
             id: id, name: "Recipe \(id)", heroPhoto: .local(id),
