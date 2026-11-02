@@ -18,6 +18,9 @@ public struct UserSnapshot: Equatable, Sendable {
     public let shareCardHistory: ShareCardHistory
     public let hasShownSaveToast: Bool
     public let hasShownAlarmPermissionSheet: Bool
+    public let shoppingList: ShoppingList
+    public let addRecipesAsSaved: Bool
+    public let hasAskedAutoAdd: Bool
 
     public init(
         profile: OnboardingProfile?,
@@ -29,8 +32,14 @@ public struct UserSnapshot: Equatable, Sendable {
         cookingSession: CookingSession? = nil,
         hasShownAlarmPermissionSheet: Bool = false,
         hasShownSaveToast: Bool = false,
-        shareCardHistory: ShareCardHistory = ShareCardHistory()
+        shareCardHistory: ShareCardHistory = ShareCardHistory(),
+        shoppingList: ShoppingList = ShoppingList(),
+        addRecipesAsSaved: Bool = false,
+        hasAskedAutoAdd: Bool = false
     ) {
+        self.shoppingList = shoppingList
+        self.addRecipesAsSaved = addRecipesAsSaved
+        self.hasAskedAutoAdd = hasAskedAutoAdd
         self.shareCardHistory = shareCardHistory
         self.profile = profile
         self.cookbook = cookbook
@@ -65,7 +74,10 @@ public struct UserSnapshot: Equatable, Sendable {
             cookingSession: cookingSession.map(CookingSessionDTO.init),
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet,
             hasShownSaveToast: hasShownSaveToast,
-            shareCardHistory: ShareCardHistoryDTO(shareCardHistory)
+            shareCardHistory: ShareCardHistoryDTO(shareCardHistory),
+            shoppingList: ShoppingListDTO(shoppingList),
+            addRecipesAsSaved: addRecipesAsSaved,
+            hasAskedAutoAdd: hasAskedAutoAdd
         )
 
         let encoder = JSONEncoder()
@@ -178,6 +190,9 @@ private struct UserSnapshotDTO: Codable {
     let hasShownAlarmPermissionSheet: Bool?
     let hasShownSaveToast: Bool?
     let shareCardHistory: ShareCardHistoryDTO?
+    let shoppingList: ShoppingListDTO?
+    let addRecipesAsSaved: Bool?
+    let hasAskedAutoAdd: Bool?
 
     func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
         // Intolerances are safety-critical: a snapshot that does not state them
@@ -229,7 +244,10 @@ private struct UserSnapshotDTO: Codable {
             cookingSession: retainedSession,
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet ?? false,
             hasShownSaveToast: hasShownSaveToast ?? false,
-            shareCardHistory: try shareCardHistory?.domainValue ?? ShareCardHistory()
+            shareCardHistory: try shareCardHistory?.domainValue ?? ShareCardHistory(),
+            shoppingList: try shoppingList?.domainValue ?? ShoppingList(),
+            addRecipesAsSaved: addRecipesAsSaved ?? false,
+            hasAskedAutoAdd: hasAskedAutoAdd ?? false
         )
     }
 }
@@ -675,5 +693,50 @@ private struct StepTimerDTO: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case stepIndex, startedAt, duration, pausedRemaining
+    }
+}
+
+// Optional version-2 fields. Explicit wire DTOs keep shopping persistence separate
+// from aggregation and recipe availability; no catalogue lookup on restoration.
+private struct ShoppingListDTO: Codable {
+    struct Entry: Codable {
+        let recipeID: String
+        let recipeName: String
+        let ingredients: [Share]
+    }
+    struct Share: Codable {
+        let id: String
+        let name: String
+        let quantity: IngredientQuantity
+        let purchaseKey: String
+        let aisle: Aisle
+        let allergens: Set<Allergen>
+    }
+    let entries: [Entry]
+    let tickedKeys: [String]
+
+    init(_ list: ShoppingList) {
+        entries = list.entries.map { entry in
+            Entry(recipeID: entry.recipeID, recipeName: entry.recipeName, ingredients: entry.ingredients.map {
+                Share(id: $0.id, name: $0.name, quantity: $0.structuredQuantity,
+                      purchaseKey: $0.purchaseKey, aisle: $0.aisle, allergens: $0.allergens)
+            })
+        }
+        tickedKeys = list.tickedKeys.sorted()
+    }
+    var domainValue: ShoppingList {
+        get throws {
+            guard Set(entries.map(\.recipeID)).count == entries.count,
+                  entries.allSatisfy({ !$0.recipeID.isEmpty && !$0.recipeName.isEmpty && !$0.ingredients.isEmpty }),
+                  entries.flatMap(\.ingredients).allSatisfy({ !$0.purchaseKey.isEmpty && !$0.name.isEmpty }) else {
+                throw SnapshotDecodingError.invalidValue
+            }
+            return ShoppingList(entries: entries.map { entry in
+                ShoppingList.Entry(recipeID: entry.recipeID, recipeName: entry.recipeName, ingredients: entry.ingredients.map {
+                    Ingredient(id: $0.id, name: $0.name, structuredQuantity: $0.quantity,
+                               purchaseKey: $0.purchaseKey, aisle: $0.aisle, allergens: $0.allergens)
+                })
+            }, tickedKeys: Set(tickedKeys))
+        }
     }
 }

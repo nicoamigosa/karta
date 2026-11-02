@@ -13,7 +13,8 @@ extension KartaState {
             cookHistory: cookHistory, legacyPayload: legacyPayload,
             hasShownFullTour: onboarding.hasShownFullTour, cookingSession: session,
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet,
-            hasShownSaveToast: hasShownSaveToast, shareCardHistory: shareCardHistory)
+            hasShownSaveToast: hasShownSaveToast, shareCardHistory: shareCardHistory,
+            shoppingList: shoppingList, addRecipesAsSaved: addRecipesAsSaved, hasAskedAutoAdd: hasAskedAutoAdd)
     }
 
     /// Storage calls UserSnapshot.restore first, including its session expiry
@@ -32,5 +33,8 @@ extension KartaState {
             hasShownSaveToast: snapshot.hasShownSaveToast, shareBaseURL: shareBaseURL,
             shareCardHistory: snapshot.shareCardHistory)
         legacyPayload = snapshot.legacyPayload
+        shoppingList = snapshot.shoppingList
+        addRecipesAsSaved = snapshot.addRecipesAsSaved
+        hasAskedAutoAdd = snapshot.hasAskedAutoAdd
     }
 }

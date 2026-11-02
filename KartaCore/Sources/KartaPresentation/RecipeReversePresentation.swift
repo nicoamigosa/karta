@@ -6,15 +6,21 @@ public struct RecipeReversePresentation: Equatable, Sendable {
     public let recipeID: String
     /// Saved tint survives the removal of unsaving from the reverse.
     public let isSaved: Bool
+    public let isOnList: Bool
+    public var pillTitle: String { !isSaved ? "Save" : isOnList ? "On your list" : "Add to list" }
+    public var pillAction: KartaAction {
+        !isSaved ? .saveRecipe(recipeID) : isOnList ? .shopping(.removeRecipe(recipeID)) : .shopping(.openAdd(recipeID))
+    }
     /// A saved reverse has no save mutation; the shopping-list contract adds its action separately.
     public var saveAction: KartaAction? { isSaved ? nil : .saveRecipe(recipeID) }
     public let intoleranceNote: String?
     public let ingredients: [Ingredient]
     public let steps: [RecipeReverseStepPresentation]
 
-    public init(recipe: Recipe, intolerances: Set<Allergen> = [], isSaved: Bool = false) {
+    public init(recipe: Recipe, intolerances: Set<Allergen> = [], isSaved: Bool = false, isOnList: Bool = false) {
         recipeID = recipe.id
         self.isSaved = isSaved
+        self.isOnList = isOnList
         intoleranceNote = IntoleranceWarning.note(recipe: recipe, intolerances: intolerances)
         ingredients = recipe.visibleIngredients(for: intolerances)
         steps = recipe.visibleSteps(for: intolerances)
