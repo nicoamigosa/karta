@@ -23,6 +23,9 @@ public struct KartaState: Equatable, Sendable {
     public fileprivate(set) var hasShownSaveToast: Bool
     /// Opaque legacy user data is carried through every save, never ranked.
     public internal(set) var legacyPayload: StoredJSON?
+    /// Transient selection shared by both Cookbook halves, never persisted.
+    public fileprivate(set) var isSelectingCookbook = false
+    public fileprivate(set) var selectedCookbookRecipeIDs: Set<String> = []
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
     public var viewHistory: ViewHistory
@@ -182,7 +185,10 @@ public struct KartaState: Equatable, Sendable {
     /// Build the reverse, including warnings for saved recipes.
     public func reversePresentation(for recipe: Recipe) -> RecipeReversePresentation? {
         guard canOpenRecipe(recipe) else { return nil }
-        return RecipeReversePresentation(recipe: recipe, intolerances: safetyProfile.intolerances)
+        return RecipeReversePresentation(
+            recipe: recipe, intolerances: safetyProfile.intolerances,
+            isSaved: cookbook.isSaved(recipe.id)
+        )
     }
 
     public init(
@@ -229,6 +235,11 @@ public struct KartaState: Equatable, Sendable {
 public enum KartaAction: Sendable {
     case paywall(PaywallAction)
     case saveRecipe(String)
+    case beginCookbookSelection
+    case endCookbookSelection
+    case toggleCookbookSelection(String)
+    case removeCookbookSelection
+    /// Cookbook grid context menu: the same removal path as a selection of one.
     case unsaveRecipe(String)
     case undoUnsave
     case dismissSaveToast
@@ -287,6 +298,16 @@ public enum KartaAction: Sendable {
 /// Pure state transitions for the presentation layer.
 public enum KartaReducer {
 
+    private static func removeCookbookRecipes(_ state: inout KartaState, ids: [String]) {
+        // Removal belongs to the grid; an open reverse never removes or creates a toast.
+        guard state.navigation.routes.isEmpty else { return }
+        state.pendingSaveToast = nil
+        state.lastSaveResult = nil
+        state.pendingUnsave = state.cookbook.unsave(ids)
+        state.isSelectingCookbook = false
+        state.selectedCookbookRecipeIDs = []
+    }
+
     public static func reduce(_ state: inout KartaState, action: KartaAction) {
         switch action {
         case let .paywall(action):
@@ -302,10 +323,22 @@ public enum KartaReducer {
                 state.hasShownSaveToast = true
                 state.pendingSaveToast = SaveToast(recipeID: id)
             }
+        case .beginCookbookSelection:
+            guard !state.cookbook.savedIDs.isEmpty else { return }
+            state.isSelectingCookbook = true
+        case .endCookbookSelection:
+            state.isSelectingCookbook = false
+            state.selectedCookbookRecipeIDs = []
+        case let .toggleCookbookSelection(id):
+            guard state.isSelectingCookbook, state.cookbook.isSaved(id) else { return }
+            if !state.selectedCookbookRecipeIDs.insert(id).inserted {
+                state.selectedCookbookRecipeIDs.remove(id)
+            }
+        case .removeCookbookSelection:
+            guard state.isSelectingCookbook, !state.selectedCookbookRecipeIDs.isEmpty else { return }
+            removeCookbookRecipes(&state, ids: Array(state.selectedCookbookRecipeIDs))
         case let .unsaveRecipe(id):
-            state.pendingSaveToast = nil
-            state.lastSaveResult = nil
-            state.pendingUnsave = state.cookbook.unsave(id)
+            removeCookbookRecipes(&state, ids: [id])
         case .undoUnsave:
             state.pendingSaveToast = nil
             state.lastSaveResult = nil

@@ -547,6 +547,21 @@ exist; the cookbook toast is `cookbook-removed-undo.png` for one recipe and
   past what fits on one line. After a downgrade the second line states the new ceiling
   ("Your cookbook now holds 22 recipes"). Undo puts everything back, slots and ceiling
   included. A reverse no longer unsaves, so the two reverse cases signed in #7 are gone.
+The Linux contract for selection and removal (#174) is `CookbookPresentation`:
+`canSelect`, `isSelecting`, `selectedRecipeIDs`, `selectionBarText` and
+`canRemoveSelection`. Send `beginCookbookSelection`, `toggleCookbookSelection(id)`,
+`endCookbookSelection` (Done) and `removeCookbookSelection`. Which half is visible
+remains a shell preference: both halves share the same transient selection. Long-press
+Remove continues to send `unsaveRecipe(id)`, through the same batch removal path.
+`UnsaveToast.recipeIDs` identifies the whole batch in saved order; `undoUnsave` restores
+it in one step and `dismissUnsaveToast` expires that receipt. Names stop after three,
+with "and N more" for the rest; a lowered ceiling replaces the names on the second line.
+`RecipeReversePresentation.isSaved` supplies the saved tint; `saveAction` only offers
+`saveRecipe` while unsaved and is nil while saved (the list action is a separate contract).
+The reducer rejects grid removal actions while a reverse route is open.
+The macOS shell follow-up must render the selection controls and remove its old reverse
+removal callbacks, Feed removal toast, and reverse close/reopen-on-Undo behavior and tests.
+
 - **A saved recipe with a new Intolerancia** (canvas page *Intolerance tag ·
   round 1*, boards *T1 · crimson fill, no icon* and *R2 · crimson fill, no
   icon*): it stays in the cookbook, openable and cookable (`CONTEXT.md` →
