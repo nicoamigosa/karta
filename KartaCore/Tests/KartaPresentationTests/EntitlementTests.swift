@@ -133,7 +133,7 @@ struct EntitlementTests {
         let restored = try #require(UserSnapshot.restore(from: data).snapshot)
         let relaunched = KartaStore(state: KartaState(
             cookbook: restored.cookbook,
-            safetyProfile: SafetyProfile(intolerances: restored.profile.intolerances)
+            safetyProfile: SafetyProfile(intolerances: restored.profile!.intolerances)
         ))
         #expect(relaunched.state.entitlement == nil)
         #expect(!relaunched.showsGoPremium)

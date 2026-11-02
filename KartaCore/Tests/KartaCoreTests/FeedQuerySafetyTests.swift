@@ -167,8 +167,6 @@ struct FeedQuerySafetyTests {
 
     @Test("Taste preferences cannot promote an unsafe recipe into the feed")
     func tasteCannotBypassSafety() {
-        var calibration = TasteCalibration()
-        calibration.tap("unsafe")
 
         let feed = FeedQuery.feed(
             recipes: [
@@ -179,7 +177,7 @@ struct FeedQuerySafetyTests {
             recentWindow: testRecentWindow,
             clock: testClock,
             filters: FeedFilters(intolerances: [.dairy]),
-            tastePreferences: calibration.preferences
+            tastePreferences: TastePreferences(recipes: [recipe("unsafe", reviewedAllergens: [.dairy])], savedIDs: ["unsafe"])
         )
 
         #expect(feed.newRecipes.map(\.id) == ["safe"])

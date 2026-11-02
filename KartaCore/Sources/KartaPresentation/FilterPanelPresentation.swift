@@ -18,7 +18,18 @@ public struct FilterPanelPresentation: Equatable, Sendable {
     private let draft: FilterDraft
     private let safetyProfile: SafetyProfile
 
-    public init(draft: FilterDraft, safetyProfile: SafetyProfile) {
+    private let householdSize: Int?
+    public let householdLine = "Saved as you tap. Every size still shows up."
+
+    public var cookingFor: [Option<Int>] {
+        (1...5).map { size in
+            Option(value: size, label: size == 5 ? "5+" : String(size),
+                   isOn: householdSize.map { min($0, 5) == size } ?? false)
+        }
+    }
+
+    public init(draft: FilterDraft, safetyProfile: SafetyProfile, householdSize: Int? = nil) {
+        self.householdSize = householdSize
         self.draft = draft
         self.safetyProfile = safetyProfile
     }

@@ -6,24 +6,26 @@ import Foundation
 /// versioned DTO below so changes to the domain model cannot silently change
 /// the on-disk format.
 public struct UserSnapshot: Equatable, Sendable {
-    public static let currentVersion = 1
+    public static let currentVersion = 2
 
-    public let profile: OnboardingProfile
+    public let profile: OnboardingProfile?
     public let cookbook: Cookbook
     public let viewHistory: ViewHistory
     public let cookHistory: [CookEntry]
-    public let tasteCalibration: TasteCalibration
+    public let legacyPayload: StoredJSON?
+    public let hasShownFullTour: Bool
     public let cookingSession: CookingSession?
     public let shareCardHistory: ShareCardHistory
     public let hasShownSaveToast: Bool
     public let hasShownAlarmPermissionSheet: Bool
 
     public init(
-        profile: OnboardingProfile,
+        profile: OnboardingProfile?,
         cookbook: Cookbook = Cookbook(),
         viewHistory: ViewHistory = ViewHistory(),
         cookHistory: [CookEntry] = [],
-        tasteCalibration: TasteCalibration = TasteCalibration(),
+        legacyPayload: StoredJSON? = nil,
+        hasShownFullTour: Bool = false,
         cookingSession: CookingSession? = nil,
         hasShownAlarmPermissionSheet: Bool = false,
         hasShownSaveToast: Bool = false,
@@ -34,7 +36,8 @@ public struct UserSnapshot: Equatable, Sendable {
         self.cookbook = cookbook
         self.viewHistory = viewHistory
         self.cookHistory = cookHistory
-        self.tasteCalibration = tasteCalibration
+        self.legacyPayload = legacyPayload
+        self.hasShownFullTour = hasShownFullTour
         self.cookingSession = cookingSession
         self.hasShownAlarmPermissionSheet = hasShownAlarmPermissionSheet
         self.hasShownSaveToast = hasShownSaveToast
@@ -44,10 +47,10 @@ public struct UserSnapshot: Equatable, Sendable {
     public func encoded() throws -> Data {
         let dto = UserSnapshotDTO(
             version: Self.currentVersion,
-            profile: ProfileDTO(
-                intolerances: profile.intolerances.map(\.rawValue).sorted(),
-                householdSize: profile.householdSize
-            ),
+            profile: profile.map { ProfileDTO(
+                intolerances: $0.intolerances.map(\.rawValue).sorted(),
+                householdSize: $0.householdSize
+            ) },
             cookbook: CookbookDTO(
                 savedIDs: cookbook.savedIDs,
                 saveCap: cookbook.saveCap
@@ -57,9 +60,8 @@ public struct UserSnapshot: Equatable, Sendable {
                 openings: viewHistory.openings.map(OpenEntryDTO.init)
             ),
             cookHistory: cookHistory.map(CookEntryDTO.init),
-            tasteCalibration: TasteCalibrationDTO(
-                likedIDs: tasteCalibration.likedIDs
-            ),
+            tasteCalibration: legacyPayload,
+            hasShownFullTour: hasShownFullTour,
             cookingSession: cookingSession.map(CookingSessionDTO.init),
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet,
             hasShownSaveToast: hasShownSaveToast,
@@ -75,8 +77,7 @@ public struct UserSnapshot: Equatable, Sendable {
     ///
     /// The package never writes or deletes storage. Callers should keep
     /// `preservedData` untouched when it is non-nil. When `snapshot` is nil,
-    /// callers must complete onboarding again before showing any recipe
-    /// surfaces.
+    /// callers start with the Baraja segura and preserve the unreadable bytes.
     public static func restore(from data: Data) -> SnapshotRestoreResult {
         restore(from: data, sessionPolicy: nil)
     }
@@ -125,7 +126,7 @@ public struct UserSnapshot: Equatable, Sendable {
 /// The result of attempting to restore a snapshot.
 public struct SnapshotRestoreResult: Equatable, Sendable {
     /// The restored snapshot, or nil when the persisted data was unreadable.
-    /// A nil value means onboarding must be completed before showing recipes.
+    /// A nil value starts with the Baraja segura.
     public let snapshot: UserSnapshot?
     /// The exact original bytes when restoration failed. Storage owners must
     /// preserve these bytes rather than replacing or deleting them.
@@ -170,7 +171,8 @@ private struct UserSnapshotDTO: Codable {
     let cookbook: CookbookDTO?
     let viewHistory: ViewHistoryDTO?
     let cookHistory: [CookEntryDTO]?
-    let tasteCalibration: TasteCalibrationDTO?
+    let tasteCalibration: StoredJSON?
+    let hasShownFullTour: Bool?
     let cookingSession: CookingSessionDTO?
     // Optional so synthesized Codable uses decodeIfPresent for older snapshots.
     let hasShownAlarmPermissionSheet: Bool?
@@ -180,17 +182,19 @@ private struct UserSnapshotDTO: Codable {
     func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
         // Intolerances are safety-critical: a snapshot that does not state them
         // is unreadable, never "no intolerances" (ADR 0010).
-        guard let profileDTO = profile else {
-            throw SnapshotDecodingError.invalidValue
-        }
-        let allergens = try Set(profileDTO.intolerances.map { rawValue in
-            guard let allergen = Allergen(rawValue: rawValue) else {
-                throw SnapshotDecodingError.invalidValue
-            }
-            return allergen
-        })
-        guard profileDTO.householdSize > 0 else {
-            throw SnapshotDecodingError.invalidValue
+        let restoredProfile: OnboardingProfile?
+        if let profile {
+            let allergens = try Set(profile.intolerances.map { rawValue in
+                guard let allergen = Allergen(rawValue: rawValue) else {
+                    throw SnapshotDecodingError.invalidValue
+                }
+                return allergen
+            })
+            guard profile.householdSize > 0 else { throw SnapshotDecodingError.invalidValue }
+            restoredProfile = OnboardingProfile(intolerances: allergens, householdSize: profile.householdSize)
+        } else {
+            guard version >= 2 else { throw SnapshotDecodingError.invalidValue }
+            restoredProfile = nil
         }
 
         let cookbookDTO = cookbook ?? CookbookDTO(
@@ -213,19 +217,15 @@ private struct UserSnapshotDTO: Codable {
         } ?? session
 
         return UserSnapshot(
-            profile: OnboardingProfile(
-                intolerances: allergens,
-                householdSize: profileDTO.householdSize
-            ),
+            profile: restoredProfile,
             cookbook: Cookbook(
                 savedIDs: cookbookDTO.savedIDs,
                 saveCap: cookbookDTO.saveCap
             ),
             viewHistory: history,
             cookHistory: (cookHistory ?? []).map(\.domainValue),
-            tasteCalibration: TasteCalibration(
-                likedIDs: tasteCalibration?.likedIDs ?? []
-            ),
+            legacyPayload: tasteCalibration,
+            hasShownFullTour: hasShownFullTour ?? false,
             cookingSession: retainedSession,
             hasShownAlarmPermissionSheet: hasShownAlarmPermissionSheet ?? false,
             hasShownSaveToast: hasShownSaveToast ?? false,
@@ -378,23 +378,6 @@ private struct CookEntryDTO: Codable {
 
     var domainValue: CookEntry {
         CookEntry(recipeID: recipeID, date: date, wasInferred: wasInferred)
-    }
-}
-
-private struct TasteCalibrationDTO: Codable {
-    let likedIDs: [String]
-
-    init(likedIDs: [String]) {
-        self.likedIDs = likedIDs
-    }
-
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        likedIDs = try container.decodeIfPresent([String].self, forKey: .likedIDs) ?? []
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case likedIDs
     }
 }
 

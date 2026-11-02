@@ -37,7 +37,9 @@ struct CookingStepPresentationTests {
     @MainActor
     func savedRecipeRemainsCookable() throws {
         let recipe = recipe(review: .reviewed([.dairy]))
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.saveRecipe(recipe.id))
         store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy]))))
         store.send(.startCooking(recipe, startedAt: 100))
@@ -59,7 +61,9 @@ struct CookingStepPresentationTests {
     @MainActor
     func currentStepContent() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
 
         let step = try #require(store.cookingStepPresentation(for: recipe, clips: clips(), now: 100))
@@ -78,13 +82,17 @@ struct CookingStepPresentationTests {
     @MainActor
     func upNextFollowsVisibleSteps() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         let first = try #require(store.cookingStepPresentation(for: recipe, clips: clips(), now: 100))
         #expect(first.upNext?.summary == "Add butter")
         #expect(first.upNext?.photo == .relative("steps/butter.jpg"))
 
-        let safeStore = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy])))
+        let safeStore = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy])))
         safeStore.send(.startCooking(recipe, startedAt: 100))
         let safeFirst = try #require(safeStore.cookingStepPresentation(for: recipe, clips: clips(), now: 100))
         #expect(safeFirst.upNext?.summary == "Serve")
@@ -101,7 +109,9 @@ struct CookingStepPresentationTests {
     @MainActor
     func progressFollowsNavigation() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         let first = try #require(store.cookingStepPresentation(for: recipe, clips: clips(), now: 100))
         #expect(first.progress.map(\.state) == [.current, .upcoming, .upcoming])
@@ -114,7 +124,9 @@ struct CookingStepPresentationTests {
         let back = try #require(store.cookingStepPresentation(for: recipe, clips: clips(), now: 120))
         #expect(back.progress.map(\.state) == [.current, .upcoming, .upcoming])
 
-        let safeStore = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy])))
+        let safeStore = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy])))
         safeStore.send(.startCooking(recipe, startedAt: 100))
         let safe = try #require(safeStore.cookingStepPresentation(for: recipe, clips: clips(), now: 100))
         #expect(safe.progress.map(\.state) == [.current, .upcoming])
@@ -124,7 +136,9 @@ struct CookingStepPresentationTests {
     @MainActor
     func timerAcrossSteps() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         let current = try #require(store.cookingStepPresentation(for: recipe, clips: clips(), now: 118.2))
@@ -147,7 +161,9 @@ struct CookingStepPresentationTests {
     @MainActor
     func multipleTimers() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         store.send(.nextStep(now: 110))
@@ -174,8 +190,12 @@ struct CookingStepPresentationTests {
             StepIngredient(ingredientID: "tomato", quantity: "1"),
         ])
         let session = CookingSession(recipeID: recipe.id, steps: [step])
-        let unrestricted = KartaState(session: session, safetyProfile: SafetyProfile(intolerances: []))
-        let safe = KartaState(session: session, safetyProfile: SafetyProfile(intolerances: [.dairy]))
+        let unrestricted = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            session: session, safetyProfile: SafetyProfile(intolerances: []))
+        let safe = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
+            session: session, safetyProfile: SafetyProfile(intolerances: [.dairy]))
         let allRows = try #require(unrestricted.cookingStepPresentation(for: recipe, clips: clips(), now: 0))
         let safeRows = try #require(safe.cookingStepPresentation(for: recipe, clips: clips(), now: 0))
         #expect(allRows.ingredientRows.map(\.name) == ["Unsalted butter", "Roma tomatoes"])
@@ -187,10 +207,14 @@ struct CookingStepPresentationTests {
     @MainActor
     func absentSession() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         #expect(try store.cookingStepPresentation(for: recipe, clips: clips(), now: 0) == nil)
         let otherSession = CookingSession(recipeID: "other", steps: recipe.steps)
-        let otherState = KartaState(session: otherSession, safetyProfile: SafetyProfile(intolerances: []))
+        let otherState = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            session: otherSession, safetyProfile: SafetyProfile(intolerances: []))
         #expect(try otherState.cookingStepPresentation(for: recipe, clips: clips(), now: 0) == nil)
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.exitCooking)

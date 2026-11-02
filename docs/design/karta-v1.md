@@ -876,6 +876,42 @@ reopened:
 3. In the full panel, **COOKING FOR** is saved as you tap, like the Intolerancias, and never
    counts in the badge.
 
+### Shared contract (#171)
+
+The shell sends `.onboarding(.coldLaunch(reduceMotion:))` once on cold launch.
+`onboarding.tourStop` supplies the title, line, progress and optional 1.2 s delay;
+send `tourDelayElapsed` when that delay expires, `tourTap` for an outside tap,
+and `filterButtonTapped` for the filter. The shell cancels its pending delay when
+the stop changes. `pulsesFilter` respects Reduce Motion; `canShowEntryNudge`
+holds the deck nudge until the tour and panel have ended. The full-tour memory is
+consumed on entry, so quitting midway does not replay it.
+
+`onboarding.banner` supplies the signed line and Set mine action. Both Set mine
+and the filter button route to `panel == .firstRun` while unanswered; afterwards
+the filter opens `.full`. `firstRunPanel` supplies the copy, controls and enabled
+state. Send `toggleFirstRunAllergen`, `chooseFirstRunHousehold`, `showMyCards`
+or `closePanel`. Pending choices live only in the current process, including
+across closing/reopening the panel. Closing never commits an answer.
+
+In the full panel send `.onboarding(.setHouseholdSize(size))` immediately;
+`FilterPanelPresentation.cookingFor` projects the saved size. It is independent
+of the filter draft, badge and recipe count. 5+ is stored as 5. Until a Hogar is
+answered, feed ranking has no household signal; the existing Card projection
+uses its own recipe's servings as its numeric household metadata, without
+scaling quantities or persisting a default.
+
+Persist `KartaState.userSnapshot` and restore with `KartaState(snapshot:)`;
+snapshot version 2 supports an unanswered profile. Versions 0 and 1 still
+require their explicit profile. The old calibration JSON value is opaque user
+data, retained through restore/save without participating in Gusto. Unreadable
+snapshot bytes must still be preserved by the storage owner (ADR 0010).
+
+Gusto uses one signal per distinct recipe: +3 for an Apertura, +5 for a save,
+and -1 for a Vista with neither. Affinity counts shared primary Course, Diet,
+Practical tags and required ingredient names, with an additional weight for the
+same recipe. Repeated opens do not amplify the signal. Safety and filters run
+first; the Frontera partitions before ranking. There is no ML or clock in Gusto.
+
 ### Open decisions
 
 - Not drawn: VoiceOver for the tour (proposed: each stop is announced as the bubble's text,

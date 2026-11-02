@@ -28,7 +28,9 @@ struct PaywallTests {
             store.send(.paywall(.open(.worldMenu, plans: [])))
             #expect(store.state.paywall == nil)
         }
-        let unresolved = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let unresolved = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         unresolved.send(.paywall(.open(.worldMenu, plans: [])))
         #expect(unresolved.state.paywall == nil)
     }
@@ -280,6 +282,7 @@ struct PaywallTests {
     private func makeStore(count: Int = 7) -> KartaStore {
         let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: nil),
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [])
         ))
         store.send(.entitlementChanged(.free))

@@ -15,6 +15,7 @@ struct CookbookPresentationTests {
     func intoleranceTags(intolerances: Set<Allergen>, tag: String?) {
         let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: ["saved", "cooked", "missing", "unreviewed"]),
+            onboarding: OnboardingState(intoleranceAnswer: .answered(intolerances), householdSize: 2),
             cookHistory: [CookEntry(recipeID: "cooked", date: Date(timeIntervalSince1970: 1))],
             safetyProfile: SafetyProfile(intolerances: intolerances),
             filterDraft: FilterDraft(maxMinutes: 5)
@@ -38,6 +39,7 @@ struct CookbookPresentationTests {
     func rowsAndCountsFollowSavedOrder() {
         let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: ["try-b", "inferred", "missing", "explicit", "unreviewed", "try-a"]),
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             cookHistory: [
                 CookEntry(recipeID: "explicit", date: Date(timeIntervalSince1970: 1)),
                 CookEntry(recipeID: "inferred", date: Date(timeIntervalSince1970: 2), wasInferred: true),
@@ -65,7 +67,9 @@ struct CookbookPresentationTests {
     @Test("Cooking and saving again keep Repertorio membership and history", arguments: [false, true])
     @MainActor
     func cookingAndResavingPreserveRepertoire(wasInferred: Bool) {
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         let catalog = [recipe("cooked"), recipe("uncooked")]
         let entry = CookEntry(
             recipeID: "cooked", date: Date(timeIntervalSince1970: 1), wasInferred: wasInferred
@@ -117,6 +121,7 @@ struct CookbookPresentationTests {
     func freeCupo(count: Int, ceiling: Int, expected: String?) {
         let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling),
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [])
         ))
         store.send(.entitlementChanged(.free))
@@ -144,6 +149,7 @@ struct CookbookPresentationTests {
                   link: CookbookPresentation.CupoLine.Link?) {
         let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling),
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [])
         ))
         if let entitlement { store.send(.entitlementChanged(entitlement)) }
@@ -159,7 +165,9 @@ struct CookbookPresentationTests {
     ])
     @MainActor
     func trialTimeZone(offset: Int, text: String) throws {
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.entitlementChanged(.trial(endsAt: Date(timeIntervalSince1970: 1_793_923_200))))
         let zone = try #require(TimeZone(secondsFromGMT: offset))
         #expect(store.cookbookPresentation(recipes: [], timeZone: zone).cupoLine?.text == text)
@@ -176,7 +184,9 @@ struct CookbookPresentationTests {
         let original = Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: ceiling)
         let history = [CookEntry(recipeID: "r3", date: Date(timeIntervalSince1970: 1))]
         let store = KartaStore(state: KartaState(
-            cookbook: original, cookHistory: history, safetyProfile: SafetyProfile(intolerances: [])
+            cookbook: original,
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            cookHistory: history, safetyProfile: SafetyProfile(intolerances: [])
         ))
         #expect(store.unsaveToast(recipes: [recipe("r3")]) == nil)
 
@@ -203,7 +213,9 @@ struct CookbookPresentationTests {
         var cookbook = Cookbook(savedIDs: (0..<count).map { "r\($0)" }, saveCap: nil)
         cookbook.downgradeToFree()
         let store = KartaStore(state: KartaState(
-            cookbook: cookbook, safetyProfile: SafetyProfile(intolerances: [])
+            cookbook: cookbook,
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])
         ))
         #expect(store.blockedByCap == nil)
 
@@ -230,6 +242,7 @@ struct CookbookPresentationTests {
     func expiredUndoDoesNotRestore(action: KartaAction) {
         let store = KartaStore(state: KartaState(
             cookbook: Cookbook(savedIDs: ["r1", "r2"]),
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [])
         ))
         store.send(.unsaveRecipe("r1"))

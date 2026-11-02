@@ -109,10 +109,10 @@ struct FeedEmptyStateTests {
                 .noMatchForFilters(summary: "No recipe is ready in 1 min.", keptIntolerances: "dairy stays hidden"))
     }
 
-    @Test("Empty-state presentation is unavailable until onboarding completes")
+    @Test("The unanswered safe deck has no empty-state message when recipes fit")
     func incompleteOnboarding() {
         let state = KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy]))
-        #expect(state.feedEmptyState(recipes: [recipe()], clock: EmptyStateClock()) == nil)
+        #expect(state.feedEmptyState(recipes: [recipe()], clock: EmptyStateClock()) == FeedEmptyState.none)
     }
 
     private func recipe(review: AllergenReview = .reviewed([])) -> Recipe {

@@ -34,6 +34,7 @@ struct CookingFinishPresentationTests {
         let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot)
         let recipe = recipe()
         let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: []),
             shareBaseURL: URL(string: "https://karta.app/r"),
             shareCardHistory: restored.shareCardHistory
@@ -51,6 +52,7 @@ struct CookingFinishPresentationTests {
     func finishDismissesShareCard() {
         let recipe = recipe()
         let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: []),
             shareBaseURL: URL(string: "https://karta.app/r")
         ))
@@ -68,6 +70,7 @@ struct CookingFinishPresentationTests {
     func closesShareCard(shared: Bool) throws {
         let recipe = recipe()
         let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: []),
             shareBaseURL: URL(string: "https://karta.app/r")
         ))
@@ -91,6 +94,7 @@ struct CookingFinishPresentationTests {
     func shareCardAfterGood(available: Bool) throws {
         let recipe = recipe()
         let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: []),
             shareBaseURL: available ? URL(string: "https://karta.app/r") : nil
         ))
@@ -113,7 +117,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func finishContent() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         let clips = try TechniqueClipLibrary(clips: [])
         store.send(.startCooking(recipe, startedAt: 100))
         for time in [110.0, 120.0, 130.0] {
@@ -137,7 +143,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func finishTimers() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         store.send(.nextStep(now: 110))
@@ -159,7 +167,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func finishPausedTimer() throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         store.send(.pauseTimer(now: 280))
@@ -175,7 +185,9 @@ struct CookingFinishPresentationTests {
     func finishInfersCook() throws {
         let recipe = recipe()
         let earlier = CookEntry(recipeID: recipe.id, date: Date(timeIntervalSince1970: 50))
-        let store = KartaStore(state: KartaState(cookHistory: [earlier], safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            cookHistory: [earlier], safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         store.send(.nextStep(now: 110))
@@ -201,7 +213,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func finishAnswer(outcome: CookOutcome, inferred: Bool) throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         if inferred { store.send(.startTimer(now: 100)) }
         store.send(.nextStep(now: 110))
@@ -228,7 +242,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func finishInferenceRequiresEvidence(startTimer: Bool) throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         if startTimer { store.send(.startTimer(now: 100)) }
         store.send(.nextStep(now: 110))
@@ -251,7 +267,9 @@ struct CookingFinishPresentationTests {
     func restoredFinishAnswer() throws {
         let recipe = recipe()
         let earlier = CookEntry(recipeID: recipe.id, date: Date(timeIntervalSince1970: 50), wasInferred: true)
-        let store = KartaStore(state: KartaState(cookHistory: [earlier], safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            cookHistory: [earlier], safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         store.send(.nextStep(now: 110))
@@ -263,6 +281,7 @@ struct CookingFinishPresentationTests {
         )
         let restored = try #require(UserSnapshot.restore(from: snapshot.encoded()).snapshot)
         let resumed = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             cookHistory: restored.cookHistory, session: restored.cookingSession,
             safetyProfile: SafetyProfile(intolerances: [])
         ))
@@ -277,7 +296,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func finishGuards() throws {
         let recipe = recipe(review: .reviewed([.dairy]))
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy])))
         #expect(store.cookingFinishPresentation(for: recipe, now: 100) == nil)
         store.send(.saveRecipe(recipe.id))
         store.send(.startCooking(recipe, startedAt: 100))
@@ -301,6 +322,7 @@ struct CookingFinishPresentationTests {
         var otherSession = CookingSession(recipeID: "other", steps: ["Serve"])
         otherSession.next(at: 100)
         let other = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
             session: otherSession,
             safetyProfile: SafetyProfile(intolerances: [])
         )
@@ -311,7 +333,9 @@ struct CookingFinishPresentationTests {
     @MainActor
     func legacyShellFlow(inferred: Bool) throws {
         let recipe = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [])))
         store.send(.startCooking(recipe, startedAt: 100))
         store.send(.startTimer(now: 100))
         while store.session?.isOnLastStep == false {
@@ -344,7 +368,9 @@ struct CookingFinishPresentationTests {
             recipeID: "untimed", steps: multiStep ? ["Prepare", "Serve"] : ["Serve"],
             declaredDuration: 60, startedAt: 100
         )
-        let store = KartaStore(state: KartaState(session: session, safetyProfile: SafetyProfile(intolerances: [])))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([]), householdSize: 2),
+            session: session, safetyProfile: SafetyProfile(intolerances: [])))
         if multiStep { store.send(.nextStep(now: 101)) }
         store.send(.nextStep(now: 115))
         #expect(store.session?.isOnFinish == true)
