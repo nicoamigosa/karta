@@ -436,8 +436,9 @@ confirmation** below are rewritten for that. Three PNGs of #7 are gone:
 `reverse-saved.png` (replaced by `shopping-reverse-add.png`), `reverse-unsaved-undo.png` and
 `reverse-unsaved-undo-ceiling.png` (a reverse can no longer unsave, so those states do not
 exist; the cookbook toast is `cookbook-removed-undo.png` for one recipe and
-`shopping-cookbook-removed.png` for several). `reverse-intolerance.png` still draws the pill
-as **Saved**: the text wins, and it reads **Add to list**.
+`shopping-cookbook-removed.png` for several). `reverse-intolerance.png`,
+`premium-save-toast.png` and `premium-welcome.png` are re-exported with the pill reading
+**Add to list**.
 
 - **Shape:** paper background, 58 pt top and 22 pt side padding, 18 pt
   between blocks. Under the header, a switch shows one half at a time:
@@ -1037,7 +1038,7 @@ Cancelling on Apple's purchase sheet returns to the paywall as it was, with no m
 ### Purchase done
 
 `premium-welcome.png`. The same sheet shows the celebration, and the recipe whose save hit the
-cap is saved behind it (the pill reads **Saved**):
+cap is saved behind it (the saved pill reads **Add to list**, *Save and the cookbook*):
 
 - A 200 pt band with a 92 pt `brand` circle in the middle holding the box-with-check icon
   (44 pt, `card`, stroke 1.7), its 4 pt `brandEdge` edge and a soft shadow; around it, about
