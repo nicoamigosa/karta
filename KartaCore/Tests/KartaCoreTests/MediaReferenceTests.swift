@@ -17,7 +17,7 @@ struct MediaReferenceTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
+            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }]
         """
@@ -39,7 +39,7 @@ struct MediaReferenceTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
+            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }]
         """
@@ -70,7 +70,7 @@ struct MediaReferenceTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": "1" }],
+            "ingredients": [{ "id": "potato", "name": "Potato", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }]
         """

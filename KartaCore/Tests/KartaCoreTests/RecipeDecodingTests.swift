@@ -7,7 +7,7 @@ struct RecipeDecodingTests {
 
     @Test("An optional ingredient decodes its own reviewed allergens")
     func optionalIngredientDecodesAllergens() throws {
-        let json = #"{"id":"cilantro","name":"Fresh cilantro","quantity":"1 tbsp","optional":true,"allergens":["dairy"]}"#
+        let json = #"{"id":"cilantro","name":"Fresh cilantro","quantity":{"amount": "1", "unit": "tbsp"}, "purchaseKey": "test-product", "aisle": "other","optional":true,"allergens":["dairy"]}"#
 
         let ingredient = try JSONDecoder().decode(Ingredient.self, from: Data(json.utf8))
 
@@ -17,7 +17,7 @@ struct RecipeDecodingTests {
 
     @Test("An optional ingredient requires a reviewed allergen set")
     func optionalIngredientRequiresAllergenSet() {
-        let json = #"{"id":"butter","name":"Butter","quantity":"1 tbsp","optional":true}"#
+        let json = #"{"id":"butter","name":"Butter","quantity":{"amount": "1", "unit": "tbsp"}, "purchaseKey": "test-product", "aisle": "other","optional":true}"#
 
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(Ingredient.self, from: Data(json.utf8))
@@ -26,7 +26,7 @@ struct RecipeDecodingTests {
 
     @Test("An optional ingredient rejects an unknown allergen term")
     func optionalIngredientRejectsUnknownAllergen() {
-        let json = #"{"id":"butter","name":"Butter","quantity":"1 tbsp","optional":true,"allergens":["lactose"]}"#
+        let json = #"{"id":"butter","name":"Butter","quantity":{"amount": "1", "unit": "tbsp"}, "purchaseKey": "test-product", "aisle": "other","optional":true,"allergens":["lactose"]}"#
 
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(Ingredient.self, from: Data(json.utf8))
@@ -42,7 +42,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [{
-                "id": "milk", "name": "Milk", "quantity": "1 cup", "allergens": ["dairy"]
+                "id": "milk", "name": "Milk", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other", "allergens": ["dairy"]
             }],
             "steps": [{ "detail": "Cook with milk", "summary": "Cook with milk." }]
         }
@@ -66,7 +66,7 @@ struct RecipeDecodingTests {
             "difficulty": "easy",
             "servings": 4,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"paso","summary":"paso."}]
         }
         """
@@ -97,7 +97,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
-                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
                 "steps": [{"detail":"s","summary":"s."}]
             },
             {
@@ -109,7 +109,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": null,
-                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
                 "steps": [{"detail":"s","summary":"s."}]
             }
         ]
@@ -147,7 +147,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [" DaIrY "],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"paso","summary":"paso."}]
         }
         """
@@ -168,7 +168,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": ["lactose"],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"paso","summary":"paso."}]
         }
         """
@@ -200,7 +200,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
-                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
                 "steps": [{"detail":"Cook","summary":"Cook."}]
             },
             {
@@ -212,7 +212,7 @@ struct RecipeDecodingTests {
                 "servings": 4,
                 "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
                 "contains": [],
-                "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+                "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
                 "steps": [{"detail":"Cook","summary":"Cook."}]
             }
         ]
@@ -270,7 +270,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "blank-name", "name": "  ", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "blank-name", "name": "  ", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -301,7 +301,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": []
         }
         """
@@ -331,7 +331,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -358,7 +358,7 @@ struct RecipeDecodingTests {
             "servings": 4,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -380,7 +380,7 @@ struct RecipeDecodingTests {
             "servings": 0,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -411,7 +411,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -442,7 +442,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -469,7 +469,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -499,7 +499,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "  " }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -508,12 +508,7 @@ struct RecipeDecodingTests {
             _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
             Issue.record("Expected an empty ingredient quantity to be rejected")
         } catch let error as RecipeDecodingError {
-            #expect(error == .emptyIngredientQuantity(
-                recipeID: "missing-quantity",
-                recipeName: "Missing quantity",
-                ingredientIndex: 0,
-                ingredientName: "Flour"
-            ))
+            #expect(error == .invalidIngredientQuantity)
         } catch {
             Issue.record("Unexpected error: \(error)")
         }
@@ -531,7 +526,7 @@ struct RecipeDecodingTests {
             "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "0 cups" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {"amount": "0", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
@@ -540,13 +535,7 @@ struct RecipeDecodingTests {
             _ = try JSONDecoder().decode(Recipe.self, from: Data(json.utf8))
             Issue.record("Expected a non-positive ingredient quantity to be rejected")
         } catch let error as RecipeDecodingError {
-            #expect(error == .nonPositiveIngredientQuantity(
-                recipeID: "zero-quantity",
-                recipeName: "Zero quantity",
-                ingredientIndex: 0,
-                ingredientName: "Flour",
-                value: "0 cups"
-            ))
+            #expect(error == .invalidIngredientAmount(value: "0"))
         } catch {
             Issue.record("Unexpected error: \(error)")
         }
@@ -571,8 +560,8 @@ struct RecipeDecodingTests {
             "practicalTags": ["one-pan"],
             "contains": [],
             "ingredients": [
-                { "id": "papa", "name": "Papa", "quantity": "4 unidades" },
-                { "id": "huevo", "name": "Huevo", "quantity": "5 unidades" }
+                { "id": "papa", "name": "Papa", "quantity": {"amount": "4", "unit": "piece"}, "purchaseKey": "test-product", "aisle": "other" },
+                { "id": "huevo", "name": "Huevo", "quantity": {"amount": "5", "unit": "piece"}, "purchaseKey": "test-product", "aisle": "other" }
             ],
             "steps": [{"detail":"Pelar y cortar las papas en rodajas finas.","summary":"Prepare"},{"detail":"Freír a fuego medio hasta que estén tiernas.","summary":"Prepare"}]
         }
@@ -591,7 +580,7 @@ struct RecipeDecodingTests {
         #expect(recipe.ingredients.count == 2)
         let firstIngredient = try #require(recipe.ingredients.first)
         #expect(firstIngredient.name == "Papa")
-        #expect(firstIngredient.quantity == "4 unidades")
+        #expect(firstIngredient.quantity == "4 pieces")
         #expect(recipe.steps.count == 2)
     }
 
@@ -633,7 +622,7 @@ struct RecipeDecodingTests {
             "diets": [],
             "practicalTags": ["one-pan", "quick"],
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"s","summary":"s."}]
         }
         """
@@ -660,7 +649,7 @@ struct RecipeDecodingTests {
             "heroPhotoURL": "https://img.karta.app/unknown-course.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "brunch", "additionalCourses": [], "diets": [], "practicalTags": [],
-            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
         let unknownDiet = """
@@ -669,7 +658,7 @@ struct RecipeDecodingTests {
             "heroPhotoURL": "https://img.karta.app/unknown-diet.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": ["pescatarian"], "practicalTags": [],
-            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -693,7 +682,7 @@ struct RecipeDecodingTests {
             "heroPhotoURL": "https://img.karta.app/repeated-course.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": ["dinner"], "diets": [], "practicalTags": [],
-            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
+            "contains": [], "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -713,7 +702,7 @@ struct RecipeDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [],
             "tags": ["quick"], "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }], "steps": [{"detail":"s","summary":"s."}]
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }], "steps": [{"detail":"s","summary":"s."}]
         }
         """
 
@@ -744,7 +733,7 @@ struct RecipeDecodingTests {
             "difficulty": "easy",
             "servings": 2,
             "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{"detail":"Cook","summary":"Cook."}]
         }
         """
