@@ -45,7 +45,9 @@ at 100) and **Figtree** (UI). Card roles: `rank` (the minutes), `rankUnit`
 ```
 
 - Always exactly: time, servings, difficulty, primary Course. No tags, no diet,
-  no Save button (ADR 0012/0013).
+  no Save button (ADR 0012/0013). The one exception is the Leftovers Mundo, where a
+  leftovers pill naming what is left over joins the chips without shrinking the photo
+  (*Leftovers*, ADR 0018).
 - **Relief:** the card has a visible 4 px edge (four 1 px layers, `cardEdge`)
   plus a soft drop shadow. The cards behind get the same edge in their suit's
   `edge` tone.
@@ -742,8 +744,8 @@ and the bottom safe area, 36 pt from the sides. The header stays as it is, badge
   gap is ours to fill, not yours.* One tactile button, **Check my intolerances**, opens the
   panel.
 - When both are true, the profile state wins: clearing filters would not help.
-- The Frontera (*you're all caught up*) and the empty Leftovers Mundo (nothing cooked yet) are
-  not part of this section.
+- The Frontera (*you're all caught up*) is not part of this section. The empty states of the
+  Leftovers Mundo are in *Leftovers*.
 
 ### Fit, text size and scroll
 
@@ -948,6 +950,177 @@ first; the Frontera partitions before ranking. There is no ML or clock in Gusto.
   and a double tap anywhere acts as the skip).
 - Not drawn: the Baraja segura when the catalog has no recipe free of all five allergens.
 - Not drawn: the banner above the empty Leftovers Mundo (#9).
+
+## Leftovers
+
+Signed off on 2026-11-02 by the founder (#9). The rounds are in four artifacts: *Karta
+Leftovers ronda 1* (<https://claude.ai/artifact/EHpwyVsmFFbPf7qCQqNgKR>), rows Origen A, Entrada
+C and Vacío A; *ronda 2* (<https://claude.ai/artifact/URqSXfGXqP5e2HVo5YScsG>), rows Por qué
+B+C, Vacío combinado A and Final A; *ronda 3* (<https://claude.ai/artifact/2ZGKuHbBgtJcio48Ctf6Tk>),
+the pill V2; and *ronda 4* (<https://claude.ai/artifact/EYvLLqbfm9Eum6vr1QyV5x>), option 1 at
+the default size and at AX1. Product context: `CONTEXT.md` → **Leftovers**, **Cocinado**,
+**Card**, **Mundo**, **Clave de compra**, **Básico de despensa**; ADR 0003, 0008, 0015, 0017,
+0018.
+Built in #180 (the KartaCore contract) and #181 (iOS).
+
+All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched:
+
+| PNG | Board |
+|---|---|
+| `leftovers-deck.png` | the Leftovers deck: the Card with its leftovers pill |
+| `leftovers-deck-ax1.png` | the same Card at Dynamic Type AX1: the pill on its own line |
+| `leftovers-reverse-note.png` | the reverse opened from Leftovers, with the note |
+| `leftovers-see-toast.png` | For You after an explicit Cocinado: the toast with **See** |
+| `leftovers-empty-nothing-cooked.png` | nothing cooked yet |
+| `leftovers-empty-out-of-window.png` | nothing to reuse: the last cook is out of the window |
+| `leftovers-empty-no-match.png` | nothing to reuse: no other recipe shares an ingredient |
+| `leftovers-empty-filters.png` | the applied filters leave no leftover recipe |
+| `leftovers-last-card.png` | the last card, at rest: nothing behind it |
+| `leftovers-last-card-bounce.png` | trying to pass the last card: the bounce and the hint |
+
+Leftovers is drawn as free. Whether it is premium is open in #153 (question 5); if it is, the
+locked Mundo needs its own round.
+
+### What feeds it
+
+- Only **explicit** Cocinados: the answer on the finish card, *Good* and **(default)** *Not
+  great* alike (ADR 0008). An inferred Cocinado never feeds Leftovers. There is no inventory.
+- Only Cocinados inside the window, **(default)** 7 days, against the injected clock (ADR 0003).
+- What a cooked recipe leaves over: its ingredients, compared by **Clave de compra** (ADR 0017,
+  #173) as sets (#48), minus the **Básicos de despensa** **(default)**: salt, pepper, cooking
+  oils, flour, sugar and yeast, the same closed list as the shopping list (#11).
+- A recipe is offered when it shares at least one leftover Clave de compra. It must be reviewed,
+  free of every Intolerancia (or in the Baraja segura before answering, ADR 0015) and pass the
+  applied Filtros. **(Default)** It is not offered if it was cooked (explicitly or inferred)
+  inside the window, and recipes in the Cookbook are offered like any other.
+- Order: most shared Claves de compra first; ties follow Gusto and the Hogar as in For You
+  (ADR 0016, 0006). There is no Frontera (*The last card*).
+
+### The deck
+
+Origen A: the Leftovers Mundo is the signed deck as it is (*The deck*), with the Mundo pill on
+**Leftovers**. There is nothing above the deck and nothing to choose: every explicit Cocinado
+in the window feeds it at once. The Filtros and the Intolerancias are the same as in For You
+(*The feed header*), and **Show N recipes** counts Leftovers' recipes when the panel is opened
+here.
+
+### The leftovers pill on the Card
+
+Por qué C, pill V2, option 1 (`leftovers-deck.png`). In the Leftovers Mundo only, the Card gets
+one more chip after the servings and the difficulty, in the same row. The rest of the Card,
+**the photo included, keeps the size of the signed Card** (ADR 0018). In For You, in the
+cookbook and on the reverse the Card does not change.
+
+- **Look:** a pill, not a chip, so it never reads as a key: `card` fill, a 1.5 pt border in the
+  suit's `chipInk`, radius 999, the chips' height, 9 pt padding on the left and 13 pt on the
+  right. A 16 pt bowl icon (the Leftovers icon of the Mundo menu, stroke 1.9) and, 6 pt after
+  it, the text in Figtree 800 13.5 pt, suit `chipInk`. No fill colour, no edge, no shadow.
+- **Text:** the short name of the main leftover ingredient and, when there are more, ` + N`
+  for the rest: *potatoes + 1*, *eggs*. There is no "Uses your". ` + N` never splits from the
+  name.
+  - The **main** ingredient is **(default)** the first leftover one in the recipe's order; when
+    two cooked recipes leave the same one over, it counts once.
+  - The **short name** comes with the Clave de compra (`yukon-gold-potatoes` → *potatoes*); it
+    is catalog data reviewed by the editor, in lowercase except proper names (*Parmigiano*).
+- **It must fit beside the chips.** The rule is not a character cap: the catalog validator
+  checks that, at the default text size, the pill with its longest possible ` + N` fits in the
+  row next to that recipe's own servings and difficulty chips. Measured in round 4 with the
+  seed: the gap is 163 pt next to *Serves 6* and *Medium*, and the widest seed pill,
+  *coconut cream + 2*, is 161 pt.
+- **When it does not fit** (any size from AX1 on, `leftovers-deck-ax1.png`, or a recipe the
+  validator let through): it goes on its own line, 8 pt under the chips, left-aligned, and
+  wraps between words. Only then does the photo give way. Text follows Dynamic Type with the
+  chips' role; the pill keeps its border and grows with its text (radius 24 when it wraps).
+
+### The note on the reverse
+
+Por qué B (`leftovers-reverse-note.png`). On a reverse opened from Leftovers, one note sits
+under the title block: `paper` fill, radius 14, 10 × 12 pt padding, a 20 pt bowl icon in the
+suit's `chipInk` and the text in Figtree 800 14 / 19 pt `ink`: *Uses the potatoes and onion
+left from your Spanish Tortilla* (every leftover short name, joined with commas and *and*).
+With two cooked recipes: *…left from your Spanish Tortilla and Pesto Pasta*. **(Default)** With
+three or more: *…left from what you cooked this week*. The ingredient rows do not change. A
+reverse opened anywhere else has no note.
+
+### After cooking: the See toast
+
+Entrada C (`leftovers-see-toast.png`). When a session ends with an explicit Cocinado and that
+Cocinado puts at least one recipe in Leftovers, For You shows the signed toast of *Save and the
+cookbook* 12 pt below the header row, 22 pt from the sides: the 22 pt bowl icon in `card`,
+**3 ideas for your leftovers** (*1 idea…*) over *From the potatoes, eggs and onion of your
+Spanish Tortilla*, and a cream **See** pill. **See** switches the Mundo to Leftovers, at the
+top. It leaves on its own after 5 s. The session itself does not change.
+
+- **(Default)** It shows once per cooked recipe, and never again after three dismissals in a
+  row without tapping **See**, like the share card.
+- It uses the same place as the toast of a recipe no longer on Karta (*Share*); they never show
+  together, and that one wins.
+
+### Empty states
+
+They use the signed form of *The feed header* → *Empty states*, with the Mundo pill on
+**Leftovers**: the 64 pt bowl icon in `emptyIcon`, the title, one line, and **Go to For You**
+(primary), which switches the Mundo.
+
+- **Nothing cooked yet** (`leftovers-empty-nothing-cooked.png`, Vacío A): no explicit Cocinado,
+  ever. *Cook a recipe and tell us how it turned out. Recipes that use what's left over show up
+  here.*
+- **Nothing to reuse right now** (Vacío combinado A): there are explicit Cocinados, but none in
+  the window, or none of the ones in the window shares an ingredient with another offered
+  recipe. One title; the line names the most recent cooked recipe:
+  - out of the window (`leftovers-empty-out-of-window.png`): *You last cooked Spanish Tortilla 9
+    days ago. Leftovers looks back 7 days.*
+  - nothing shares an ingredient (`leftovers-empty-no-match.png`): *No other recipe uses what
+    your Spanish Tortilla left over.* With two: *…what your Spanish Tortilla and Pesto Pasta
+    left over.*
+- **Nothing fits these filters** (`leftovers-empty-filters.png`): the signed state as it is,
+  only when Leftovers would offer recipes without the Filtros. The line starts *No leftover
+  recipe…*.
+- **(Default)** Which wins: the profile state (ADR 0004) > nothing cooked yet > nothing to reuse
+  > nothing fits these filters.
+
+### The last card
+
+Final A. Leftovers is short and has no Frontera **(default)**: its cards count as Vistas, but
+it never hides what was seen and never ends on a card without a suit.
+
+- **At rest** (`leftovers-last-card.png`): the last recipe shows with no cards behind it, so
+  the end of the deck is visible.
+- **Trying to pass it** (`leftovers-last-card-bounce.png`): the card follows the finger and
+  comes back with the deck's rebound (ADR 0012), with a light haptic. Under the deck, 40 pt above
+  the bottom of the screen, *That's all your leftovers* with a 16 pt bowl icon (Figtree 700 13 pt
+  `inkMuted`) fades in, and out after 3 s, like the deck hint. Swiping down still goes back.
+  **Reduce Motion:** no movement, the hint only.
+- **(Default)** *For You igual*: when For You runs out of already-seen recipes too, its last card
+  behaves the same, with *You've seen every recipe*. This is not the Frontera: For You goes on
+  past *you're all caught up* (ADR 0004), whose look is still to be drawn.
+
+### Rules by default
+
+The founder did not answer these; they are signed as proposed and can be reopened:
+
+1. The window is 7 days.
+2. *Not great* is an explicit Cocinado and feeds Leftovers like *Good*.
+3. The Básicos de despensa (salt, pepper, cooking oils, flour, sugar, yeast) never count as
+   left over.
+4. Ingredients are compared by Clave de compra, which also carries the short name of the pill.
+5. The main ingredient is the first leftover one in the recipe's order.
+6. Leftovers cards count as Vistas; Leftovers has no Frontera and ends on its last card.
+7. Any safe recipe not cooked in the window can be offered, Cookbook recipes included.
+8. The empty states win in the order above.
+9. The See toast shows once per cooked recipe and stops after three dismissals in a row.
+10. *For You igual*: For You's absolute end behaves like Leftovers' last card.
+
+### Open decisions
+
+- #153, question 5: whether Leftovers is premium. Drawn as free.
+- Not drawn: Leftovers before the Intolerancias are answered, with the Baraja segura banner
+  over the deck or over an empty state (#10). Proposed: the banner as signed, and the deck or the
+  empty state 14 pt below it.
+- Not decided: whether an optional ingredient of a cooked recipe counts as left over. Proposed:
+  only the required ones, since an optional one may never have been bought.
+- Not drawn: VoiceOver for the pill (proposed: read as *Uses your potatoes and 1 other
+  ingredient*) and for the last-card hint.
 
 ## Premium and the paywall
 

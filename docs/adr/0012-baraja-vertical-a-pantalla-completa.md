@@ -20,7 +20,8 @@ de los reels, que la usuaria ya conoce, pero con foto y no con vídeo.
 - La metáfora de baraja vive en la transición y el relieve (la carta siguiente asoma debajo),
   no en la dirección del gesto. Es trabajo de interfaz a medida, no un paginado estándar.
 - La Card da claves para decidir si abrir, no describe: sin Etiquetas ni ingredientes, y
-  sin botón de Guardar; guardar ocurre sólo tras la Apertura.
+  sin botón de Guardar; guardar ocurre sólo tras la Apertura. Enmendado por el ADR 0018: en el
+  Mundo Leftovers la Card nombra el ingrediente que sobra.
 - Una Vista en el Feed es una Card que llegó a asentarse en pantalla.
 - La Card se manipula, no se reproduce: sigue al dedo, vuelve con un rebote si no se supera
   el umbral y sale lanzada con la inercia del gesto si se supera. Un solo eje, el vertical, para que
