@@ -3,7 +3,7 @@
 Simulator: iPhone 17 (iOS simulator runtime from Xcode 27.0 RC;
 `/Applications/Xcode-27.0-RC.app`).
 Xcode: 27.0 (Release Candidate).
-Tested commit: `a4a08c8bfa5c5145b6d5b0d29fc776b831841856` (the shots were
+Tested commit: `6ba0e162e1d0774ce5cf494fd6e9823f283058d9` (the shots were
 taken against that build; this README line was filled in afterwards).
 
 Every state is driven by `KARTA_SEED=<name>` (launched via
