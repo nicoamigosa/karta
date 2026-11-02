@@ -67,6 +67,9 @@ struct FeedHeader: View {
     /// Reports the filter button's horizontal centre in
     /// `FeedLayout.coordinateSpace` so the panel can aim its pointer (#6).
     var onFilterButtonCenter: ((CGFloat) -> Void)? = nil
+    /// Reports each header control's frame in `FeedLayout.coordinateSpace`
+    /// so the tour spotlight can ring it (#172).
+    var onControlFrames: ((TourControl, CGRect) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 0) {
@@ -83,7 +86,8 @@ struct FeedHeader: View {
                     appliedCount: store.state.appliedFilterCount,
                     pressed: filterPressed,
                     action: onFilter,
-                    onCenter: onFilterButtonCenter
+                    onCenter: onFilterButtonCenter,
+                    onFrame: { onControlFrames?(.filters, $0) }
                 )
 
                 MundoPill(
@@ -91,6 +95,11 @@ struct FeedHeader: View {
                     pressed: mundoMenuOpen,
                     action: onToggleMundoMenu
                 )
+                .onGeometryChange(for: CGRect.self) { geometry in
+                    geometry.frame(in: .named(FeedLayout.coordinateSpace))
+                } action: { frame in
+                    onControlFrames?(.world, frame)
+                }
 
                 Button(action: onOpenCookbook) {
                     CookbookBoxGlyph(ink: KartaDesign.ColorToken.ink)
@@ -114,6 +123,11 @@ struct FeedHeader: View {
                         }
                 }
                 .accessibilityLabel("Open your cookbook")
+                .onGeometryChange(for: CGRect.self) { geometry in
+                    geometry.frame(in: .named(FeedLayout.coordinateSpace))
+                } action: { frame in
+                    onControlFrames?(.cookbook, frame)
+                }
             }
         }
         .frame(height: KartaDesign.space.headerRowHeight)
@@ -130,6 +144,8 @@ private struct FilterButton: View {
     let action: () -> Void
     /// Reports the button's horizontal centre in `FeedLayout`'s space.
     var onCenter: ((CGFloat) -> Void)? = nil
+    /// Reports the button's full frame in `FeedLayout`'s space.
+    var onFrame: ((CGRect) -> Void)? = nil
 
     var body: some View {
         Button(action: action) {
@@ -199,6 +215,11 @@ private struct FilterButton: View {
             geometry.frame(in: .named(FeedLayout.coordinateSpace)).midX
         } action: { center in
             onCenter?(center)
+        }
+        .onGeometryChange(for: CGRect.self) { geometry in
+            geometry.frame(in: .named(FeedLayout.coordinateSpace))
+        } action: { frame in
+            onFrame?(frame)
         }
     }
 }

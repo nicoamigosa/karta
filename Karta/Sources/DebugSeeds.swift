@@ -11,7 +11,10 @@ enum DebugSeeds {
     @MainActor
     static func store() -> KartaStore {
         guard let name = ProcessInfo.processInfo.environment["KARTA_SEED"] else {
-            var plain = KartaState(
+            // No seed: a real launch restores the persisted user snapshot so
+            // committed answers (and `hasShownFullTour`) survive relaunch
+            // (#172). Test hosts always build fresh state.
+            var plain = restoredState() ?? KartaState(
                 safetyProfile: SafetyProfile(intolerances: [])
             )
             plain.shareBaseURL = ShareLinks.baseURL
@@ -60,6 +63,52 @@ enum DebugSeeds {
             break
         }
         return store
+    }
+
+    /// Restore the user snapshot for a production launch; nil in test hosts
+    /// (XCTest/Swift Testing) so tests never inherit real persisted state.
+    private static func restoredState() -> KartaState? {
+        let isTestHost = NSClassFromString("XCTestCase") != nil
+            || ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        guard !isTestHost else { return nil }
+        let recipes = (try? SeedResourceAdapter().loadRecipes()) ?? []
+        return UserSnapshotStorage.restoreState(catalog: recipes)
+    }
+
+    /// Onboarding seeds act after the shell sends `.coldLaunch` (#172), which
+    /// resets `panel`/`tourStop` itself — so the states the boards show are
+    /// walked here through store actions, like the cooking seeds.
+    @MainActor
+    static func afterColdLaunch(into store: KartaStore) {
+        switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
+        case "onboarding-tour-world":
+            store.send(.onboarding(.tourDelayElapsed))
+        case "onboarding-tour-filters":
+            store.send(.onboarding(.tourDelayElapsed))
+            store.send(.onboarding(.tourDelayElapsed))
+        case "onboarding-banner":
+            // The Baraja segura with its banner, tour over.
+            store.send(.onboarding(.tourTap))
+            store.send(.onboarding(.tourTap))
+        case "onboarding-panel-empty":
+            store.send(.onboarding(.tourTap))
+            store.send(.onboarding(.filterButtonTapped))
+        case "onboarding-panel":
+            store.send(.onboarding(.tourTap))
+            store.send(.onboarding(.filterButtonTapped))
+            store.send(.onboarding(.toggleFirstRunAllergen(.dairy)))
+            store.send(.onboarding(.chooseFirstRunHousehold(4)))
+        case "onboarding-panel-none":
+            store.send(.onboarding(.tourTap))
+            store.send(.onboarding(.filterButtonTapped))
+            store.send(.onboarding(.chooseFirstRunHousehold(2)))
+        case "filters-open", "filters-intolerance", "filters-household":
+            // Panel openness is now store state: the filter button opens the
+            // full panel once answered.
+            store.send(.onboarding(.filterButtonTapped))
+        default:
+            break
+        }
     }
 
     /// Whether the seed asks the feed to open with the Mundo menu already
@@ -250,21 +299,15 @@ enum DebugSeeds {
         }
     }
 
-    /// Whether the seed asks the feed to open with the filter panel already
-    /// down (#6's `feed-filters*.png` boards): panel openness is shell state,
-    /// like the Mundo menu's.
-    static var opensFilterPanel: Bool {
-        ["filters-open", "filters-intolerance"]
-            .contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
-    }
-
     /// The allergen the panel reports as just saved (`filters-intolerance`,
     /// board `feed-filters-intolerance.png`): the confirmation line is view
     /// state, so the seed supplies it directly.
     static var panelIntoleranceNote: Allergen? {
-        ProcessInfo.processInfo.environment["KARTA_SEED"] == "filters-intolerance"
-            ? .gluten
-            : nil
+        switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
+        case "filters-intolerance": return .gluten
+        case "filters-household": return .dairy
+        default: return nil
+        }
     }
 
     /// The draft the panel opens with when the seed draws one (`filters-open`,
@@ -438,6 +481,22 @@ enum DebugSeeds {
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: []),
                 filterDraft: FilterDraft(maxMinutes: 30, practicalTags: [.onePan])
+            )
+        case "onboarding", "onboarding-tour-world", "onboarding-tour-filters",
+             "onboarding-banner", "onboarding-panel-empty", "onboarding-panel",
+             "onboarding-panel-none":
+            // Unanswered: the Baraja segura offers only reviewed recipes with
+            // no allergen, so the safety profile stands at all five — the
+            // same shape `KartaState(snapshot:)` restores (#172).
+            return KartaState(
+                safetyProfile: SafetyProfile(intolerances: Set(Allergen.allCases))
+            )
+        case "filters-household":
+            // The full panel with a Hogar saved (board
+            // `feed-filters-household.png`): dairy declared, cooking for 4.
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.dairy], householdSize: 4),
+                safetyProfile: SafetyProfile(intolerances: [.dairy])
             )
         case "filters-open":
             // The panel editing an unapplied 30 min + one-pan draft over the
@@ -834,11 +893,12 @@ enum DebugSeeds {
     }
 
     private static func onboarded(
-        intolerances: Set<Allergen> = []
+        intolerances: Set<Allergen> = [],
+        householdSize: Int = 2
     ) -> OnboardingState {
         OnboardingState(
             intoleranceAnswer: .answered(intolerances),
-            householdSize: 2
+            householdSize: householdSize
         )
     }
 }

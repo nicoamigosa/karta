@@ -56,7 +56,8 @@ struct FilterPanelView: View {
     private var presentation: FilterPanelPresentation {
         FilterPanelPresentation(
             draft: draft,
-            safetyProfile: store.state.safetyProfile
+            safetyProfile: store.state.safetyProfile,
+            householdSize: store.state.onboarding.householdSize
         )
     }
 
@@ -100,6 +101,7 @@ struct FilterPanelView: View {
                 VStack(alignment: .leading, spacing: KartaDesign.space.filterBlockGap) {
                     titleRow
                     neverShowMeBlock
+                    cookingForSection
                     readyInSection
                     difficultySection
                     practicalSection
@@ -255,6 +257,38 @@ struct FilterPanelView: View {
         }
     }
 
+    /// COOKING FOR sits between NEVER SHOW ME and READY IN once the
+    /// Intolerancias are answered (#172). The Hogar is saved as she taps —
+    /// like Intolerancias, it never waits for the draft.
+    private var cookingForSection: some View {
+        VStack(alignment: .leading, spacing: KartaDesign.space.filterHeadingGap) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("COOKING FOR")
+                    .font(KartaDesign.FontToken.filterHeading())
+                    .tracking(KartaDesign.type.filterHeadingTracking)
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                Spacer(minLength: 0)
+                Text("PEOPLE")
+                    .font(KartaDesign.FontToken.filterHeading())
+                    .tracking(KartaDesign.type.filterHeadingTracking)
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+            }
+            FilterTrack(
+                multiChoice: false,
+                stacked: stacksTracks,
+                options: presentation.cookingFor.map { option in
+                    FilterTrack.Option(label: option.label, isOn: option.isOn) {
+                        store.send(.onboarding(.setHouseholdSize(option.value)))
+                    }
+                }
+            )
+            Text(presentation.householdLine)
+                .font(KartaDesign.FontToken.sheetCount())
+                .foregroundStyle(KartaDesign.ColorToken.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var readyInSection: some View {
         filterSection(
             heading: "READY IN",
@@ -342,7 +376,7 @@ struct FilterPanelView: View {
 /// and never truncates: when the widest label does not fit its equal share —
 /// or from AX1 — the track takes its stacked form: one full-width 48 pt row
 /// per option, with a check on an on multi-choice row.
-private struct FilterTrack: View {
+struct FilterTrack: View {
     struct Option {
         let label: String
         let isOn: Bool

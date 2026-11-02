@@ -61,6 +61,15 @@ enum KartaDesign {
             blue: 18 / 255,
             opacity: 0.55
         )
+
+        /// Scrim under the tour spotlight (tokens.json `tourScrim`:
+        /// `inkEdge` at 52 %).
+        static let tourScrim = Color(
+            red: 43 / 255,
+            green: 13 / 255,
+            blue: 8 / 255,
+            opacity: 0.52
+        )
     }
 
     enum FontToken {
@@ -270,6 +279,47 @@ enum KartaDesign {
         /// The filter panel's "Filters" title (Fraunces 700, 24 → title2).
         static func filterPanelTitle() -> Font {
             display(size: 24, relativeTo: .title2, weight: 700)
+        }
+
+        /// Baraja segura banner line (Figtree 700, 13 → footnote).
+        static func bannerLine() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
+        /// The banner's Set mine label (Figtree 800, 13 → footnote).
+        static func bannerAction() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.heavy)
+        }
+
+        /// Tour bubble title (Fraunces 700, 19 → title3).
+        static func tourTitle() -> Font {
+            display(size: 19, relativeTo: .title3, weight: 700)
+        }
+
+        /// Tour bubble line (Figtree 700, 15/20 → body).
+        static func tourLine() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.bold)
+        }
+
+        /// Tour bubble step, e.g. 1 OF 3 (Figtree 800, 11, tracking 1.2 → caption2).
+        static func tourStep() -> Font {
+            .custom("Figtree", size: 11, relativeTo: .caption2)
+                .weight(.heavy)
+        }
+
+        /// The tour's skip line (Figtree 700, 14 → footnote).
+        static func tourSkip() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
+        /// Line under the first-run title (Figtree 600, 15/22 → body).
+        static func firstRunSubtitle() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.semibold)
         }
 
         /// Track section headings and their right-hand note (Figtree 800, 12).
@@ -573,6 +623,27 @@ enum KartaDesign {
         /// Diagonal of the 12 pt pointer square: the peak's base width and
         /// twice its height (~17 pt).
         static let panelPeak: CGFloat = panelPointer * CGFloat(2).squareRoot()
+        // The Baraja segura banner and the tour (#172).
+        static let bannerTopGap: CGFloat = 8
+        static let bannerPaddingY: CGFloat = 9
+        static let bannerPaddingX: CGFloat = 12
+        static let bannerGap: CGFloat = 9
+        static let bannerRadius: CGFloat = 14
+        static let bannerShield: CGFloat = 18
+        /// The deck's top gap when the banner is up (20 without it).
+        static let bannerToDeck: CGFloat = 14
+        static let tourHoleOutset: CGFloat = 6
+        static let tourRingWidth: CGFloat = 3
+        static let tourBubbleWidth: CGFloat = 230
+        static let tourBubbleTopGap: CGFloat = 14
+        static let tourBubbleRadius: CGFloat = 16
+        static let tourBubblePaddingY: CGFloat = 12
+        static let tourBubblePaddingX: CGFloat = 14
+        static let tourEdgeMargin: CGFloat = 22
+        static let tourSkipBottom: CGFloat = 48
+        static let tourMoveDuration: TimeInterval = 0.3
+        static let tourPulsePeriod: TimeInterval = 1.4
+        static let tourPulseScale: CGFloat = 1.45
         /// Empty-state side margin (36 pt per *Empty states*).
         static let emptyStateX: CGFloat = 36
         static let sheetTopRadius: CGFloat = 26
