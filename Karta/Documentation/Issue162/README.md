@@ -9,7 +9,7 @@ and read back before shooting.
 
 Environment: iPhone 17 simulator, iOS 27.0
 (E0224A22-F874-4B8C-83FB-EB084492C493), Xcode 27.0 (27A266a), tested at
-commit `4ec85c0` on `ralph/issue-162`. Every capture is a real app
+commit `b4f6a49` on `ralph/issue-162`. Every capture is a real app
 launch seeded with `SIMCTL_CHILD_KARTA_SEED=<name>`; premium seeds are
 applied by `DebugSeeds.afterPremiumLaunch` after
 `PremiumController.start()` so the launch-time entitlement report does
@@ -31,6 +31,15 @@ not overwrite them.
 | premium-cookbook-trial | `premium-cookbook-trial` | "Free trial until Nov 7 · Manage" |
 | premium-cookbook-premium | `premium-cookbook-premium` | "Premium · Manage" |
 | premium-cookbook-full-downgraded | `premium-cookbook-full-downgraded` | K3 after premium expired: "Your cookbook keeps all 23 recipes on the free plan" |
+
+K3 → paywall transition (`premium-k3-paywall-transition` seed, timed
+frames — `sim-premium-k3-*.png`):
+
+| Frame | What it proves |
+|---|---|
+| `sim-premium-k3-before-paywall.png` | K3 sheet: fan, "Your cookbook is full", "7 OF 7 SAVED" |
+| `sim-premium-k3-grown-paywall.png` | The SAME sheet grown into the paywall: fan and count kept, the rest cross-faded |
+| `sim-premium-k3-closed-bare.png` | After the paywall closes without a purchase: bare reverse, no K3 back again |
 
 Notes:
 
