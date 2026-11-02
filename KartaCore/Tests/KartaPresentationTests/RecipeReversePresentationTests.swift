@@ -128,7 +128,8 @@ struct RecipeReversePresentationTests {
                 Ingredient(
                     id: "optional-garnish",
                     name: "Fresh basil",
-                    quantity: "2 leaves",
+                    structuredQuantity: .unmeasured(.fewSprigs),
+                    purchaseKey: "basil", aisle: .produce,
                     isOptional: true,
                     allergens: []
                 ),

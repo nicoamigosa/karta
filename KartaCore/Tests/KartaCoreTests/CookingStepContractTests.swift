@@ -16,11 +16,13 @@ struct CookingStepContractTests {
             "ingredients": [["ingredientID": "eggs", "quantity": stepQuantity]],
         ]
         step["photo"] = photo
+        var structuredQuantity: [String: String] = ["amount": "2"]
+        if quantity != "2" { structuredQuantity["approximateWeight"] = String(quantity.dropFirst(2)) }
         let object: [String: Any] = [
             "id": "eggs", "name": "Eggs", "heroPhotoURL": "local:eggs",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "breakfast", "contains": [],
-            "ingredients": [["id": "eggs", "name": "Large eggs", "quantity": quantity]],
+            "ingredients": [["id": "eggs", "name": "Large eggs", "quantity": structuredQuantity, "purchaseKey": "large-egg", "aisle": "dairy-and-eggs"]],
             "steps": [step],
         ]
         return try JSONDecoder().decode(Recipe.self, from: JSONSerialization.data(withJSONObject: object))
@@ -65,7 +67,7 @@ struct CookingStepContractTests {
 
     @Test("Cantidad compares whole words, allowing a partial match")
     func quantityAllowsPartialWord() throws {
-        #expect(try decode(quantity: "2 largely", stepQuantity: "1 egg").ingredients[0].quantity == "2 largely")
+        #expect(try decode(quantity: "2 largely", stepQuantity: "1 egg").ingredients[0].quantity == "2 (largely)")
     }
 
     @Test("A Paso's Cantidad also rejects a word from its ingredient's name",

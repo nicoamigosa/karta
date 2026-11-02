@@ -67,7 +67,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/multiline-summary.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "tomato", "name": "Tomato", "quantity": "2" }],
+            "ingredients": [{ "id": "tomato", "name": "Tomato", "quantity": {"amount": "2"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{ "detail": "Cook the tomato", "summary": "Cook the tomato\\nuntil soft" }]
         }
         """
@@ -85,7 +85,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/dangling-step-ingredient.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{
                 "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "sugar", "quantity": "1 tbsp" }]
@@ -114,7 +114,7 @@ struct RecipeStepDecodingTests {
         {
             "id": "r1", "name": "Mix", "heroPhotoURL": "https://img.karta.app/mix.jpg", "totalMinutes": 10,
             "difficulty": "easy", "servings": 4, "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [
                 { "detail": "Chop the onion", "summary": "Chop the onion." },
                 { "detail": "Fry it", "summary": "Fry the onion", "timerSeconds": 120 }
@@ -137,8 +137,8 @@ struct RecipeStepDecodingTests {
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
             "ingredients": [
-                { "id": "flour", "name": "Flour", "quantity": "1 cup" },
-                { "id": "butter", "name": "Butter", "quantity": "1 tbsp", "optional": true, "allergens": ["dairy"] }
+                { "id": "flour", "name": "Flour", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" },
+                { "id": "butter", "name": "Butter", "quantity": {"amount": "1", "unit": "tbsp"}, "purchaseKey": "test-product", "aisle": "other", "optional": true, "allergens": ["dairy"] }
             ],
             "steps": [{
                 "detail": "Mix in the butter", "summary": "Mix the batter",
@@ -160,7 +160,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/zero-step-duration.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{ "detail": "Wait", "summary": "Wait.", "timerSeconds": 0 }]
         }
         """
@@ -188,7 +188,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/missing-step-detail.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{ "detail": "   ", "summary": "Stir" }]
         }
         """
@@ -215,7 +215,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/missing-clip-id.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "x", "name": "x", "quantity": "1" }],
+            "ingredients": [{ "id": "x", "name": "x", "quantity": {"amount": "1"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{ "detail": "Cook", "summary": "Cook.", "clipID": " " }]
         }
         """
@@ -242,7 +242,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/empty-step-ingredient-name.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{
                 "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "  ", "quantity": "1 cup" }]
@@ -272,7 +272,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/empty-step-ingredient-quantity.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{
                 "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "flour", "quantity": "  " }]
@@ -303,7 +303,7 @@ struct RecipeStepDecodingTests {
             "heroPhotoURL": "https://img.karta.app/zero-step-ingredient-quantity.jpg",
             "totalMinutes": 10, "difficulty": "easy", "servings": 2,
             "primaryCourse": "dinner", "additionalCourses": [], "diets": [], "practicalTags": [], "contains": [],
-            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": "1 cup" }],
+            "ingredients": [{ "id": "flour", "name": "Flour", "quantity": {"amount": "1", "unit": "cup"}, "purchaseKey": "test-product", "aisle": "other" }],
             "steps": [{
                 "detail": "Cook", "summary": "Cook.",
                 "ingredients": [{ "ingredientID": "flour", "quantity": "0 cups" }]

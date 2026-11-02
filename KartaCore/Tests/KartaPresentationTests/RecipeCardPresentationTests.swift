@@ -53,7 +53,7 @@ struct RecipeCardPresentationTests {
             primaryCourse: .breakfast,
             ingredients: [
                 Ingredient(name: "flour", quantity: "1 1/2 cups"),
-                Ingredient(name: "salt", quantity: "as needed"),
+                Ingredient(id: "salt", name: "salt", structuredQuantity: .unmeasured(.forFrying), purchaseKey: "salt", aisle: .spices),
             ],
             steps: ["Mix"],
             allergenReview: .reviewed([])
@@ -67,7 +67,7 @@ struct RecipeCardPresentationTests {
         #expect(card.difficultyLabel == "intermediate")
         #expect(card.servingsLabel == "Serves 1")
         #expect(card.primaryCourse == .breakfast)
-        #expect(card.ingredientQuantities == ["1 1/2 cups", "as needed"])
+        #expect(card.ingredientQuantities == ["1 1/2 cups", "as needed for frying"])
     }
 
     @Test("Card rank caps durations over an hour while prose keeps exact time")

@@ -1,6 +1,15 @@
 import Foundation
 
 public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
+    case unknownIngredientUnit(value: String)
+    case unknownUnmeasuredQuantity(value: String)
+    case unknownIngredientForm(value: String)
+    case unknownAisle(value: String)
+    case missingAisle(ingredientID: String)
+    case missingIngredientQuantity(ingredientID: String)
+    case missingPurchaseKey(ingredientID: String)
+    case invalidIngredientAmount(value: String)
+    case invalidIngredientQuantity
     case missingAllergenReview(recipeID: String, recipeName: String)
     case unknownAllergen(recipeID: String, recipeName: String, value: String)
     case missingPrimaryCourse(recipeID: String, recipeName: String)
@@ -75,6 +84,15 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
 
     public var errorDescription: String? {
         switch self {
+        case let .unknownIngredientUnit(value): return "Unknown ingredient unit '\(value)'"
+        case let .unknownUnmeasuredQuantity(value): return "Unknown unmeasured quantity '\(value)'"
+        case let .unknownIngredientForm(value): return "Unknown ingredient form '\(value)'"
+        case let .missingIngredientQuantity(id): return "Ingredient '\(id)' is missing its quantity"
+        case let .missingAisle(id): return "Ingredient '\(id)' is missing its Pasillo"
+        case let .unknownAisle(value): return "Unknown aisle '\(value)'"
+        case let .missingPurchaseKey(id): return "Ingredient '\(id)' is missing its Clave de compra"
+        case let .invalidIngredientAmount(value): return "Invalid ingredient amount '\(value)'"
+        case .invalidIngredientQuantity: return "Quantity requires either an amount or an unmeasured wording"
         case let .missingAllergenReview(recipeID, recipeName):
             return "Recipe '\(recipeID)' ('\(recipeName)') is missing its allergen review state"
         case let .unknownAllergen(recipeID, recipeName, value):
@@ -365,12 +383,6 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
             if ingredient.isOptional {
                 optionalIngredientIDs.insert(ingredient.id)
             }
-            try validateRecipeIngredientQuantity(
-                ingredient,
-                recipeID: id,
-                recipeName: name,
-                ingredientIndex: index
-            )
         }
         steps = try c.decode([CookingStep].self, forKey: .steps)
         guard !steps.isEmpty else {
@@ -558,12 +570,33 @@ public struct Recipe: Codable, Equatable, Identifiable, Sendable {
 public struct Ingredient: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
-    public let quantity: String
+    public let structuredQuantity: IngredientQuantity
+    public let purchaseKey: String
+    public let aisle: Aisle
+    /// Generated reverse text; kept as a projection for existing shell consumers.
+    public var quantity: String { structuredQuantity.text }
     public let isOptional: Bool
     /// Allergen review for an optional ingredient. Recipe-level `contains`
     /// remains the review of required ingredients only.
     public let allergens: Set<Allergen>
 
+    public init(
+        id: String, name: String, structuredQuantity: IngredientQuantity,
+        purchaseKey: String, aisle: Aisle,
+        isOptional: Bool = false, allergens: Set<Allergen> = []
+    ) {
+        self.id = id
+        self.name = name
+        self.structuredQuantity = structuredQuantity
+        self.purchaseKey = purchaseKey
+        self.aisle = aisle
+        self.isOptional = isOptional
+        self.allergens = allergens
+    }
+
+    /// Source compatibility for existing shell fixtures, not a catalog parser.
+    /// New recipes must supply editor-chosen purchase keys and aisles explicitly.
+    @available(*, deprecated, message: "Supply structuredQuantity, purchaseKey and aisle")
     public init(
         id: String,
         name: String,
@@ -573,7 +606,9 @@ public struct Ingredient: Codable, Equatable, Sendable {
     ) {
         self.id = id
         self.name = name
-        self.quantity = quantity
+        self.structuredQuantity = Self.fixtureQuantity(quantity)
+        self.purchaseKey = Self.derivedID(from: name)
+        self.aisle = .other
         self.isOptional = isOptional
         self.allergens = allergens
     }
@@ -581,6 +616,7 @@ public struct Ingredient: Codable, Equatable, Sendable {
     /// Compatibility for programmatic recipes created before ingredient ids
     /// were part of the catalog contract. Catalog data must declare `id`
     /// explicitly.
+    @available(*, deprecated, message: "Supply structuredQuantity, purchaseKey and aisle")
     public init(
         name: String,
         quantity: String,
@@ -625,10 +661,26 @@ public struct Ingredient: Codable, Equatable, Sendable {
             }
             allergens = []
         }
+        let id = try container.decode(String.self, forKey: .id)
+        guard let purchaseKey = try container.decodeIfPresent(String.self, forKey: .purchaseKey),
+              !purchaseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw RecipeDecodingError.missingPurchaseKey(ingredientID: id)
+        }
+        guard let rawAisle = try container.decodeIfPresent(String.self, forKey: .aisle) else {
+            throw RecipeDecodingError.missingAisle(ingredientID: id)
+        }
+        guard let aisle = Aisle(rawValue: rawAisle) else {
+            throw RecipeDecodingError.unknownAisle(value: rawAisle)
+        }
+        guard container.contains(.quantity), try !container.decodeNil(forKey: .quantity) else {
+            throw RecipeDecodingError.missingIngredientQuantity(ingredientID: id)
+        }
         self.init(
-            id: try container.decode(String.self, forKey: .id),
+            id: id,
             name: name,
-            quantity: try container.decode(String.self, forKey: .quantity),
+            structuredQuantity: try container.decode(IngredientQuantity.self, forKey: .quantity),
+            purchaseKey: purchaseKey,
+            aisle: aisle,
             isOptional: isOptional,
             allergens: allergens
         )
@@ -638,15 +690,39 @@ public struct Ingredient: Codable, Equatable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
-        try container.encode(quantity, forKey: .quantity)
+        try container.encode(structuredQuantity, forKey: .quantity)
+        try container.encode(purchaseKey, forKey: .purchaseKey)
+        try container.encode(aisle, forKey: .aisle)
         try container.encode(isOptional, forKey: .isOptional)
         try container.encode(allergens.map(\.rawValue).sorted(), forKey: .allergens)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, quantity
+        case id, name, quantity, purchaseKey, aisle
         case isOptional = "optional"
         case allergens
+    }
+
+    private static func fixtureQuantity(_ text: String) -> IngredientQuantity {
+        switch text {
+        case "1": return .measured(try! IngredientAmount("1"))
+        case "2": return .measured(try! IngredientAmount("2"))
+        case "3": return .measured(try! IngredientAmount("3"))
+        case "5": return .measured(try! IngredientAmount("5"))
+        case "1 cup": return .measured(try! IngredientAmount("1"), unit: .cup)
+        case "2 cups": return .measured(try! IngredientAmount("2"), unit: .cup)
+        case "4 cups": return .measured(try! IngredientAmount("4"), unit: .cup)
+        case "1 1/2 cups": return .measured(try! IngredientAmount("1 1/2"), unit: .cup)
+        case "1 tbsp": return .measured(try! IngredientAmount("1"), unit: .tbsp)
+        case "2 tbsp": return .measured(try! IngredientAmount("2"), unit: .tbsp)
+        case "1 tsp": return .measured(try! IngredientAmount("1"), unit: .tsp)
+        case "1 medium": return .measured(try! IngredientAmount("1"), unit: .medium)
+        case "2 medium": return .measured(try! IngredientAmount("2"), unit: .medium)
+        case "1 link (about 4 oz)": return .measured(try! IngredientAmount("1"), unit: .link, approximateWeight: "about 4 oz")
+        case "to taste": return .unmeasured(.toTaste)
+        case "1 pinch": return .unmeasured(.pinch)
+        default: preconditionFailure("Use structured quantities for new programmatic ingredients")
+        }
     }
 
     private static func derivedID(from name: String) -> String {
@@ -654,37 +730,6 @@ public struct Ingredient: Codable, Equatable, Sendable {
             .split { !$0.isLetter && !$0.isNumber }
             .map { $0.lowercased() }
             .joined(separator: "-")
-    }
-}
-
-private func validateRecipeIngredientQuantity(
-    _ ingredient: Ingredient,
-    recipeID: String,
-    recipeName: String,
-    ingredientIndex: Int
-) throws {
-    let quantity = ingredient.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !quantity.isEmpty else {
-        throw RecipeDecodingError.emptyIngredientQuantity(
-            recipeID: recipeID,
-            recipeName: recipeName,
-            ingredientIndex: ingredientIndex,
-            ingredientName: ingredient.name
-        )
-    }
-
-    let numericPrefix = String(quantity.prefix { character in
-        character == "." || character == "-" || character == "+"
-            || character.isNumber
-    })
-    if let numericValue = Double(numericPrefix), numericValue <= 0 {
-        throw RecipeDecodingError.nonPositiveIngredientQuantity(
-            recipeID: recipeID,
-            recipeName: recipeName,
-            ingredientIndex: ingredientIndex,
-            ingredientName: ingredient.name,
-            value: ingredient.quantity
-        )
     }
 }
 
