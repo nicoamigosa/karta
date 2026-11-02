@@ -43,6 +43,7 @@ public struct Paywall: Equatable, Sendable {
         case cupoLine
         case sixthSaveToast
         case worldMenu
+        case shoppingList
     }
 
     public enum Plan: Equatable, Sendable { case yearly, monthly }
@@ -172,6 +173,7 @@ extension KartaReducer {
                       state.canOpenRecipe(recipe) else { return }
             }
             state.restoreToast = nil
+            if entry == .shoppingList { state.showsShoppingInvitation = false }
             state.paywall = Paywall(
                 plans: [Paywall.Plan.yearly, .monthly].compactMap { plan in products.first { $0.plan == plan } },
                 entry: entry,

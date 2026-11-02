@@ -23,18 +23,19 @@ public enum LeftoversQuery {
         }
         let cookedRecipeIDs = Set(recentCooks.map(\.recipeID))
 
-        // The pool of ingredients freed up by what was just cooked.
-        let cookedIngredients: Set<String> = recipes
-            .filter { cookedRecipeIDs.contains($0.id) }
-            .reduce(into: []) { acc, recipe in
-                acc.formUnion(recipe.ingredients.map { normalize($0.name) })
-            }
+        let cookedIngredients = Set(PurchasePolicy.leftovers(
+            recipes: recipes, cooks: cooks, now: now, window: recentWindow,
+            intolerances: filters.intolerances
+        ).keys)
 
         return recipes
             .filter { !cookedRecipeIDs.contains($0.id) }   // don't re-suggest cooked
             .filter(filters.allows)                        // safety always applies
             .compactMap { recipe -> (Recipe, Int, Int)? in
-                let recipeIngredients = Set(recipe.ingredients.map { normalize($0.name) })
+                let recipeIngredients = Set(recipe.visibleIngredients(for: filters.intolerances).filter {
+                    !$0.isOptional && $0.allergens.isDisjoint(with: filters.intolerances)
+                        && !PurchasePolicy.pantryBasics.contains($0.purchaseKey)
+                }.map(\.purchaseKey))
                 let overlap = recipeIngredients.intersection(cookedIngredients).count
                 return overlap > 0 ? (recipe, overlap, 0) : nil
             }
@@ -47,7 +48,4 @@ public enum LeftoversQuery {
             .map(\.element.0)
     }
 
-    private static func normalize(_ name: String) -> String {
-        name.lowercased()
-    }
 }

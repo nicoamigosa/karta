@@ -8,6 +8,16 @@ private enum FeedPolicy {
 
 /// The value state shared by the presentation store and its pure reducer.
 public struct KartaState: Equatable, Sendable {
+    public internal(set) var shoppingList = ShoppingList()
+    public internal(set) var shoppingSheet: ShoppingAddSheet?
+    public internal(set) var shoppingToast: ShoppingToast?
+    internal var shoppingUndo: ShoppingList.Undo?
+    public internal(set) var addRecipesAsSaved = false
+    public internal(set) var hasAskedAutoAdd = false
+    public internal(set) var showsAutoAddQuestion = false
+    internal var askAfterShoppingToast = false
+    public internal(set) var showsShoppingInvitation = false
+    public internal(set) var showsShoppingList = false
     /// Transient purchase sheet and one-shot restore notice; never persisted.
     public internal(set) var paywall: Paywall?
     public internal(set) var restoreToast: RestoreToast?
@@ -117,7 +127,7 @@ public struct KartaState: Equatable, Sendable {
     public func leftoversFeed(recipes: [Recipe], clock: any KartaClock) -> Feed {
         let suggestions = LeftoversQuery.suggestions(
             recipes: recipes, cooks: cookHistory,
-            recentWindow: FeedPolicy.recentViewWindow, clock: clock,
+            recentWindow: PurchasePolicy.leftoversWindow, clock: clock,
             filters: effectiveFeedFilters)
         return FeedQuery.feed(
             recipes: suggestions, views: viewHistory.entries,
@@ -133,7 +143,7 @@ public struct KartaState: Equatable, Sendable {
         let safety = FeedFilters(intolerances: safetyProfile.intolerances)
         let unfiltered = LeftoversQuery.suggestions(
             recipes: recipes, cooks: cookHistory,
-            recentWindow: FeedPolicy.recentViewWindow, clock: clock, filters: safety)
+            recentWindow: PurchasePolicy.leftoversWindow, clock: clock, filters: safety)
         if unfiltered.isEmpty && recipes.contains(where: safety.allows) {
             return .none
         }
@@ -187,7 +197,7 @@ public struct KartaState: Equatable, Sendable {
         guard canOpenRecipe(recipe) else { return nil }
         return RecipeReversePresentation(
             recipe: recipe, intolerances: safetyProfile.intolerances,
-            isSaved: cookbook.isSaved(recipe.id)
+            isSaved: cookbook.isSaved(recipe.id), isOnList: shoppingList.contains(recipe.id)
         )
     }
 
@@ -233,8 +243,11 @@ public struct KartaState: Equatable, Sendable {
 
 /// Inputs accepted by the presentation state machine.
 public enum KartaAction: Sendable {
+    case shopping(ShoppingAction)
+    case shoppingContext(ShoppingAction, recipes: [Recipe], now: Date)
     case paywall(PaywallAction)
     case saveRecipe(String)
+    case saveRecipeContext(String, recipes: [Recipe], now: Date)
     case beginCookbookSelection
     case endCookbookSelection
     case toggleCookbookSelection(String)
@@ -310,8 +323,18 @@ public enum KartaReducer {
 
     public static func reduce(_ state: inout KartaState, action: KartaAction) {
         switch action {
+        case let .shopping(action):
+            reduceShopping(&state, action: action, recipes: [], now: nil)
+        case let .shoppingContext(action, recipes, now):
+            reduceShopping(&state, action: action, recipes: recipes, now: now)
         case let .paywall(action):
             reducePaywall(&state, action: action)
+        case let .saveRecipeContext(id, recipes, now):
+            reduce(&state, action: .saveRecipe(id))
+            if state.lastSaveResult == .saved, state.hasShoppingPremium, state.addRecipesAsSaved,
+               let recipe = recipes.first(where: { $0.id == id }), state.canOpenRecipe(recipe) {
+                autoAddSavedRecipe(&state, recipe: recipe, recipes: recipes, now: now)
+            }
         case let .saveRecipe(id):
             state.pendingSaveToast = nil
             state.pendingUnsave = nil
@@ -365,7 +388,12 @@ public enum KartaReducer {
             state.lastSaveResult = nil
             state.pendingUnsave = nil
             switch entitlement {
-            case .free: state.cookbook.downgradeToFree()
+            case .free:
+                state.cookbook.downgradeToFree()
+                state.addRecipesAsSaved = false
+                state.shoppingSheet = nil
+                state.showsAutoAddQuestion = false
+                state.askAfterShoppingToast = false
             case .trial, .premium: state.cookbook.liftCupo()
             }
         case let .onboarding(action):
@@ -492,13 +520,24 @@ public final class KartaStore {
     /// The active cooking session, exposed as a read-only value snapshot.
     public var session: CookingSession? { state.session }
 
-    public init(state: KartaState) {
+    private let recipes: [Recipe]
+    private let clock: (any KartaClock)?
+
+    public init(state: KartaState, recipes: [Recipe] = [], clock: (any KartaClock)? = nil) {
         self.state = state
+        self.recipes = recipes
+        self.clock = clock
     }
 
     /// Apply one presentation action through the pure reducer.
     public func send(_ action: Action) {
-        KartaReducer.reduce(&state, action: action)
+        if case let .saveRecipe(id) = action, let clock {
+            KartaReducer.reduce(&state, action: .saveRecipeContext(id, recipes: recipes, now: clock.now))
+        } else if case let .shopping(shopping) = action, let clock {
+            KartaReducer.reduce(&state, action: .shoppingContext(shopping, recipes: recipes, now: clock.now))
+        } else {
+            KartaReducer.reduce(&state, action: action)
+        }
     }
 
     /// The shell's read seam for the current feed.

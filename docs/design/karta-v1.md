@@ -1447,6 +1447,8 @@ counts it (*More below*).
 
 ## The shopping list
 
+The Core / Presentation API for the shell is documented in [the shopping-list contract](../shopping-list-contract.md).
+
 Signed off on 2026-10-31 by the founder (#11). The two rounds are each in their own artifact:
 *Karta lista de la compra* (<https://claude.ai/artifact/6vEzcqQn4jERjk2K5yhqMS>, rows Lugar B,
 Raciones A, Agrupar C, En casa C and AX1 A) and *Karta lista ronda 2*
