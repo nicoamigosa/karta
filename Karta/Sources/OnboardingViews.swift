@@ -209,9 +209,11 @@ struct OnboardingTourOverlay: View {
                         lineWidth: KartaDesign.space.tourRingWidth
                     )
                     .frame(width: hole.width, height: hole.height)
-                    .position(x: hole.midX, y: hole.midY)
+                    // Scale before positioning: the ring grows around its own
+                    // centre, not the overlay's.
                     .scaleEffect(pulseOn ? KartaDesign.space.tourPulseScale : 1)
                     .opacity(pulseOn ? 0 : 1)
+                    .position(x: hole.midX, y: hole.midY)
                     .animation(
                         .easeOut(duration: KartaDesign.space.tourPulsePeriod)
                             .repeatForever(autoreverses: false),
