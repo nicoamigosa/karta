@@ -185,6 +185,9 @@ card no es sólo la foto. La información clave es siempre tiempo, raciones, dif
 Course principal: claves para decidir si abrir la receta, no una descripción de ella; lo
 descriptivo vive tras la Apertura. Como en un naipe, el tiempo es el número y el Course
 principal es el palo. Toma la mecánica de los reels, pero es una foto, no un vídeo.
+La única excepción es el Mundo Leftovers: ahí la Card lleva además una ficha que nombra el
+ingrediente que sobra de lo cocinado (*potatoes + 1*), porque en ese Mundo es la clave para
+decidir; la foto no se encoge por ella (ADR 0018).
 _Avoid_: tarjeta, carta, post, reel, celda, fila
 
 **Vista**:
@@ -304,5 +307,8 @@ _Avoid_: completado, terminado
 
 **Leftovers**:
 Las recetas que reutilizan ingredientes de lo que se cocinó recientemente. Se derivan del
-historial de cocinados, nunca de un inventario que la usuaria tenga que mantener.
+historial de cocinados, nunca de un inventario que la usuaria tenga que mantener: sólo cuentan
+los Cocinados explícitos dentro de una ventana (siete días por defecto), comparados por clave de
+compra y sin los básicos de despensa. Es un Mundo corto, sin Frontera, que se acaba en su
+última carta (ADR 0018).
 _Avoid_: sobras, despensa, inventario
