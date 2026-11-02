@@ -266,6 +266,8 @@ struct OnboardingTourOverlay: View {
                     .accessibilityIdentifier("tourSkipLine")
             }
         }
+        // Full width inside the topLeading ZStack so the line centres.
+        .frame(maxWidth: .infinity)
         .allowsHitTesting(false)
     }
 }
@@ -308,7 +310,11 @@ private struct TourBubble: View {
             .fill(KartaDesign.ColorToken.card)
         }
         .compositingGroup()
-        .shadow(color: .black.opacity(0.45), radius: 18, y: 30)
+        .shadow(
+            color: .black.opacity(0.45),
+            radius: KartaDesign.elevation.tourBubbleShadowRadius,
+            y: KartaDesign.elevation.tourBubbleShadowY
+        )
         .accessibilityIdentifier("tourBubble")
     }
 }

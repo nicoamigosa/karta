@@ -283,8 +283,8 @@ struct FilterPanelView: View {
                 }
             )
             Text(presentation.householdLine)
-                .font(KartaDesign.FontToken.sheetCount())
-                .foregroundStyle(KartaDesign.ColorToken.ink)
+                .font(KartaDesign.FontToken.mundoLine())
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

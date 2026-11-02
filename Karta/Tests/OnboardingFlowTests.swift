@@ -201,12 +201,15 @@ struct OnboardingFlowTests {
     @MainActor
     @Test("Show my cards restarts the feed at the top")
     func showMyCardsResetsAnchors() {
-        let recipes = (try? SeedResourceAdapter().loadRecipes()) ?? []
         let store = freshStore()
         store.send(.onboarding(.coldLaunch(reduceMotion: false)))
-        if let first = recipes.first {
-            store.send(.recordView(recipeID: first.id, at: Date()))
-        }
+        // A real anchor down the deck: the answer has to discard it.
+        store.send(.setFeedAnchor(
+            ScrollAnchor(recipeID: "pesto-pasta", relativeOffset: 0.5),
+            world: .forYou
+        ))
+        #expect(store.state.navigation.anchor(for: .forYou) != nil)
+
         store.send(.onboarding(.setMine))
         store.send(.onboarding(.chooseFirstRunHousehold(1)))
         store.send(.onboarding(.showMyCards))
@@ -245,15 +248,31 @@ struct OnboardingFlowTests {
     @MainActor
     @Test("Unreadable bytes are preserved, never replaced")
     func preservedBytes() throws {
-        let dir = FileManager.default.temporaryDirectory
+        let files = FileManager.default
+        let dir = files.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(
-            at: dir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
+        try files.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? files.removeItem(at: dir) }
+
+        let previous = UserSnapshotStorage.directoryURL
+        UserSnapshotStorage.directoryURL = dir
+        defer { UserSnapshotStorage.directoryURL = previous }
+
         let garbage = Data([0xFF, 0x00, 0x42])
-        let result = UserSnapshot.restore(
-            from: garbage, now: Date().timeIntervalSince1970, catalog: [])
-        #expect(result.snapshot == nil)
-        #expect(result.preservedData == garbage)
+        try garbage.write(to: UserSnapshotStorage.fileURL)
+
+        // First unreadable restore: the file moves aside, never deleted.
+        #expect(UserSnapshotStorage.restoreState(catalog: []) == nil)
+        #expect(try Data(contentsOf: UserSnapshotStorage.preservedURL) == garbage)
+        #expect(!files.fileExists(atPath: UserSnapshotStorage.fileURL.path))
+
+        // A second unreadable file gets its own name — an existing
+        // `*.preserved` never makes a copy fail (ADR 0010).
+        let garbage2 = Data([0xDE, 0xAD])
+        try garbage2.write(to: UserSnapshotStorage.fileURL)
+        #expect(UserSnapshotStorage.restoreState(catalog: []) == nil)
+        let second = dir.appending(path: "user-snapshot-2.preserved")
+        #expect(try Data(contentsOf: second) == garbage2)
+        #expect(try Data(contentsOf: UserSnapshotStorage.preservedURL) == garbage)
     }
 }

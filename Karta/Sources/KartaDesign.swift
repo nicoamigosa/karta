@@ -917,6 +917,11 @@ enum KartaDesign {
         /// as the front Card's.
         static let menuShadowY: CGFloat = 18
         static let menuShadowRadius: CGFloat = 17
+        /// Tour bubble drop shadow: (0, 18, 30, −10, black 45 %) — the spec's
+        /// 30 pt CSS blur halves to a 15 pt SwiftUI radius, same convention
+        /// as the menu shadow above.
+        static let tourBubbleShadowY: CGFloat = 18
+        static let tourBubbleShadowRadius: CGFloat = 15
     }
 
     enum layout {

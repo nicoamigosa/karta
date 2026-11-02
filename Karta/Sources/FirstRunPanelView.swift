@@ -144,7 +144,7 @@ struct FirstRunPanelView: View {
             Text(panel.intoleranceLine)
                 .font(intoleranceLineIsMuted
                     ? KartaDesign.FontToken.mundoLine()
-                    : KartaDesign.FontToken.trackOff())
+                    : KartaDesign.FontToken.sheetCount())
                 .foregroundStyle(
                     intoleranceLineIsMuted
                         ? KartaDesign.ColorToken.inkMuted
@@ -192,8 +192,8 @@ struct FirstRunPanelView: View {
                 }
             )
             Text(panel.householdLine)
-                .font(KartaDesign.FontToken.sheetCount())
-                .foregroundStyle(KartaDesign.ColorToken.ink)
+                .font(KartaDesign.FontToken.mundoLine())
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
