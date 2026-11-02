@@ -516,6 +516,14 @@ private struct FeedSurface: View {
                 }
             }
             .coordinateSpace(name: FeedLayout.coordinateSpace)
+            // The scrim+panel and the tour overlay declare .transition(.opacity);
+            // these cover their insertion/removal wherever the action comes
+            // from (button, scrim tap, coldLaunch) — 300 ms, as in #6, and it is
+            // also what fades stop 3 in under Reduce Motion.
+            .animation(.easeOut(duration: KartaDesign.deck.faceRevealDuration),
+                       value: store.state.onboarding.panel != nil)
+            .animation(.easeOut(duration: KartaDesign.deck.faceRevealDuration),
+                       value: store.state.onboarding.tourStop != nil)
         }
     }
 

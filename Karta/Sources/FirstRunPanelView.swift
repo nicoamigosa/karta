@@ -175,12 +175,12 @@ struct FirstRunPanelView: View {
                 Text("COOKING FOR")
                     .font(KartaDesign.FontToken.filterHeading())
                     .tracking(KartaDesign.type.filterHeadingTracking)
-                    .foregroundStyle(KartaDesign.ColorToken.ink)
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
                 Spacer(minLength: 0)
                 Text("PEOPLE")
                     .font(KartaDesign.FontToken.filterHeading())
                     .tracking(KartaDesign.type.filterHeadingTracking)
-                    .foregroundStyle(KartaDesign.ColorToken.ink)
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
             }
             FilterTrack(
                 multiChoice: false,
