@@ -3,6 +3,7 @@ import KartaCore
 /// The ingredient lines and step summaries shown on the reverse of a Card.
 /// Full cooking instructions remain available only in the cooking session.
 public struct RecipeReversePresentation: Equatable, Sendable {
+    public let leftoversNote: String?
     public let recipeID: String
     /// Saved tint survives the removal of unsaving from the reverse.
     public let isSaved: Bool
@@ -17,7 +18,8 @@ public struct RecipeReversePresentation: Equatable, Sendable {
     public let ingredients: [Ingredient]
     public let steps: [RecipeReverseStepPresentation]
 
-    public init(recipe: Recipe, intolerances: Set<Allergen> = [], isSaved: Bool = false, isOnList: Bool = false) {
+    public init(recipe: Recipe, intolerances: Set<Allergen> = [], isSaved: Bool = false, isOnList: Bool = false, leftoversNote: String? = nil) {
+        self.leftoversNote = leftoversNote
         recipeID = recipe.id
         self.isSaved = isSaved
         self.isOnList = isOnList

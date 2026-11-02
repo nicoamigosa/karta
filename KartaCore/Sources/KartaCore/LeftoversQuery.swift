@@ -14,12 +14,14 @@ public enum LeftoversQuery {
         cooks: [CookEntry],
         recentWindow: TimeInterval,
         clock: any KartaClock,
-        filters: FeedFilters
+        filters: FeedFilters,
+        tastePreferences: TastePreferences = TastePreferences(),
+        householdSize: Int? = nil
     ) -> [Recipe] {
         let now = clock.now
         let lowerBound = now.addingTimeInterval(-recentWindow)
         let recentCooks = cooks.filter {
-            !$0.wasInferred && $0.date >= lowerBound && $0.date <= now
+            $0.date >= lowerBound && $0.date <= now
         }
         let cookedRecipeIDs = Set(recentCooks.map(\.recipeID))
 
@@ -28,7 +30,9 @@ public enum LeftoversQuery {
             intolerances: filters.intolerances
         ).keys)
 
-        return recipes
+        let ranked = FeedQuery.ranked(recipes, tastePreferences: tastePreferences,
+                                      householdSize: householdSize, now: now)
+        return ranked
             .filter { !cookedRecipeIDs.contains($0.id) }   // don't re-suggest cooked
             .filter(filters.allows)                        // safety always applies
             .compactMap { recipe -> (Recipe, Int, Int)? in

@@ -21,8 +21,11 @@ public struct ShoppingAddSheet: Equatable, Sendable {
     init(recipe: Recipe, state: KartaState, recipes: [Recipe], now: Date, review: Bool) {
         self.recipe = recipe
         isReview = review
-        let leftovers = PurchasePolicy.leftovers(recipes: recipes, cooks: state.cookHistory, now: now,
-                                                intolerances: state.safetyProfile.intolerances)
+        let reuse = PurchasePolicy.reusedIngredients(in: recipe, recipes: recipes, cooks: state.cookHistory,
+                                                     now: now, intolerances: state.safetyProfile.intolerances)
+        let leftovers = Dictionary(uniqueKeysWithValues: reuse.compactMap { item in
+            item.sources.first.map { (item.ingredient.purchaseKey, $0.recipeName) }
+        })
         rows = recipe.visibleIngredients(for: state.safetyProfile.intolerances).filter {
             !$0.isOptional && $0.allergens.isDisjoint(with: state.safetyProfile.intolerances)
         }.map { Row(ingredient: $0, hint: leftovers[$0.purchaseKey].map { "Left from your \($0)" }) }

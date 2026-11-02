@@ -77,7 +77,10 @@ public struct Feed: Equatable, Sendable {
     /// Recipes inside the active recency window, in ranking order.
     public let alreadySeenRecipes: [Recipe]
 
-    public init(newRecipes: [Recipe], alreadySeenRecipes: [Recipe]) {
+    public let hasFrontier: Bool
+
+    public init(newRecipes: [Recipe], alreadySeenRecipes: [Recipe], hasFrontier: Bool = true) {
+        self.hasFrontier = hasFrontier
         self.newRecipes = newRecipes
         self.alreadySeenRecipes = alreadySeenRecipes
     }
@@ -98,7 +101,7 @@ public struct Feed: Equatable, Sendable {
     public var items: [Item] {
         guard status != .noCompatibleRecipes else { return [] }
         return newRecipes.map(Item.new)
-            + [.frontier]
+            + (hasFrontier ? [.frontier] : [])
             + alreadySeenRecipes.map(Item.alreadySeen)
     }
 
@@ -166,7 +169,7 @@ public enum FeedQuery {
         )
     }
 
-    private static func ranked(
+    static func ranked(
         _ recipes: [Recipe],
         tastePreferences: TastePreferences,
         householdSize: Int?,

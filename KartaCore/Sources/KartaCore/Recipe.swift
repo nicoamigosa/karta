@@ -6,6 +6,7 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
     case unknownIngredientForm(value: String)
     case unknownAisle(value: String)
     case missingAisle(ingredientID: String)
+    case missingIngredientShortName(ingredientID: String)
     case missingIngredientQuantity(ingredientID: String)
     case missingPurchaseKey(ingredientID: String)
     case invalidIngredientAmount(value: String)
@@ -87,6 +88,7 @@ public enum RecipeDecodingError: Error, Equatable, LocalizedError, Sendable {
         case let .unknownIngredientUnit(value): return "Unknown ingredient unit '\(value)'"
         case let .unknownUnmeasuredQuantity(value): return "Unknown unmeasured quantity '\(value)'"
         case let .unknownIngredientForm(value): return "Unknown ingredient form '\(value)'"
+        case let .missingIngredientShortName(id): return "Ingredient '\(id)' is missing its short name"
         case let .missingIngredientQuantity(id): return "Ingredient '\(id)' is missing its quantity"
         case let .missingAisle(id): return "Ingredient '\(id)' is missing its Pasillo"
         case let .unknownAisle(value): return "Unknown aisle '\(value)'"
@@ -571,6 +573,7 @@ public struct Ingredient: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let structuredQuantity: IngredientQuantity
+    public let shortName: String
     public let purchaseKey: String
     public let aisle: Aisle
     /// Generated reverse text; kept as a projection for existing shell consumers.
@@ -582,12 +585,13 @@ public struct Ingredient: Codable, Equatable, Sendable {
 
     public init(
         id: String, name: String, structuredQuantity: IngredientQuantity,
-        purchaseKey: String, aisle: Aisle,
+        purchaseKey: String, aisle: Aisle, shortName: String? = nil,
         isOptional: Bool = false, allergens: Set<Allergen> = []
     ) {
         self.id = id
         self.name = name
         self.structuredQuantity = structuredQuantity
+        self.shortName = shortName ?? name
         self.purchaseKey = purchaseKey
         self.aisle = aisle
         self.isOptional = isOptional
@@ -607,6 +611,7 @@ public struct Ingredient: Codable, Equatable, Sendable {
         self.id = id
         self.name = name
         self.structuredQuantity = Self.fixtureQuantity(quantity)
+        self.shortName = name
         self.purchaseKey = Self.derivedID(from: name)
         self.aisle = .other
         self.isOptional = isOptional
@@ -666,6 +671,10 @@ public struct Ingredient: Codable, Equatable, Sendable {
               !purchaseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw RecipeDecodingError.missingPurchaseKey(ingredientID: id)
         }
+        guard let shortName = try container.decodeIfPresent(String.self, forKey: .shortName),
+              !shortName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw RecipeDecodingError.missingIngredientShortName(ingredientID: id)
+        }
         guard let rawAisle = try container.decodeIfPresent(String.self, forKey: .aisle) else {
             throw RecipeDecodingError.missingAisle(ingredientID: id)
         }
@@ -680,7 +689,7 @@ public struct Ingredient: Codable, Equatable, Sendable {
             name: name,
             structuredQuantity: try container.decode(IngredientQuantity.self, forKey: .quantity),
             purchaseKey: purchaseKey,
-            aisle: aisle,
+            aisle: aisle, shortName: shortName,
             isOptional: isOptional,
             allergens: allergens
         )
@@ -691,6 +700,7 @@ public struct Ingredient: Codable, Equatable, Sendable {
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encode(structuredQuantity, forKey: .quantity)
+        try container.encode(shortName, forKey: .shortName)
         try container.encode(purchaseKey, forKey: .purchaseKey)
         try container.encode(aisle, forKey: .aisle)
         try container.encode(isOptional, forKey: .isOptional)
@@ -698,7 +708,7 @@ public struct Ingredient: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, quantity, purchaseKey, aisle
+        case id, name, quantity, purchaseKey, aisle, shortName
         case isOptional = "optional"
         case allergens
     }

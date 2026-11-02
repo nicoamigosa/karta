@@ -15,6 +15,7 @@ public struct UserSnapshot: Equatable, Sendable {
     public let legacyPayload: StoredJSON?
     public let hasShownFullTour: Bool
     public let cookingSession: CookingSession?
+    public let leftoversToastHistory: LeftoversToastHistory
     public let shareCardHistory: ShareCardHistory
     public let hasShownSaveToast: Bool
     public let hasShownAlarmPermissionSheet: Bool
@@ -35,8 +36,10 @@ public struct UserSnapshot: Equatable, Sendable {
         shareCardHistory: ShareCardHistory = ShareCardHistory(),
         shoppingList: ShoppingList = ShoppingList(),
         addRecipesAsSaved: Bool = false,
-        hasAskedAutoAdd: Bool = false
+        hasAskedAutoAdd: Bool = false,
+        leftoversToastHistory: LeftoversToastHistory = LeftoversToastHistory()
     ) {
+        self.leftoversToastHistory = leftoversToastHistory
         self.shoppingList = shoppingList
         self.addRecipesAsSaved = addRecipesAsSaved
         self.hasAskedAutoAdd = hasAskedAutoAdd
@@ -77,7 +80,8 @@ public struct UserSnapshot: Equatable, Sendable {
             shareCardHistory: ShareCardHistoryDTO(shareCardHistory),
             shoppingList: ShoppingListDTO(shoppingList),
             addRecipesAsSaved: addRecipesAsSaved,
-            hasAskedAutoAdd: hasAskedAutoAdd
+            hasAskedAutoAdd: hasAskedAutoAdd,
+            leftoversToastHistory: LeftoversToastHistoryDTO(leftoversToastHistory)
         )
 
         let encoder = JSONEncoder()
@@ -193,6 +197,7 @@ private struct UserSnapshotDTO: Codable {
     let shoppingList: ShoppingListDTO?
     let addRecipesAsSaved: Bool?
     let hasAskedAutoAdd: Bool?
+    let leftoversToastHistory: LeftoversToastHistoryDTO?
 
     func snapshot(sessionPolicy: SessionRestorePolicy?) throws -> UserSnapshot {
         // Intolerances are safety-critical: a snapshot that does not state them
@@ -247,7 +252,8 @@ private struct UserSnapshotDTO: Codable {
             shareCardHistory: try shareCardHistory?.domainValue ?? ShareCardHistory(),
             shoppingList: try shoppingList?.domainValue ?? ShoppingList(),
             addRecipesAsSaved: addRecipesAsSaved ?? false,
-            hasAskedAutoAdd: hasAskedAutoAdd ?? false
+            hasAskedAutoAdd: hasAskedAutoAdd ?? false,
+            leftoversToastHistory: try leftoversToastHistory?.domainValue ?? LeftoversToastHistory()
         )
     }
 }
@@ -267,6 +273,23 @@ private struct ShareCardHistoryDTO: Codable {
             return ShareCardHistory(
                 shownRecipeIDs: Set(shownRecipeIDs), consecutiveDismissals: consecutiveDismissals
             )
+        }
+    }
+}
+
+private struct LeftoversToastHistoryDTO: Codable {
+    let shownRecipeIDs: [String]
+    let consecutiveDismissals: Int
+
+    init(_ history: LeftoversToastHistory) {
+        shownRecipeIDs = history.shownRecipeIDs.sorted()
+        consecutiveDismissals = history.consecutiveDismissals
+    }
+
+    var domainValue: LeftoversToastHistory {
+        get throws {
+            guard consecutiveDismissals >= 0 else { throw SnapshotDecodingError.invalidValue }
+            return LeftoversToastHistory(shownRecipeIDs: Set(shownRecipeIDs), consecutiveDismissals: consecutiveDismissals)
         }
     }
 }
@@ -707,6 +730,7 @@ private struct ShoppingListDTO: Codable {
     struct Share: Codable {
         let id: String
         let name: String
+        let shortName: String?
         let quantity: IngredientQuantity
         let purchaseKey: String
         let aisle: Aisle
@@ -718,7 +742,7 @@ private struct ShoppingListDTO: Codable {
     init(_ list: ShoppingList) {
         entries = list.entries.map { entry in
             Entry(recipeID: entry.recipeID, recipeName: entry.recipeName, ingredients: entry.ingredients.map {
-                Share(id: $0.id, name: $0.name, quantity: $0.structuredQuantity,
+                Share(id: $0.id, name: $0.name, shortName: $0.shortName, quantity: $0.structuredQuantity,
                       purchaseKey: $0.purchaseKey, aisle: $0.aisle, allergens: $0.allergens)
             })
         }
@@ -734,7 +758,7 @@ private struct ShoppingListDTO: Codable {
             return ShoppingList(entries: entries.map { entry in
                 ShoppingList.Entry(recipeID: entry.recipeID, recipeName: entry.recipeName, ingredients: entry.ingredients.map {
                     Ingredient(id: $0.id, name: $0.name, structuredQuantity: $0.quantity,
-                               purchaseKey: $0.purchaseKey, aisle: $0.aisle, allergens: $0.allergens)
+                               purchaseKey: $0.purchaseKey, aisle: $0.aisle, shortName: $0.shortName, allergens: $0.allergens)
                 })
             }, tickedKeys: Set(tickedKeys))
         }
