@@ -22,44 +22,46 @@ public struct OnboardingProfile: Equatable, Sendable {
     }
 }
 
-/// The taste-calibration mini-flow: the user taps recipes that appeal during a
-/// real vertical-scroll experience. Its taps seed taste preferences and are a
-/// **separate channel** from the cookbook — they never consume the free save
-/// cap (a calibration tap is not a save).
-public struct TasteCalibration: Equatable, Sendable {
-    public private(set) var likedIDs: [String]
-
-    public init(likedIDs: [String] = []) {
-        self.likedIDs = likedIDs
-    }
-
-    /// Record an appealing recipe. Idempotent; preserves tap order.
-    public mutating func tap(_ id: String) {
-        guard !likedIDs.contains(id) else { return }
-        likedIDs.append(id)
-    }
-
-    /// The ranking input produced by this calibration. Keeping the conversion
-    /// explicit makes the calibration channel separate from Cookbook saves.
-    public var preferences: TastePreferences {
-        TastePreferences(likedIDs: likedIDs)
-    }
-}
-
-/// Taste signals learned from onboarding interactions. A preference can only
-/// affect the order of recipes that already passed the feed's hard filters.
+/// Gusto is an explainable affinity score, never an eligibility rule.
+/// Each distinct opened recipe contributes +3, each save +5 (additive).
+/// A Vista with neither an Apertura nor a save contributes only -1.
+/// Repeated openings do not amplify a signal. No clock, decay, ML or calibration.
+/// Shared primary Course, Diet, Practical tags and required ingredients each
+/// add affinity; the recipe itself adds 4. Unknown history IDs have no effect.
 public struct TastePreferences: Equatable, Sendable {
-    public let likedIDs: Set<String>
+    private let scores: [String: Int]
 
-    public init(likedIDs: [String] = []) {
-        self.likedIDs = Set(likedIDs)
+    public init(recipes: [Recipe] = [], history: ViewHistory = ViewHistory(), savedIDs: [String] = []) {
+        let opened = Set(history.openings.map(\.recipeID))
+        let saved = Set(savedIDs)
+        let viewed = Set(history.entries.map(\.recipeID))
+        let signals = recipes.compactMap { recipe -> (Recipe, Int)? in
+            let weight = (opened.contains(recipe.id) ? 3 : 0)
+                + (saved.contains(recipe.id) ? 5 : 0)
+                - (viewed.contains(recipe.id) && !opened.contains(recipe.id)
+                    && !saved.contains(recipe.id) ? 1 : 0)
+            return weight == 0 ? nil : (recipe, weight)
+        }
+        var scores: [String: Int] = [:]
+        for candidate in recipes {
+            scores[candidate.id] = signals.reduce(0) { sum, signal in
+                let (source, weight) = signal
+                let affinity = (candidate.id == source.id ? 4 : 0)
+                    + (candidate.primaryCourse == source.primaryCourse ? 1 : 0)
+                    + candidate.diets.intersection(source.diets).count
+                    + candidate.practicalTags.intersection(source.practicalTags).count
+                    + Self.ingredients(candidate).intersection(Self.ingredients(source)).count
+                return sum + weight * affinity
+            }
+        }
+        self.scores = scores
     }
 
-    public init(likedIDs: Set<String>) {
-        self.likedIDs = likedIDs
-    }
+    public func score(for recipe: Recipe) -> Int { scores[recipe.id, default: 0] }
 
-    public func favors(_ recipe: Recipe) -> Bool {
-        likedIDs.contains(recipe.id)
+    private static func ingredients(_ recipe: Recipe) -> Set<String> {
+        Set(recipe.ingredients.filter { !$0.isOptional }.map {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        })
     }
 }

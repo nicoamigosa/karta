@@ -5,12 +5,24 @@ import Testing
 @Suite("User snapshot")
 struct UserSnapshotTests {
 
+    @Test("An unanswered user keeps saves, views, opens and cooks across launches")
+    func unansweredRoundTrip() throws {
+        let snapshot = UserSnapshot(
+            profile: nil, cookbook: Cookbook(savedIDs: ["safe"]),
+            viewHistory: ViewHistory(
+                entries: [ViewEntry(recipeID: "safe", date: Date(timeIntervalSince1970: 100))],
+                openings: [OpenEntry(recipeID: "safe", date: Date(timeIntervalSince1970: 101))]),
+            cookHistory: [CookEntry(recipeID: "safe", date: Date(timeIntervalSince1970: 102), wasInferred: false)],
+            hasShownFullTour: true)
+        #expect(try UserSnapshot.restore(from: snapshot.encoded()).snapshot == snapshot)
+    }
+
     @Test("Version 1 snapshots without sharing memory restore the empty state")
     func legacyShareCardHistory() throws {
         let data = Data(#"{"version":1,"profile":{"intolerances":["dairy"],"householdSize":2}}"#.utf8)
         let restored = try #require(UserSnapshot.restore(from: data).snapshot)
         #expect(restored.shareCardHistory == ShareCardHistory())
-        #expect(restored.profile.intolerances == [.dairy])
+        #expect(restored.profile?.intolerances == [.dairy])
     }
 
     @Test("Invalid sharing memory preserves the original snapshot")
@@ -93,13 +105,13 @@ struct UserSnapshotTests {
             openings: [OpenEntry(recipeID: "recipe-2", date: openingDate)]
         )
         let cookHistory = [CookEntry(recipeID: "recipe-1", date: cookDate, wasInferred: true)]
-        let calibration = TasteCalibration(likedIDs: ["recipe-2", "recipe-1"])
+        let legacy = StoredJSON.object(["likedIDs": .array([.string("recipe-2"), .string("recipe-1")])])
         let snapshot = UserSnapshot(
             profile: profile,
             cookbook: cookbook,
             viewHistory: history,
             cookHistory: cookHistory,
-            tasteCalibration: calibration
+            legacyPayload: legacy
         )
 
         let restored = try #require(UserSnapshot.restore(from: try snapshot.encoded()).snapshot)
@@ -123,7 +135,7 @@ struct UserSnapshotTests {
         #expect(snapshot.cookbook.saveCap == Cookbook.freeSaveCap)
         #expect(snapshot.viewHistory == ViewHistory())
         #expect(snapshot.cookHistory.isEmpty)
-        #expect(snapshot.tasteCalibration == TasteCalibration())
+        #expect(snapshot.legacyPayload == nil)
     }
 
     @Test("Unreadable snapshot data is preserved while restoration starts safely")
@@ -166,7 +178,7 @@ struct UserSnapshotTests {
 
     @Test("A snapshot version that this app cannot understand is preserved")
     func preservesUnsupportedVersion() {
-        let futureData = Data(#"{"version":2,"newField":{"meaning":"unknown"}}"#.utf8)
+        let futureData = Data(#"{"version":3,"newField":{"meaning":"unknown"}}"#.utf8)
 
         let result = UserSnapshot.restore(from: futureData)
 

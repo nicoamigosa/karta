@@ -64,14 +64,21 @@ struct RecipeLinkOpeningTests {
         #expect(store.state == initial)
     }
 
-    @Test("A shared link cannot bypass unfinished onboarding")
+    @Test("An unanswered receiver can open only safe-deck shared recipes")
     @MainActor
     func unfinishedOnboarding() {
         var initial = state()
         initial.onboarding = OnboardingState()
         let store = KartaStore(state: initial)
-        #expect(store.openRecipeLink(URL(string: "https://karta.app/r/sauce")!, recipes: [recipe()], at: date) == .notOffered)
+        #expect(store.openRecipeLink(URL(string: "https://karta.app/r/sauce")!,
+                                    recipes: [recipe(review: .reviewed([.egg]))], at: date) == .notOffered)
         #expect(store.state == initial)
+        guard case .reverse = store.openRecipeLink(URL(string: "https://karta.app/r/sauce")!,
+                                                   recipes: [recipe()], at: date) else {
+            Issue.record("The safe-deck shared recipe should open")
+            return
+        }
+        #expect(store.state.viewHistory.openings == [OpenEntry(recipeID: "sauce", date: date)])
     }
 
     @Test("Generated links round-trip an encoded recipe id with either base path spelling", arguments: [false, true])

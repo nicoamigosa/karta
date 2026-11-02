@@ -15,7 +15,9 @@ struct FeedHeaderTests {
         let profile = SafetyProfile(intolerances: [.dairy, .gluten])
         let draft = FilterDraft(maxMinutes: 30, maxDifficulty: .easy, course: .dinner,
                                 diet: .vegetarian, practicalTags: [.onePan, .shareable])
-        var state = KartaState(safetyProfile: profile)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(profile.intolerances), householdSize: 2),
+            safetyProfile: profile)
         KartaReducer.reduce(&state, action: .filter(.apply(draft)))
         let filters = state.effectiveFeedFilters
         for world in World.allCases + [.forYou] {
@@ -82,7 +84,9 @@ struct FeedHeaderTests {
     @Test("Intolerancia taps save separately and the note describes the latest change")
     func intoleranceTaps() {
         let draft = FilterDraft(maxMinutes: 30, course: .dinner, practicalTags: [.onePan])
-        var state = KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy]), filterDraft: draft)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy]), filterDraft: draft)
         let panel = FilterPanelPresentation(draft: draft, safetyProfile: state.safetyProfile)
         #expect(panel.intoleranceNote(after: nil) == nil)
         let added = panel.nextSafetyProfile(toggling: .gluten)
@@ -121,7 +125,7 @@ struct FeedHeaderTests {
         #expect(state == before)
         KartaReducer.reduce(&state, action: .filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy, .gluten]))))
         #expect(state.draftRecipeCount(for: .forYou, draft: FilterDraft(), recipes: recipes, clock: clock) == 4)
-        #expect(state.draftRecipeCount(for: .leftovers, draft: FilterDraft(), recipes: recipes, clock: clock) == nil)
+        #expect(state.draftRecipeCount(for: .leftovers, draft: FilterDraft(), recipes: recipes, clock: clock) == 0)
     }
     @Test("Draft previews enforce every Intolerancia, review, Dieta and all Practical tags",
           arguments: Allergen.allCases)
@@ -155,13 +159,17 @@ struct FeedHeaderTests {
                                       recipes: recipes, clock: clock) == feed.recipes.count)
         #expect(state.draftRecipeCount(for: .forYou, draft: FilterDraft(diet: .vegan),
                                       recipes: recipes, clock: clock) == 1)
-        #expect(KartaState(safetyProfile: state.safetyProfile).draftRecipeCount(
-            for: .forYou, draft: draft, recipes: recipes, clock: clock) == nil)
+        #expect(KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(state.safetyProfile.intolerances), householdSize: 2),
+            safetyProfile: state.safetyProfile).draftRecipeCount(
+            for: .forYou, draft: draft, recipes: recipes, clock: clock) == 2)
     }
 
     @Test("The badge counts applied non-safety filters, including each Practical tag and Course")
     func appliedBadgeCount() {
-        var state = KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy, .gluten]))
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy, .gluten]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy, .gluten]))
         #expect(state.appliedFilterCount == 0)
         KartaReducer.reduce(&state, action: .filter(.apply(FilterDraft(maxMinutes: 30, practicalTags: [.onePan]))))
         #expect(state.appliedFilterCount == 2)

@@ -14,7 +14,9 @@ struct KartaStoreTests {
 
     @Test("A new presentation state starts at the For You root")
     func navigationStartsAtForYouRoot() {
-        let state = KartaState(safetyProfile: noIntolerances)
+        let state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
 
         #expect(state.navigation.world == .forYou)
         #expect(state.navigation.routes.isEmpty)
@@ -23,7 +25,9 @@ struct KartaStoreTests {
 
     @Test("Navigation anchors are session-scoped")
     func navigationAnchorIsNotCarriedIntoNewState() {
-        var previousState = KartaState(safetyProfile: noIntolerances)
+        var previousState = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         KartaReducer.reduce(
             &previousState,
             action: .setFeedAnchor(
@@ -32,7 +36,9 @@ struct KartaStoreTests {
             )
         )
 
-        let newState = KartaState(safetyProfile: noIntolerances)
+        let newState = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
 
         #expect(previousState.navigation.anchor(for: .forYou) != nil)
         #expect(newState.navigation.anchor(for: .forYou) == nil)
@@ -40,7 +46,9 @@ struct KartaStoreTests {
 
     @Test("Opening a recipe and returning preserves the world's feed anchor")
     func detailBackPreservesFeedAnchor() {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
 
         KartaReducer.reduce(
@@ -60,7 +68,9 @@ struct KartaStoreTests {
 
     @Test("Switching worlds and returning preserves each world's anchor")
     func worldSwitchPreservesForYouAnchor() {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
         let leftoversAnchor = ScrollAnchor(recipeID: "leftovers-2", relativeOffset: 0.75)
 
@@ -82,7 +92,9 @@ struct KartaStoreTests {
 
     @Test("Changing feed filters discards the session anchors")
     func changingFiltersDiscardsAnchors() {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         let anchor = ScrollAnchor(recipeID: "recipe-4", relativeOffset: 0.25)
         KartaReducer.reduce(
             &state,
@@ -101,7 +113,9 @@ struct KartaStoreTests {
     @Test("Applying a filter draft preserves the safety profile")
     func applyingFilterDraftPreservesSafetyProfile() {
         let profile = SafetyProfile(intolerances: [.dairy])
-        var state = KartaState(safetyProfile: profile)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(profile.intolerances), householdSize: 2),
+            safetyProfile: profile)
 
         KartaReducer.reduce(
             &state,
@@ -119,6 +133,7 @@ struct KartaStoreTests {
     func resettingFiltersPreservesSafetyProfile() {
         let profile = SafetyProfile(intolerances: [.gluten, .nuts])
         var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(profile.intolerances), householdSize: 2),
             safetyProfile: profile,
             filterDraft: FilterDraft(
                 maxMinutes: 20,
@@ -140,6 +155,7 @@ struct KartaStoreTests {
     func cancellingFilterEditingPreservesSafetyProfile() {
         let profile = SafetyProfile(intolerances: [.dairy])
         var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(profile.intolerances), householdSize: 2),
             safetyProfile: profile,
             filterDraft: FilterDraft(maxDifficulty: .hard)
         )
@@ -154,6 +170,7 @@ struct KartaStoreTests {
     @Test("Changing the safety profile preserves the filter draft")
     func changingSafetyProfilePreservesFilterDraft() {
         var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [.dairy]),
             filterDraft: FilterDraft(
                 maxMinutes: 45,
@@ -189,7 +206,9 @@ struct KartaStoreTests {
     @Test("Switching worlds preserves the safety profile")
     func switchingWorldsPreservesSafetyProfile() {
         let profile = SafetyProfile(intolerances: [.dairy, .gluten])
-        var state = KartaState(safetyProfile: profile)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(profile.intolerances), householdSize: 2),
+            safetyProfile: profile)
 
         KartaReducer.reduce(&state, action: .selectWorld(.leftovers))
         KartaReducer.reduce(&state, action: .selectWorld(.forYou))
@@ -202,6 +221,7 @@ struct KartaStoreTests {
     func safetyProfileEditingIsNotPremiumGated() {
         var state = KartaState(
             cookbook: Cookbook(saveCap: Cookbook.freeSaveCap),
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [.dairy])
         )
 
@@ -217,7 +237,9 @@ struct KartaStoreTests {
 
     @Test("An anchor for a recipe absent from the feed resolves to the top")
     func staleAnchorResolvesToTop() {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         let currentAnchor = ScrollAnchor(recipeID: "recipe-1", relativeOffset: 0.25)
         KartaReducer.reduce(
             &state,
@@ -238,7 +260,9 @@ struct KartaStoreTests {
 
     @Test("The save action is applied by the pure reducer")
     func reducerSavesRecipe() {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .saveRecipe("recipe-1"))
 
@@ -249,7 +273,9 @@ struct KartaStoreTests {
     func reducerDowngradesCookbook() {
         var cookbook = Cookbook(saveCap: nil)
         for i in 0..<9 { #expect(cookbook.save("recipe-\(i)") == .saved) }
-        var state = KartaState(cookbook: cookbook, safetyProfile: noIntolerances)
+        var state = KartaState(cookbook: cookbook,
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .downgradeCookbookToFree)
 
@@ -263,6 +289,7 @@ struct KartaStoreTests {
         let firstDate = Date(timeIntervalSince1970: 1_000)
         let laterDate = Date(timeIntervalSince1970: 2_000)
         var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
             viewHistory: ViewHistory(entries: [
                 ViewEntry(recipeID: "existing", date: firstDate),
             ]),
@@ -286,7 +313,9 @@ struct KartaStoreTests {
 
     @Test("A new presentation state starts with an empty view history")
     func viewHistoryDefaultsToEmpty() {
-        let state = KartaState(safetyProfile: noIntolerances)
+        let state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
 
         #expect(state.viewHistory == ViewHistory())
     }
@@ -296,6 +325,7 @@ struct KartaStoreTests {
         let firstViewDate = Date(timeIntervalSince1970: 1_000)
         let openingDate = Date(timeIntervalSince1970: 2_000)
         var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
             viewHistory: ViewHistory(entries: [
                 ViewEntry(recipeID: "already-viewed", date: firstViewDate),
             ]),
@@ -334,7 +364,9 @@ struct KartaStoreTests {
             steps: ["First step", "Second step"],
             allergenReview: .reviewed([])
         )
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
 
         KartaReducer.reduce(&state, action: .startCooking(recipe, startedAt: 123))
         KartaReducer.reduce(&state, action: .nextStep(now: 124))
@@ -345,7 +377,9 @@ struct KartaStoreTests {
 
     @Test("An inferred Cocinado enters history at the injected inference time")
     func reducerRecordsInferredCook() {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
         KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
 
@@ -360,7 +394,9 @@ struct KartaStoreTests {
         CookOutcome.thumbsUp, .thumbsDown, .photo,
     ])
     func reducerRecordsExplicitCook(outcome: CookOutcome) {
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
         KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
         KartaReducer.reduce(&state, action: .previousStep)
@@ -377,7 +413,9 @@ struct KartaStoreTests {
     func reducerUpgradesSessionCook() {
         let earlier = CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 500), wasInferred: true)
         let interleaved = CookEntry(recipeID: "other", date: Date(timeIntervalSince1970: 1_260))
-        var state = KartaState(cookHistory: [earlier], safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            cookHistory: [earlier], safetyProfile: noIntolerances)
         KartaReducer.reduce(&state, action: .startCooking(recipe(), startedAt: 1_000))
         KartaReducer.reduce(&state, action: .nextStep(now: 1_200))
         KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_250))
@@ -408,7 +446,9 @@ struct KartaStoreTests {
     ])
     func ignoredSessionActionsPreserveHistory(actions: [KartaAction]) {
         let history = [CookEntry(recipeID: "recipe-1", date: Date(timeIntervalSince1970: 500))]
-        var state = KartaState(cookHistory: history, safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            cookHistory: history, safetyProfile: noIntolerances)
         // With no session, both actions are ignored too.
         KartaReducer.reduce(&state, action: .respond(.thumbsUp))
         KartaReducer.reduce(&state, action: .inferProbablyCooked(now: 1_300))
@@ -426,7 +466,9 @@ struct KartaStoreTests {
     @Test("Either session Cocinado moves a saved recipe into Repertorio", arguments: [false, true])
     func sessionCookUpdatesCookbook(wasInferred: Bool) {
         let cooked = recipe()
-        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances))
         store.send(.saveRecipe(cooked.id))
         #expect(store.cookbookPresentation(recipes: [cooked]).wantToTry.map(\.recipeID) == ["recipe-1"])
 
@@ -443,7 +485,9 @@ struct KartaStoreTests {
     func sessionCookFeedsOnlyExplicitLeftovers() {
         let cooked = rankingRecipe("cooked", popularity: 1)
         let suggested = rankingRecipe("suggested", popularity: 1)
-        var state = KartaState(safetyProfile: noIntolerances)
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances)
         state.session = CookingSession(
             recipeID: cooked.id, steps: ["Prepare", "Serve"],
             declaredDuration: 600, startedAt: 1_000
@@ -471,6 +515,7 @@ struct KartaStoreTests {
     @Test("An explicit one-step cook uses the injected session start time")
     func singleStepCookUsesSessionStart() {
         var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
             session: CookingSession(recipeID: "one-step", steps: ["Cook"], startedAt: 1_000),
             safetyProfile: noIntolerances
         )
@@ -514,7 +559,9 @@ struct KartaStoreTests {
             ],
             allergenReview: .reviewed([])
         )
-        var state = KartaState(safetyProfile: SafetyProfile(intolerances: [.dairy]))
+        var state = KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered([.dairy]), householdSize: 2),
+            safetyProfile: SafetyProfile(intolerances: [.dairy]))
 
         KartaReducer.reduce(&state, action: .startCooking(recipe, startedAt: 123))
 
@@ -524,7 +571,9 @@ struct KartaStoreTests {
     @MainActor
     @Test("The store applies an action through its public send entry point")
     func storeSendsSaveAction() {
-        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances))
 
         store.send(.saveRecipe("recipe-1"))
 
@@ -596,19 +645,19 @@ struct KartaStoreTests {
     }
 
     @MainActor
-    @Test("Calibration through the store does not save a recipe")
-    func storeCalibratesWithoutSaving() {
+    @Test("Aperturas through the store do not save a recipe")
+    func storeOpensWithoutSaving() {
         let store = KartaStore(state: KartaState(
             onboarding: OnboardingState(householdSize: 2),
             safetyProfile: noIntolerances
         ))
 
         for index in 0..<20 {
-            store.send(.onboarding(.tapCalibration("recipe-\(index)")))
+            store.send(.recordOpen(recipeID: "recipe-\(index)", at: Date(timeIntervalSince1970: 100)))
         }
         store.send(.saveRecipe("real-save"))
 
-        #expect(store.state.onboarding.calibration.likedIDs.count == 20)
+        #expect(store.state.viewHistory.openings.count == 20)
         #expect(store.cookbook.savedIDs == ["real-save"])
         #expect(store.cookbook.isAtCap == false)
     }
@@ -649,7 +698,9 @@ struct KartaStoreTests {
     @Test("The store sends an Apertura to view history")
     func storeSendsOpeningAction() {
         let openingDate = Date(timeIntervalSince1970: 2_000)
-        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances))
 
         store.send(.recordOpen(recipeID: "recipe-1", at: openingDate))
 
@@ -674,8 +725,8 @@ struct KartaStoreTests {
     }
 
     @MainActor
-    @Test("The store's calibrated onboarding state changes its feed order")
-    func storeCalibrationFeedsRanking() throws {
+    @Test("The store uses recorded Aperturas to rank its feed")
+    func storeHistoryFeedsRanking() throws {
         let store = KartaStore(state: KartaState(
             onboarding: OnboardingState(
                 intoleranceAnswer: .answered([]),
@@ -683,7 +734,7 @@ struct KartaStoreTests {
             ),
             safetyProfile: noIntolerances
         ))
-        store.send(.onboarding(.tapCalibration("low")))
+        store.send(.recordOpen(recipeID: "low", at: Date(timeIntervalSince1970: 100)))
 
         let feed = try #require(store.feed(
             recipes: [
@@ -722,7 +773,9 @@ struct KartaStoreTests {
     @MainActor
     @Test("The store applies cooking actions through the same send entry point")
     func storeSendsCookingAction() {
-        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances))
 
         store.send(.startCooking(recipe(), startedAt: 123))
         store.send(.nextStep(now: 124))
@@ -733,7 +786,9 @@ struct KartaStoreTests {
     @MainActor
     @Test("A value mutation through send invalidates an observation")
     func storeNotifiesObservers() {
-        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances))
         let changes = Mutex(0)
 
         withObservationTracking {
@@ -751,6 +806,7 @@ struct KartaStoreTests {
     @Test("A session mutation through send invalidates an observation")
     func storeNotifiesSessionObservers() {
         let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
             session: recipe().cookingSession(),
             safetyProfile: noIntolerances
         ))
@@ -770,7 +826,9 @@ struct KartaStoreTests {
     @MainActor
     @Test("State and actions can be handed to an external task as values")
     func valuesAreSendable() async {
-        let store = KartaStore(state: KartaState(safetyProfile: noIntolerances))
+        let store = KartaStore(state: KartaState(
+            onboarding: OnboardingState(intoleranceAnswer: .answered(noIntolerances.intolerances), householdSize: 2),
+            safetyProfile: noIntolerances))
         store.send(.saveRecipe("recipe-1"))
         let state = store.state
         let action: KartaStore.Action = .unsaveRecipe("recipe-1")

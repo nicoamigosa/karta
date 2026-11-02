@@ -175,9 +175,9 @@ public enum FeedQuery {
         recipes
             .enumerated()
             .sorted { lhs, rhs in
-                let lhsTaste = tastePreferences.favors(lhs.element)
-                let rhsTaste = tastePreferences.favors(rhs.element)
-                if lhsTaste != rhsTaste { return lhsTaste }
+                let lhsTaste = tastePreferences.score(for: lhs.element)
+                let rhsTaste = tastePreferences.score(for: rhs.element)
+                if lhsTaste != rhsTaste { return lhsTaste > rhsTaste }
 
                 let lhsFreshness = FreshnessPolicy.score(
                     editorialDate: lhs.element.editorialDate,

@@ -245,19 +245,18 @@ struct FeedFilterPanelTests {
     }
 
     @MainActor
-    @Test("The Card face comes from the safety profile, not the onboarding answer")
-    func cardFaceGuardedBySafetyProfile() throws {
+    @Test("An Intolerancia saved in the panel guards both Card projections")
+    func savedIntoleranceGuardsBothCardProjections() throws {
         let recipes = try SeedResourceAdapter().loadRecipes()
         let pesto = try #require(recipes.first { $0.id == "pesto-pasta" })
         let store = makeStore()
         #expect(store.state.cardPresentation(for: pesto) != nil)
 
-        // Declaring Gluten in the panel updates the safety profile: the
-        // store projection refuses the violating card while the onboarding
-        // projection would still draw it.
+        // Declaring Gluten in the panel saves the onboarding answer too:
+        // both projections refuse the violating card.
         store.send(.filter(.setSafetyProfile(SafetyProfile(intolerances: [.gluten]))))
         #expect(store.state.cardPresentation(for: pesto) == nil)
-        #expect(store.state.onboarding.cardPresentation(for: pesto) != nil)
+        #expect(store.state.onboarding.cardPresentation(for: pesto) == nil)
     }
 
     @MainActor

@@ -21,6 +21,8 @@ public struct KartaState: Equatable, Sendable {
     public fileprivate(set) var pendingSaveToast: SaveToast?
     /// Persist when raised, even while the toast is still visible.
     public fileprivate(set) var hasShownSaveToast: Bool
+    /// Opaque legacy user data is carried through every save, never ranked.
+    public internal(set) var legacyPayload: StoredJSON?
     public var cookbook: Cookbook
     public var onboarding: OnboardingState
     public var viewHistory: ViewHistory
@@ -43,7 +45,10 @@ public struct KartaState: Equatable, Sendable {
     public var filterState: FilterState
 
     /// The safety profile is kept separate from the non-safety draft.
-    public var safetyProfile: SafetyProfile { filterState.safetyProfile }
+    public var safetyProfile: SafetyProfile {
+        onboarding.intoleranceAnswer == .unanswered
+            ? SafetyProfile(intolerances: Set(Allergen.allCases)) : filterState.safetyProfile
+    }
 
     /// The non-safety filters currently applied across both Mundos.
     public var filterDraft: FilterDraft { filterState.filterDraft }
@@ -60,30 +65,30 @@ public struct KartaState: Equatable, Sendable {
 
     /// The single effective filter value consumed by Core queries.
     public var effectiveFeedFilters: FeedFilters {
-        filterState.effectiveFeedFilters
+        var filters = filterState.effectiveFeedFilters
+        filters.intolerances = safetyProfile.intolerances
+        return filters
     }
 
     /// Compatibility spelling for the effective query consumed by the shell.
     public var feedFilters: FeedFilters { effectiveFeedFilters }
 
-    /// Build the feed only after onboarding is complete. The active safety
-    /// profile is composed here, while taste and household signals remain
-    /// ranking inputs and never become filters.
+    /// Build the Baraja segura while unanswered, otherwise the personal feed.
+    /// Gusto and household fit only rank recipes that passed hard filters.
     public func feed(
         recipes: [Recipe],
         views: [ViewEntry],
         recentWindow: TimeInterval,
         clock: any KartaClock
     ) -> Feed? {
-        guard onboarding.profile != nil,
-              let householdSize = onboarding.householdSize else { return nil }
+        let householdSize = onboarding.householdSize
         return FeedQuery.feed(
             recipes: recipes,
             views: views,
             recentWindow: recentWindow,
             clock: clock,
             filters: effectiveFeedFilters,
-            tastePreferences: onboarding.tastePreferences,
+            tastePreferences: TastePreferences(recipes: recipes, history: viewHistory, savedIDs: cookbook.savedIDs),
             householdSize: householdSize
         )
     }
@@ -98,16 +103,43 @@ public struct KartaState: Equatable, Sendable {
         )
     }
 
-    /// For You's emptiness and copy, using the applied draft. Unavailable
-    /// before onboarding, just like the feed itself.
+    /// For You's emptiness and copy, including all five allergens while unanswered.
     public func feedEmptyState(recipes: [Recipe], clock: any KartaClock) -> FeedEmptyState? {
         guard let feed = feed(recipes: recipes, clock: clock) else { return nil }
         return FeedEmptyState(feed: feed, recipes: recipes, draft: filterDraft, safetyProfile: safetyProfile)
     }
 
+    /// Leftovers uses the same safety composition, Gusto and Frontera as For You.
+    /// The original ingredient-overlap order remains the stable final tie-break.
+    public func leftoversFeed(recipes: [Recipe], clock: any KartaClock) -> Feed {
+        let suggestions = LeftoversQuery.suggestions(
+            recipes: recipes, cooks: cookHistory,
+            recentWindow: FeedPolicy.recentViewWindow, clock: clock,
+            filters: effectiveFeedFilters)
+        return FeedQuery.feed(
+            recipes: suggestions, views: viewHistory.entries,
+            recentWindow: FeedPolicy.recentViewWindow, clock: clock,
+            filters: effectiveFeedFilters,
+            tastePreferences: TastePreferences(recipes: recipes, history: viewHistory, savedIDs: cookbook.savedIDs),
+            householdSize: onboarding.householdSize)
+    }
+
+    /// The signed profile-empty state takes precedence when no safe recipe
+    /// exists. Leftovers-specific empty presentation remains the shell's #9 contract.
+    public func leftoversEmptyState(recipes: [Recipe], clock: any KartaClock) -> FeedEmptyState {
+        let safety = FeedFilters(intolerances: safetyProfile.intolerances)
+        let unfiltered = LeftoversQuery.suggestions(
+            recipes: recipes, cooks: cookHistory,
+            recentWindow: FeedPolicy.recentViewWindow, clock: clock, filters: safety)
+        if unfiltered.isEmpty && recipes.contains(where: safety.allows) {
+            return .none
+        }
+        return FeedEmptyState(feed: leftoversFeed(recipes: recipes, clock: clock),
+                              recipes: recipes, draft: filterDraft, safetyProfile: safetyProfile)
+    }
+
     /// Preview a Mundo with an uncommitted draft and the current safety
-    /// profile. Both feed stretches count; the frontier does not. Leftovers
-    /// remains unavailable until its store integration in #9.
+    /// profile. Both feed stretches count; the frontier does not.
     public func draftRecipeCount(
         for world: World,
         draft: FilterDraft,
@@ -120,15 +152,16 @@ public struct KartaState: Equatable, Sendable {
             preview.filterState.reduce(.apply(draft))
             return preview.feed(recipes: recipes, clock: clock)?.recipes.count
         case .leftovers:
-            return nil
+            var preview = self
+            preview.filterState.reduce(.apply(draft))
+            return preview.leftoversFeed(recipes: recipes, clock: clock).recipes.count
         }
     }
 
     /// Build the feed Card projection with the active safety profile.
     public func cardPresentation(for recipe: Recipe) -> RecipeCardPresentation? {
-        guard onboarding.profile != nil,
-              let householdSize = onboarding.householdSize,
-              FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe) else {
+        let householdSize = onboarding.householdSize ?? recipe.servings
+        guard FeedFilters(intolerances: safetyProfile.intolerances).allows(recipe) else {
             return nil
         }
         return RecipeCardPresentation(
@@ -148,7 +181,7 @@ public struct KartaState: Equatable, Sendable {
 
     /// Build the reverse, including warnings for saved recipes.
     public func reversePresentation(for recipe: Recipe) -> RecipeReversePresentation? {
-        guard onboarding.profile != nil, canOpenRecipe(recipe) else { return nil }
+        guard canOpenRecipe(recipe) else { return nil }
         return RecipeReversePresentation(recipe: recipe, intolerances: safetyProfile.intolerances)
     }
 
@@ -304,18 +337,25 @@ public enum KartaReducer {
             }
         case let .onboarding(action):
             let previousFilters = state.effectiveFeedFilters
-            switch action {
-            case let .answerIntolerances(intolerances):
-                state.onboarding.answerIntolerances(intolerances)
-                state.filterState.reduce(
-                    .setSafetyProfile(SafetyProfile(intolerances: intolerances))
-                )
-            case let .setHouseholdSize(householdSize):
-                state.onboarding.setHouseholdSize(householdSize)
-            case let .tapCalibration(recipeID):
-                state.onboarding.tapCalibration(recipeID)
+            let submitsFirstRun: Bool
+            if case .showMyCards = action {
+                submitsFirstRun = state.onboarding.panel == .firstRun
+                    && state.onboarding.firstRunPanel.canShowCards
+            } else {
+                submitsFirstRun = false
             }
-            if state.effectiveFeedFilters != previousFilters {
+            state.onboarding.reduce(action)
+            switch action {
+            case .answerIntolerances:
+                if case let .answered(intolerances) = state.onboarding.intoleranceAnswer {
+                    state.filterState.reduce(.setSafetyProfile(SafetyProfile(intolerances: intolerances)))
+                }
+            case .showMyCards where submitsFirstRun:
+                state.filterState.reduce(.setSafetyProfile(
+                    SafetyProfile(intolerances: state.onboarding.firstRunPanel.intolerances)))
+            default: break
+            }
+            if submitsFirstRun || state.effectiveFeedFilters != previousFilters {
                 state.navigation.discardAnchors()
             }
         case let .startCooking(recipe, startedAt):
@@ -391,6 +431,10 @@ public enum KartaReducer {
         case let .filter(action):
             let previousFilters = state.effectiveFeedFilters
             state.filterState.reduce(action)
+            if case let .setSafetyProfile(profile) = action,
+               case .answered = state.onboarding.intoleranceAnswer {
+                state.onboarding.answerIntolerances(profile.intolerances)
+            }
             guard state.effectiveFeedFilters != previousFilters else { return }
             state.navigation.discardAnchors()
         case let .pushRoute(route):

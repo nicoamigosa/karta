@@ -82,7 +82,7 @@ struct SaveToastTests {
         #expect(restored.hasShownSaveToast)
         let relaunched = KartaStore(state: KartaState(
             cookbook: restored.cookbook,
-            safetyProfile: SafetyProfile(intolerances: restored.profile.intolerances),
+            safetyProfile: SafetyProfile(intolerances: restored.profile!.intolerances),
             hasShownSaveToast: restored.hasShownSaveToast
         ))
         #expect(relaunched.state.pendingSaveToast == nil)
@@ -105,7 +105,7 @@ struct SaveToastTests {
         #expect(!restored.hasShownSaveToast)
         let store = KartaStore(state: KartaState(
             cookbook: restored.cookbook,
-            safetyProfile: SafetyProfile(intolerances: restored.profile.intolerances),
+            safetyProfile: SafetyProfile(intolerances: restored.profile!.intolerances),
             hasShownSaveToast: restored.hasShownSaveToast
         ))
         store.send(.entitlementChanged(.free))

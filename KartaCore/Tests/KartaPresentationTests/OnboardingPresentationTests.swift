@@ -6,9 +6,54 @@ import KartaPresentation
 @Suite("Onboarding state")
 struct OnboardingPresentationTests {
 
+    @Test("The first tour advances to filters and later launches show filters alone")
+    func tourLifecycle() {
+        var state = OnboardingState()
+        state.reduce(.coldLaunch(reduceMotion: false))
+        #expect(state.tourStop == .cookbook)
+        state.reduce(.tourDelayElapsed)
+        #expect(state.tourStop == .world)
+        state.reduce(.tourDelayElapsed)
+        #expect(state.tourStop == .filters)
+        #expect(state.hasShownFullTour)
+        state.reduce(.tourTap)
+        #expect(state.tourStop == nil)
+        state.reduce(.coldLaunch(reduceMotion: false))
+        #expect(state.tourStop == .filters)
+        state.reduce(.filterButtonTapped)
+        #expect(state.panel == .firstRun)
+        #expect(state.tourStop == nil)
+    }
+
     @MainActor
-    @Test("An unanswered intolerance question cannot produce a feed")
-    func unansweredIntolerancesProduceNoFeed() {
+    @Test("The first-run panel stages both answers and commits them together at the top")
+    func firstRunPanel() throws {
+        let store = KartaStore(state: KartaState(safetyProfile: SafetyProfile(intolerances: [])))
+        store.send(.onboarding(.setMine))
+        #expect(store.state.onboarding.panel == .firstRun)
+        #expect(store.state.onboarding.firstRunPanel.intoleranceLine == "Tap any you never eat, or none.")
+        #expect(!store.state.onboarding.firstRunPanel.canShowCards)
+        store.send(.onboarding(.showMyCards))
+        #expect(store.state.onboarding.profile == nil)
+        store.send(.onboarding(.toggleFirstRunAllergen(.dairy)))
+        #expect(store.state.onboarding.firstRunPanel.intoleranceLine == "Dairy will never show up. Change it anytime here.")
+        store.send(.onboarding(.chooseFirstRunHousehold(5)))
+        store.send(.onboarding(.closePanel))
+        #expect(store.state.onboarding.profile == nil)
+        #expect(store.state.onboarding.householdSize == nil)
+        store.send(.onboarding(.setMine))
+        #expect(store.state.onboarding.firstRunPanel.canShowCards)
+        store.send(.setFeedAnchor(ScrollAnchor(recipeID: "safe", relativeOffset: 0), world: .forYou))
+        store.send(.onboarding(.showMyCards))
+        #expect(store.state.onboarding.profile == OnboardingProfile(intolerances: [.dairy], householdSize: 5))
+        #expect(store.state.onboarding.panel == nil)
+        #expect(store.state.onboarding.banner == nil)
+        #expect(store.state.navigation.anchor(for: .forYou) == nil)
+    }
+
+    @MainActor
+    @Test("An unanswered intolerance question offers the safe deck")
+    func unansweredIntolerancesProduceSafeDeck() {
         let store = KartaStore(state: KartaState(
             onboarding: OnboardingState(householdSize: 2),
             safetyProfile: SafetyProfile(intolerances: [])
@@ -20,7 +65,7 @@ struct OnboardingPresentationTests {
             views: [],
             recentWindow: recentWindow,
             clock: clock
-        ) == nil)
+        )?.recipes.map(\.id) == ["safe"])
     }
 
     @MainActor

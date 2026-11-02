@@ -47,10 +47,11 @@ struct FeedQueryOrderingTests {
         #expect(feed.newRecipes.map(\.id) == ["top", "mid", "low"])
     }
 
-    @Test("Taste preferences move calibrated recipes ahead within the safe feed")
-    func ordersCalibratedRecipesFirst() {
-        var calibration = TasteCalibration()
-        calibration.tap("low")
+    @Test("Aperturas move recipes ahead within the safe feed")
+    func ordersOpenedRecipesFirst() {
+        let preferences = TastePreferences(
+            recipes: [recipe("top", popularity: 90), recipe("low", popularity: 10)],
+            history: ViewHistory(openings: [OpenEntry(recipeID: "low", date: testClock.now)]))
 
         let feed = FeedQuery.feed(
             recipes: [
@@ -61,22 +62,21 @@ struct FeedQueryOrderingTests {
             recentWindow: testRecentWindow,
             clock: testClock,
             filters: FeedFilters(),
-            tastePreferences: calibration.preferences
+            tastePreferences: preferences
         )
 
         #expect(feed.newRecipes.map(\.id) == ["low", "top"])
     }
 
-    @Test("Different calibrations produce different feed orders")
-    func differentCalibrationsChangeOrder() {
-        var firstCalibration = TasteCalibration()
-        firstCalibration.tap("low")
-        var secondCalibration = TasteCalibration()
-        secondCalibration.tap("top")
+    @Test("Different saves and Aperturas produce different feed orders")
+    func differentHistoriesChangeOrder() {
         let recipes = [
             recipe("top", popularity: 50),
             recipe("low", popularity: 50),
         ]
+        let firstPreferences = TastePreferences(recipes: recipes, savedIDs: ["low"])
+        let secondPreferences = TastePreferences(recipes: recipes,
+            history: ViewHistory(openings: [OpenEntry(recipeID: "top", date: testClock.now)]))
 
         let firstFeed = FeedQuery.feed(
             recipes: recipes,
@@ -84,7 +84,7 @@ struct FeedQueryOrderingTests {
             recentWindow: testRecentWindow,
             clock: testClock,
             filters: FeedFilters(),
-            tastePreferences: firstCalibration.preferences
+            tastePreferences: firstPreferences
         )
         let secondFeed = FeedQuery.feed(
             recipes: recipes,
@@ -92,7 +92,7 @@ struct FeedQueryOrderingTests {
             recentWindow: testRecentWindow,
             clock: testClock,
             filters: FeedFilters(),
-            tastePreferences: secondCalibration.preferences
+            tastePreferences: secondPreferences
         )
 
         #expect(firstFeed.newRecipes.map(\.id) == ["low", "top"])
