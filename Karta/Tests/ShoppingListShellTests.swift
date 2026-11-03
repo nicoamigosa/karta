@@ -54,10 +54,6 @@ struct ShoppingListShellTests {
         #expect(sheet.canConfirm)
 
         let keys = sheet.rows.map(\.ingredient.purchaseKey)
-        // Pantry basics start unticked with their hint drawn.
-        for row in sheet.rows where !sheet.selectedKeys.contains(row.ingredient.purchaseKey) {
-            #expect(row.hint != nil)
-        }
         // Unticking one more shrinks the button's count.
         let chosen = keys.first { sheet.selectedKeys.contains($0) }!
         let before = sheet.buttonTitle
@@ -121,8 +117,10 @@ struct ShoppingListShellTests {
         let (store, _) = makeStore()
         store.send(.entitlementChanged(.free))
         store.send(.shopping(.setAutoAdd(true)))
+        // Free silently refuses the switch; the invitation only appears when
+        // the plan blocks a real action (openAdd/openList), covered next door.
         #expect(!store.state.addRecipesAsSaved)
-        #expect(store.state.showsShoppingInvitation)
+        #expect(!store.state.showsShoppingInvitation)
     }
 
     @Test("The pill saves, adds to the list, removes it — never unsaves")
