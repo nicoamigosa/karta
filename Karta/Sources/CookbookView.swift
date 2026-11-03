@@ -216,6 +216,9 @@ struct CookbookScreen: View {
         let pressed = store.state.showsShoppingList
         return Button {
             if pressed {
+                if store.state.shoppingToast != nil {
+                    store.send(.shopping(.dismissToast))
+                }
                 store.send(.shopping(.closeList))
                 onClose()
             } else {
@@ -290,6 +293,9 @@ struct CookbookScreen: View {
             if pressed {
                 onClose()
             } else {
+                if store.state.shoppingToast != nil {
+                    store.send(.shopping(.dismissToast))
+                }
                 store.send(.shopping(.closeList))
             }
         } label: {

@@ -35,6 +35,7 @@ struct FeedScreen: View {
         }
         cookbookOpen = true
         store.send(.shopping(.openList))
+        store.send(.shopping(.dismissToast))
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -1404,14 +1405,7 @@ struct RecipePhoto: View {
     let reference: MediaReference
     let manifest: MediaAssetManifest
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
-        feedBody
-    }
-
-    @ViewBuilder
-    private var feedBody: some View {
         Group {
             if let media = try? MediaResolver(manifest: manifest, baseURL: nil).resolve(reference) {
                 switch media {

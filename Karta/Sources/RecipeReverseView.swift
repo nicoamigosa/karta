@@ -201,6 +201,11 @@ struct RecipeReverseView: View {
 
             HStack {
                 Button {
+                    // Closing the surface that hosts the toast dismisses it,
+                    // so a stale receipt can't resurface elsewhere later.
+                    if store.state.shoppingToast != nil {
+                        store.send(.shopping(.dismissToast))
+                    }
                     store.send(.popRoute)
                 } label: {
                     Image(systemName: "xmark")
