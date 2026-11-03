@@ -224,7 +224,7 @@ struct ShoppingListView: View {
                 )
             )
             .labelsHidden()
-            .tint(KartaDesign.ColorToken.ink)
+            .toggleStyle(ShoppingToggleStyle())
         }
         .padding(.vertical, KartaDesign.space.autoAddRowY)
         .padding(.leading, KartaDesign.space.autoAddRowLeading)
@@ -299,6 +299,7 @@ struct ShoppingListView: View {
                             .foregroundStyle(row.isTicked
                                 ? KartaDesign.ColorToken.tickedInk
                                 : KartaDesign.ColorToken.inkMuted)
+                            .strikethrough(row.isTicked, color: KartaDesign.ColorToken.tickedInk)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
@@ -317,6 +318,7 @@ struct ShoppingListView: View {
                             .foregroundStyle(row.isTicked
                                 ? KartaDesign.ColorToken.tickedInk
                                 : KartaDesign.ColorToken.inkMuted)
+                            .strikethrough(row.isTicked, color: KartaDesign.ColorToken.tickedInk)
                             .lineLimit(1)
                             .fixedSize()
                     }
@@ -787,6 +789,8 @@ struct ShoppingAddSheetView: View {
                     .lineLimit(1)
                     .fixedSize()
             }
+            .frame(minHeight: KartaDesign.space.listRowMin, alignment: .top)
+            .padding(.vertical, KartaDesign.space.rankGap)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(KartaDesign.ColorToken.track)
@@ -927,5 +931,35 @@ struct ShoppingEntrySheet: View {
             store.send(.paywall(.close))
         }
         store.send(.shopping(.dismissInvitation))
+    }
+}
+
+/// The 51 × 31 switch from *Adding as you save*: a `track` fill when off,
+/// `ink` when on, card knob. `.tint` alone leaves iOS grey when off, so the
+/// style draws the track itself.
+private struct ShoppingToggleStyle: ToggleStyle {
+    private let width: CGFloat = 51
+    private let height: CGFloat = 31
+
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) {
+                configuration.isOn.toggle()
+            }
+        } label: {
+            Capsule()
+                .fill(configuration.isOn
+                    ? KartaDesign.ColorToken.ink
+                    : KartaDesign.ColorToken.track)
+                .frame(width: width, height: height)
+                .overlay(alignment: configuration.isOn ? .trailing : .leading) {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.card)
+                        .padding(2)
+                }
+                .accessibilityLabel("Add recipes when I save them")
+                .accessibilityValue(Text(configuration.isOn ? "On" : "Off"))
+        }
+        .buttonStyle(.plain)
     }
 }
