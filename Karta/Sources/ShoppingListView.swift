@@ -716,7 +716,7 @@ struct ShoppingAddSheetView: View {
                     .foregroundStyle(KartaDesign.ColorToken.inkMuted)
 
                 ScrollView {
-                    VStack(spacing: KartaDesign.space.shoppingSheetRowGap) {
+                    VStack(spacing: 0) {
                         ForEach(sheet.rows, id: \.ingredient.id) { row in
                             sheetRow(row)
                         }
@@ -789,7 +789,7 @@ struct ShoppingAddSheetView: View {
                     .lineLimit(1)
                     .fixedSize()
             }
-            .frame(minHeight: KartaDesign.space.listRowMin, alignment: .top)
+            .frame(minHeight: KartaDesign.space.listRowMin, alignment: .leading)
             .padding(.vertical, KartaDesign.space.rankGap)
             .overlay(alignment: .bottom) {
                 Rectangle()
