@@ -25,6 +25,8 @@ struct FeedScreen: View {
     /// resolving it early would report `gone` for recipes that exist, so it
     /// waits for the seed.
     @State private var pendingLink: URL?
+    /// The onboarding's coldLaunch is sent once per process (#172).
+    @State private var didColdLaunch = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -194,6 +196,19 @@ struct FeedScreen: View {
                 openRecipeLink(url)
             }
         }
+        // One cold launch per process: the store decides whether the tour
+        // runs (full, stop 3 alone or never) — no rule lives here.
+        .task {
+            guard !didColdLaunch else { return }
+            didColdLaunch = true
+            store.send(.onboarding(.coldLaunch(reduceMotion: reduceMotion)))
+            DebugSeeds.afterColdLaunch(into: store)
+        }
+        // Persisted answers make the tour's later-launch behaviour possible:
+        // the shell owns the write side of UserSnapshot (#172).
+        .onChange(of: store.state) {
+            UserSnapshotStorage.save(store.state)
+        }
         .task {
             do {
                 let seed = SeedResourceAdapter()
@@ -319,8 +334,15 @@ private struct FeedSurface: View {
     let premium: PremiumController
 
     @State private var mundoMenuOpen = DebugSeeds.opensMundoMenu
-    @State private var filterPanelOpen = DebugSeeds.opensFilterPanel
     @State private var filterButtonCenter: CGFloat = 0
+    /// Header control frames for the tour spotlight (#172).
+    @State private var controlFrames: [TourControl: CGRect] = [:]
+
+    /// Which panel drops from the filter button — the first-run form while
+    /// the Intolerancias are unanswered, the full panel after — or none.
+    private var panel: OnboardingState.Panel? {
+        store.state.onboarding.panel
+    }
 
     private var world: World {
         store.state.navigation.world
@@ -337,7 +359,7 @@ private struct FeedSurface: View {
                     FeedHeader(
                         store: store,
                         mundoMenuOpen: mundoMenuOpen,
-                        filterPressed: filterPanelOpen,
+                        filterPressed: panel != nil,
                         onToggleMundoMenu: {
                             closePanel()
                             withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
@@ -346,16 +368,28 @@ private struct FeedSurface: View {
                         },
                         onOpenCookbook: {
                             mundoMenuOpen = false
-                            filterPanelOpen = false
+                            closePanel()
                             onOpenCookbook()
                         },
                         onFilter: {
                             // Tapping the button again discards the draft.
-                            if filterPanelOpen { closePanel() } else { openPanel() }
+                            if panel != nil { closePanel() } else { openPanel() }
                         },
-                        onFilterButtonCenter: { filterButtonCenter = $0 }
+                        onFilterButtonCenter: { filterButtonCenter = $0 },
+                        onControlFrames: { controlFrames[$0] = $1 }
                     )
                     .padding(.top, KartaDesign.space.headerTopGap)
+
+                    if let banner = store.state.onboarding.banner {
+                        // The Baraja segura banner: 8 pt below the header row,
+                        // 22 pt from the sides (`onboarding-safe-deck.png`).
+                        SafeDeckBannerView(
+                            banner: banner,
+                            send: { store.send(.onboarding($0)) }
+                        )
+                        .padding(.top, KartaDesign.space.bannerTopGap)
+                        .padding(.horizontal, KartaDesign.space.screenX)
+                    }
 
                     Group {
                         switch world {
@@ -374,6 +408,7 @@ private struct FeedSurface: View {
                                     cards: cards,
                                     manifest: manifest,
                                     store: store,
+                                    topGap: deckTopGap,
                                     onOpenCard: onOpenCard
                                 )
                             }
@@ -408,7 +443,7 @@ private struct FeedSurface: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
-                if mundoMenuOpen || filterPanelOpen {
+                if mundoMenuOpen || panel != nil {
                     ZStack(alignment: .top) {
                         // Everything below the header row is dimmed; tapping
                         // the scrim closes what is open.
@@ -437,57 +472,24 @@ private struct FeedSurface: View {
                             }
                         }
 
-                        if filterPanelOpen {
+                        if panel != nil {
                             VStack {
-                                FilterPanelView(
-                                    store: store,
-                                    recipes: recipes,
-                                    clock: SystemClock(),
-                                    maxHeight: panelMaxHeight(in: geometry),
-                                    onApply: { closePanel() }
-                                )
-                                .background {
-                                    RoundedRectangle(
-                                        cornerRadius: KartaDesign.space.filterPanelRadius,
-                                        style: .continuous
-                                    )
-                                    .fill(KartaDesign.ColorToken.buttonEdge)
-                                    .offset(y: KartaDesign.space.menuEdge)
-                                    RoundedRectangle(
-                                        cornerRadius: KartaDesign.space.filterPanelRadius,
-                                        style: .continuous
-                                    )
-                                    .fill(KartaDesign.ColorToken.card)
-                                    RoundedRectangle(
-                                        cornerRadius: KartaDesign.space.filterPanelRadius,
-                                        style: .continuous
-                                    )
-                                    .strokeBorder(
-                                        KartaDesign.ColorToken.line,
-                                        lineWidth: KartaDesign.elevation.backFrameLineWidth
-                                    )
-                                }
-                                .clipShape(RoundedRectangle(
-                                    cornerRadius: KartaDesign.space.filterPanelRadius,
-                                    style: .continuous
-                                ))
-                                .compositingGroup()
-                                .shadow(
-                                    color: KartaDesign.ColorToken.frontShadow,
-                                    radius: KartaDesign.elevation.menuShadowRadius,
-                                    y: KartaDesign.elevation.menuShadowY
-                                )
-                                // The pointer is outside the clip: its top
-                                // half sticks out of the panel's top edge and
-                                // its centre sits on the filter button.
-                                .overlay(alignment: .topLeading) {
-                                    PanelPointer()
-                                        .offset(
-                                            x: filterButtonCenter
-                                                - KartaDesign.space.filterPanelInset
-                                                - KartaDesign.space.panelPeak / 2,
-                                            y: -KartaDesign.space.panelPeak / 2
+                                PanelChrome(filterButtonCenter: filterButtonCenter) {
+                                    switch panel {
+                                    case .full:
+                                        FilterPanelView(
+                                            store: store,
+                                            recipes: recipes,
+                                            clock: SystemClock(),
+                                            maxHeight: panelMaxHeight(in: geometry),
+                                            onApply: { closePanel() }
                                         )
+                                    default:
+                                        FirstRunPanelView(
+                                            store: store,
+                                            maxHeight: panelMaxHeight(in: geometry)
+                                        )
+                                    }
                                 }
                                 .padding(.top, headerClearance(in: geometry)
                                          + KartaDesign.space.filterPanelTopGap)
@@ -500,9 +502,37 @@ private struct FeedSurface: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
                 }
+
+                // The tour's spotlight sits above everything, dimming the
+                // header too; while it is up it owns all taps.
+                if store.state.onboarding.tourStop != nil {
+                    OnboardingTourOverlay(
+                        onboarding: store.state.onboarding,
+                        controlFrames: controlFrames,
+                        safeAreaInsets: geometry.safeAreaInsets,
+                        send: { store.send(.onboarding($0)) }
+                    )
+                    .transition(.opacity)
+                }
             }
             .coordinateSpace(name: FeedLayout.coordinateSpace)
+            // The scrim+panel and the tour overlay declare .transition(.opacity);
+            // these cover their insertion/removal wherever the action comes
+            // from (button, scrim tap, coldLaunch) — 300 ms, as in #6, and it is
+            // also what fades stop 3 in under Reduce Motion.
+            .animation(.easeOut(duration: KartaDesign.deck.faceRevealDuration),
+                       value: store.state.onboarding.panel != nil)
+            .animation(.easeOut(duration: KartaDesign.deck.faceRevealDuration),
+                       value: store.state.onboarding.tourStop != nil)
         }
+    }
+
+    /// The deck's gap below what sits above it: 14 pt below the banner,
+    /// 20 pt below the header row (spec: *First open and onboarding*).
+    private var deckTopGap: CGFloat {
+        store.state.onboarding.banner != nil
+            ? KartaDesign.space.bannerToDeck
+            : KartaDesign.space.headerToDeck
     }
 
     /// Clear zone above the scrim: status-bar area, the 6 pt header gap and
@@ -531,18 +561,15 @@ private struct FeedSurface: View {
 
     private func openPanel() {
         closeMenu()
-        withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
-            filterPanelOpen = true
-        }
+        // The store picks first-run or full (and advances the tour's stop 3).
+        store.send(.onboarding(.filterButtonTapped))
     }
 
     /// Closing the panel without applying throws the draft away; the panel's
     /// draft dies with it and any saved Intolerancias stay saved.
     private func closePanel() {
         store.send(.filter(.cancel))
-        withAnimation(.easeOut(duration: KartaDesign.deck.faceRevealDuration)) {
-            filterPanelOpen = false
-        }
+        store.send(.onboarding(.closePanel))
     }
 
     private func closeMenu() {
@@ -740,6 +767,9 @@ private struct LeftoversPlaceholder: View {
 private struct FeedDeck: View {
     let manifest: MediaAssetManifest
     let store: KartaStore
+    /// Gap between the deck and what sits above it (20 pt below the header
+    /// row, 14 below the Baraja segura banner).
+    var topGap: CGFloat = KartaDesign.space.headerToDeck
     /// Called when the front Card is tapped open.
     let onOpenCard: () -> Void
 
@@ -757,10 +787,12 @@ private struct FeedDeck: View {
         cards: [FeedDeckCard],
         manifest: MediaAssetManifest,
         store: KartaStore,
+        topGap: CGFloat = KartaDesign.space.headerToDeck,
         onOpenCard: @escaping () -> Void
     ) {
         self.manifest = manifest
         self.store = store
+        self.topGap = topGap
         self.onOpenCard = onOpenCard
         _cards = State(initialValue: cards)
         _currentIndex = State(initialValue: FeedDeckAnchor.initialIndex(
@@ -786,7 +818,7 @@ private struct FeedDeck: View {
                 .gesture(dragGesture)
                 .onTapGesture(perform: openCurrentCard)
             }
-            .padding(.top, KartaDesign.space.headerToDeck)
+            .padding(.top, topGap)
             .padding(.horizontal, KartaDesign.space.screenX)
 
             Text("Swipe up or down")
@@ -956,6 +988,12 @@ private struct FeedDeck: View {
             try await Task.sleep(for: .seconds(KartaDesign.deck.nudgeDelay))
         } catch {
             return
+        }
+        // The nudge waits until the tour has ended and no panel is up
+        // (#172): the store owns `canShowEntryNudge`.
+        while !store.state.onboarding.canShowEntryNudge {
+            guard !hasInteracted, !Task.isCancelled else { return }
+            try? await Task.sleep(for: .seconds(0.25))
         }
         guard !hasInteracted else { return }
 
