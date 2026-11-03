@@ -697,6 +697,10 @@ struct ShoppingAddSheetView: View {
     let sheet: ShoppingAddSheet
     let store: KartaStore
 
+    /// Measured so the sheet hugs its rows: the ScrollView caps at the
+    /// board's height, never stretches past what the rows need.
+    @State private var rowsHeight: CGFloat = 0
+
     var body: some View {
         ShoppingSheetChrome {
             store.send(.shopping(.dismissSheet))
@@ -715,9 +719,14 @@ struct ShoppingAddSheetView: View {
                             sheetRow(row)
                         }
                     }
+                    .onGeometryChange(for: CGFloat.self) { proxy in
+                        proxy.size.height
+                    } action: { height in
+                        rowsHeight = height
+                    }
                 }
                 .scrollIndicators(.hidden)
-                .frame(maxHeight: 320)
+                .frame(height: min(rowsHeight, 320))
 
                 ShoppingPrimaryButton(
                     title: sheet.buttonTitle,
@@ -778,6 +787,11 @@ struct ShoppingAddSheetView: View {
                     .lineLimit(1)
                     .fixedSize()
             }
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(KartaDesign.ColorToken.track)
+                    .frame(height: 1)
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -794,6 +808,8 @@ struct ShoppingAddSheetView: View {
 /// ask**. Every other dismissal leaves the switch off.
 struct ShoppingAutoAddQuestionView: View {
     let store: KartaStore
+    /// The recipe suit the board tints the icon circle with.
+    let suit: SuitTokens
 
     var body: some View {
         ShoppingSheetChrome {
@@ -801,7 +817,7 @@ struct ShoppingAutoAddQuestionView: View {
         } content: {
             VStack(spacing: KartaDesign.space.cookbookBlockGap) {
                 Circle()
-                    .fill(KartaDesign.ColorToken.creamLine)
+                    .fill(suit.chip)
                     .frame(
                         width: KartaDesign.space.sheetIconCircle,
                         height: KartaDesign.space.sheetIconCircle
@@ -843,6 +859,8 @@ struct ShoppingAutoAddQuestionView: View {
 struct ShoppingEntrySheet: View {
     let store: KartaStore
     let premium: PremiumController
+    /// The recipe suit the board tints the icon circle with.
+    let suit: SuitTokens
 
     /// The grown paywall once See plans opened it for the list entry.
     private var paywall: Paywall? {
@@ -865,7 +883,7 @@ struct ShoppingEntrySheet: View {
                 } else {
                     VStack(spacing: KartaDesign.space.cookbookBlockGap) {
                         Circle()
-                            .fill(KartaDesign.ColorToken.creamLine)
+                            .fill(suit.chip)
                             .frame(
                                 width: KartaDesign.space.sheetIconCircle,
                                 height: KartaDesign.space.sheetIconCircle
@@ -879,7 +897,7 @@ struct ShoppingEntrySheet: View {
                             }
 
                         Text(ShoppingInvitation.title)
-                            .font(KartaDesign.FontToken.shoppingSheetTitle())
+                            .font(KartaDesign.FontToken.shoppingTitle())
                             .foregroundStyle(KartaDesign.ColorToken.ink)
                             .multilineTextAlignment(.center)
 

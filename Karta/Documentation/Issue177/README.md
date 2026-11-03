@@ -35,5 +35,5 @@ Notes on board-to-shot differences:
 - `shopping-list-got-it` / `shopping-list-done-undo`: the seed lists a single
   recipe (Spanish Tortilla) so the `Got it · 2` divider and the ticked rows
   stay on screen; the board draws a longer list with the same chrome.
-- `shopping-cookbook-removed`: the board shows the removal toast; the shot
-  shows it after removing Banana Pancakes via the list chip / unsave path.
+- `shopping-cookbook-removed`: the seed removes Spanish Tortilla and Pesto
+  Pasta through Select, so the toast reads "2 recipes removed" like the board.

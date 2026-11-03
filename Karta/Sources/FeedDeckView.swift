@@ -127,16 +127,24 @@ struct FeedScreen: View {
 
             // The shopping sheets: the add sheet over the reverse, the
             // one-time auto-add question, and the invitation→paywall sheet.
+            // Their icon circles take the chip of the recipe behind them —
+            // dinner's when the sheet stands over the cookbook alone.
+            let sheetSuit = KartaDesign.suit(
+                RecipeReverseRoute.recipe(
+                    for: store.state.navigation.routes,
+                    in: recipes
+                )?.primaryCourse ?? .dinner
+            )
             if let sheet = store.state.shoppingSheet {
                 ShoppingAddSheetView(sheet: sheet, store: store)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if store.state.showsAutoAddQuestion {
-                ShoppingAutoAddQuestionView(store: store)
+                ShoppingAutoAddQuestionView(store: store, suit: sheetSuit)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if store.state.shoppingEntryIsPresented {
-                ShoppingEntrySheet(store: store, premium: premium)
+                ShoppingEntrySheet(store: store, premium: premium, suit: sheetSuit)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 

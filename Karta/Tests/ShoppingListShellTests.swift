@@ -313,6 +313,20 @@ struct ShoppingListShellTests {
         }
     }
 
+    @Test("Long-press removes one recipe; Undo restores it")
+    func longPressRemoveUndo() {
+        let (store, recipes) = makeStore()
+        store.send(.entitlementChanged(.premium))
+        let recipe = savedRecipe(store, from: recipes)
+
+        store.send(.unsaveRecipe(recipe.id))
+        #expect(!store.cookbook.isSaved(recipe.id))
+        #expect(store.unsaveToast(recipes: recipes)?.title == "Removed from cookbook")
+
+        store.send(.undoUnsave)
+        #expect(store.cookbook.isSaved(recipe.id))
+    }
+
     @Test("Done keeps the switch position and exits selection with no removal")
     func selectionDone() {
         let (store, recipes) = makeStore()

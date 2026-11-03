@@ -53,7 +53,7 @@ struct CookbookScreen: View {
         .overlay(alignment: .bottom) {
             if presentation.isSelecting {
                 selectionBar
-                    .padding(.horizontal, KartaDesign.space.toastSideMargin - KartaDesign.space.screenX)
+                    .padding(.horizontal, KartaDesign.space.toastSideMargin)
                     .padding(.bottom, KartaDesign.space.selectionBarBottom)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             } else if let toast = store.unsaveToast(recipes: recipes) {
@@ -62,7 +62,7 @@ struct CookbookScreen: View {
                 }, onExpire: {
                     store.send(.dismissUnsaveToast)
                 })
-                .padding(.horizontal, KartaDesign.space.toastSideMargin - KartaDesign.space.screenX)
+                .padding(.horizontal, KartaDesign.space.toastSideMargin)
                 .padding(.bottom, KartaDesign.space.toastBottomInset)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -253,15 +253,15 @@ struct CookbookScreen: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                // The rows left to buy, as the filter badge.
-                if let badge = store.state.shoppingPresentation.badge {
+                // The rows left to buy, as the filter badge — only while
+                // the list is closed (the boards draw no badge pressed).
+                if !pressed, let badge = store.state.shoppingPresentation.badge {
                     Text("\(badge)")
                         .font(KartaDesign.FontToken.filterBadge())
                         .foregroundStyle(KartaDesign.ColorToken.card)
-                        .frame(
-                            width: KartaDesign.space.filterBadge,
-                            height: KartaDesign.space.filterBadge
-                        )
+                        .padding(.horizontal, KartaDesign.space.filterBadgeOutset)
+                        .frame(minWidth: KartaDesign.space.filterBadge)
+                        .frame(height: KartaDesign.space.filterBadge)
                         .background(
                             KartaDesign.ColorToken.brand,
                             in: Circle()

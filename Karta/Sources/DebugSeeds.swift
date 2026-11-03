@@ -277,7 +277,11 @@ enum DebugSeeds {
         case "shopping-cookbook-removed":
             store.send(.entitlementChanged(.premium))
             addToList(["caesar-salad"], to: store)
-            store.send(.unsaveRecipe("banana-pancakes"))
+            // Two recipes removed through Select, like the board draws.
+            store.send(.beginCookbookSelection)
+            store.send(.toggleCookbookSelection("spanish-tortilla"))
+            store.send(.toggleCookbookSelection("pesto-pasta"))
+            store.send(.removeCookbookSelection)
         case "shopping-list", "shopping-ax1":
             store.send(.entitlementChanged(.premium))
             addToList(
@@ -584,7 +588,16 @@ enum DebugSeeds {
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
             )
-        case "shopping-cookbook-removed", "shopping-save-auto":
+        case "shopping-cookbook-removed":
+            return KartaState(
+                cookbook: Cookbook(savedIDs: [
+                    "banana-pancakes", "caesar-salad", "spanish-tortilla",
+                    "pesto-pasta"
+                ]),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "shopping-save-auto":
             return KartaState(
                 cookbook: Cookbook(savedIDs: ["banana-pancakes", "caesar-salad"]),
                 onboarding: Self.onboarded(),
