@@ -7,6 +7,7 @@ import KartaPresentation
 /// The shell's shopping flows, exercised through the same seams the views
 /// send and render (`docs/shopping-list-contract.md`): the store carries
 /// `recipes` and a clock like the app, so the shopping actions reduce.
+@MainActor
 @Suite("Shopping list shell")
 struct ShoppingListShellTests {
 
