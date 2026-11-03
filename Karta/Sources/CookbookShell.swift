@@ -31,21 +31,6 @@ enum CookbookHalf: String, CaseIterable {
     }
 }
 
-/// Which surface an unsave came from. Decides where the Undo toast lives and
-/// whether Undo reopens the reverse (`docs/design/karta-v1.md` → *Undo*:
-/// from a reverse opened in the cookbook the reverse closes and Undo puts
-/// the card back in its slot and opens the reverse again).
-enum UnsaveOrigin {
-    case feedReverse
-    case cookbookGrid
-    case cookbookReverse
-
-    /// Only a reverse opened in the cookbook flips back into its grid slot.
-    var closesReverse: Bool { self == .cookbookReverse }
-    /// Only that same path reopens the reverse on Undo (not an Apertura).
-    var undoReopensReverse: Bool { self == .cookbookReverse }
-}
-
 /// What the shell plays after sending `.saveRecipe`: the save animation or
 /// the cookbook-full sheet. The view reads the result the store recorded —
 /// it never inspects the cookbook itself to decide.

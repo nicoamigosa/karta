@@ -15,7 +15,9 @@ struct CookbookScreen: View {
     let onOpenRecipe: (CookbookPresentation.Row) -> Void
     let onUnsaveFromGrid: (CookbookPresentation.Row) -> Void
     let onShare: (CookbookPresentation.Row) -> Void
-    let onUndo: (UnsaveToast) -> Void
+    /// See list on the shopping toast: the parent also coordinates the
+    /// surfaces the toast can sit on (a reverse over the feed).
+    let onSeeList: () -> Void
     /// The cupo line's way in (Go unlimited → paywall, Manage → Apple).
     let premium: PremiumController
 
@@ -35,58 +37,79 @@ struct CookbookScreen: View {
         VStack(spacing: KartaDesign.space.cookbookBlockGap) {
             header
 
-            if !presentation.wantToTry.isEmpty || !presentation.repertoire.isEmpty {
-                switchView
-            }
-
-            if let cupoLine = presentation.cupoLine {
-                cupoView(cupoLine)
-                    .font(KartaDesign.FontToken.cupoCount())
-                    .frame(maxWidth: .infinity)
-            }
-
-            if presentation.wantToTry.isEmpty && presentation.repertoire.isEmpty {
-                emptyState(
-                    title: "Nothing saved yet",
-                    body: "Tap Save on a recipe you like and it lands here."
+            if store.state.showsShoppingList {
+                ShoppingListView(
+                    recipes: recipes,
+                    store: store,
+                    onSeeList: onSeeList
                 )
-            } else if half.rows(in: presentation).isEmpty {
-                switch half {
-                case .repertoire:
-                    emptyState(
-                        title: "Nothing cooked yet",
-                        body: "Cook a recipe from Want to try and it moves here."
-                    )
-                case .wantToTry:
-                    emptyState(
-                        title: "You've cooked them all",
-                        body: "Save something new from For You to try next."
-                    )
-                }
             } else {
-                grid(rows: half.rows(in: presentation))
+                cookbookBody
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, KartaDesign.space.screenX)
         .background(KartaDesign.ColorToken.paper.ignoresSafeArea())
         .overlay(alignment: .bottom) {
-            if let toast = store.unsaveToast(recipes: recipes) {
+            if presentation.isSelecting {
+                selectionBar
+                    .padding(.horizontal, KartaDesign.space.toastSideMargin - KartaDesign.space.screenX)
+                    .padding(.bottom, KartaDesign.space.selectionBarBottom)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if let toast = store.unsaveToast(recipes: recipes) {
                 UnsaveToastView(toast: toast, onUndo: {
-                    onUndo(toast)
+                    store.send(.undoUnsave)
                 }, onExpire: {
                     store.send(.dismissUnsaveToast)
                 })
-                .padding(.horizontal, KartaDesign.space.toastSideMargin)
+                .padding(.horizontal, KartaDesign.space.toastSideMargin - KartaDesign.space.screenX)
                 .padding(.bottom, KartaDesign.space.toastBottomInset)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.easeOut(duration: 0.25), value: store.unsaveToast(recipes: recipes))
+        .animation(.easeOut(duration: 0.25), value: presentation.isSelecting)
         .manageSubscriptionsSheet(
             isPresented: $showsManageSubscriptions,
             subscriptionGroupID: PremiumProductIDs.subscriptionGroupID
         )
+    }
+
+    /// The cookbook body the list replaces: switch, cupo line and the grid
+    /// or empty state — unchanged apart from the selection chrome.
+    @ViewBuilder
+    private var cookbookBody: some View {
+        if !presentation.wantToTry.isEmpty || !presentation.repertoire.isEmpty {
+            switchView
+        }
+
+        if let cupoLine = presentation.cupoLine {
+            cupoView(cupoLine)
+                .font(KartaDesign.FontToken.cupoCount())
+                .frame(maxWidth: .infinity)
+        }
+
+        if presentation.wantToTry.isEmpty && presentation.repertoire.isEmpty {
+            emptyState(
+                title: "Nothing saved yet",
+                body: "Tap Save on a recipe you like and it lands here."
+            )
+        } else if half.rows(in: presentation).isEmpty {
+            switch half {
+            case .repertoire:
+                emptyState(
+                    title: "Nothing cooked yet",
+                    body: "Cook a recipe from Want to try and it moves here."
+                )
+            case .wantToTry:
+                emptyState(
+                    title: "You've cooked them all",
+                    body: "Save something new from For You to try next."
+                )
+            }
+        } else {
+            grid(rows: half.rows(in: presentation))
+        }
     }
 
     /// The cupo line under the switch: only its link is underlined and
@@ -114,8 +137,11 @@ struct CookbookScreen: View {
         }
     }
 
-    /// The wordmark left and the door button right, pressed: same box icon,
-    /// `ink` fill — tapping it again goes back to For You (board *H3*).
+    /// The wordmark left and the controls right (`shopping-cookbook-door.png`):
+    /// the Select pill while the cookbook holds a recipe, the list button
+    /// with its left-to-buy badge and the door — the pressed one goes back
+    /// to For You, the unpressed one swaps between cookbook and list. In
+    /// selection mode the buttons give way to the pressed Done.
     private var header: some View {
         HStack {
             Text("karta")
@@ -126,25 +152,227 @@ struct CookbookScreen: View {
 
             Spacer()
 
-            Button(action: onClose) {
-                CookbookBoxGlyph(checked: false, ink: KartaDesign.ColorToken.card)
-                    .frame(width: KartaDesign.space.doorGlyph, height: KartaDesign.space.doorGlyph)
-                    .frame(width: KartaDesign.space.doorButton, height: KartaDesign.space.doorButton)
-                    .background {
-                        Circle()
-                            .fill(KartaDesign.ColorToken.inkEdge)
-                            .offset(y: KartaDesign.space.reverseButtonEdge)
-                        Circle()
-                            .fill(KartaDesign.ColorToken.ink)
-                        Circle()
-                            .strokeBorder(
-                                KartaDesign.ColorToken.ink,
-                                lineWidth: KartaDesign.elevation.backFrameLineWidth
+            if presentation.isSelecting {
+                Button {
+                    store.send(.endCookbookSelection)
+                } label: {
+                    Text("Done")
+                        .font(KartaDesign.FontToken.button())
+                        .foregroundStyle(KartaDesign.ColorToken.card)
+                        .padding(.horizontal, KartaDesign.space.selectPillX)
+                        .frame(height: KartaDesign.space.selectPillHeight)
+                        .background {
+                            Capsule()
+                                .fill(KartaDesign.ColorToken.inkEdge)
+                                .offset(y: KartaDesign.space.reverseButtonEdge)
+                            Capsule()
+                                .fill(KartaDesign.ColorToken.ink)
+                            Capsule()
+                                .strokeBorder(
+                                    KartaDesign.ColorToken.ink,
+                                    lineWidth: KartaDesign.elevation.backFrameLineWidth
+                                )
+                        }
+                }
+                .accessibilityLabel("Done selecting")
+            } else {
+                HStack(spacing: KartaDesign.space.doorGap) {
+                    if presentation.canSelect && !store.state.showsShoppingList {
+                        Button {
+                            store.send(.beginCookbookSelection)
+                        } label: {
+                            Text("Select")
+                                .font(KartaDesign.FontToken.button())
+                                .foregroundStyle(KartaDesign.ColorToken.ink)
+                                .padding(.horizontal, KartaDesign.space.selectPillX)
+                                .frame(height: KartaDesign.space.selectPillHeight)
+                                .background {
+                                    Capsule()
+                                        .fill(KartaDesign.ColorToken.buttonEdge)
+                                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                                    Capsule()
+                                        .fill(KartaDesign.ColorToken.card)
+                                    Capsule()
+                                        .strokeBorder(
+                                            KartaDesign.ColorToken.line,
+                                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                                        )
+                                }
+                        }
+                        .accessibilityLabel("Select recipes")
+                    }
+
+                    listButton
+                    doorButton
+                }
+            }
+        }
+    }
+
+    /// The list's own door: same 40 pt tactile circle, list icon inside,
+    /// pressed while the list is open — tapping it there goes back to For
+    /// You, as the pressed door does.
+    private var listButton: some View {
+        let pressed = store.state.showsShoppingList
+        return Button {
+            if pressed {
+                store.send(.shopping(.closeList))
+                onClose()
+            } else {
+                store.send(.shopping(.openList))
+            }
+        } label: {
+            ShoppingListGlyph(
+                ink: pressed ? KartaDesign.ColorToken.card : KartaDesign.ColorToken.ink
+            )
+            .frame(width: KartaDesign.space.doorGlyph, height: KartaDesign.space.doorGlyph)
+            .frame(width: KartaDesign.space.doorButton, height: KartaDesign.space.doorButton)
+            .background {
+                if pressed {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.inkEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Circle()
+                        .fill(KartaDesign.ColorToken.ink)
+                    Circle()
+                        .strokeBorder(
+                            KartaDesign.ColorToken.ink,
+                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                        )
+                } else {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.buttonEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Circle()
+                        .fill(KartaDesign.ColorToken.card)
+                    Circle()
+                        .strokeBorder(
+                            KartaDesign.ColorToken.line,
+                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                        )
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                // The rows left to buy, as the filter badge.
+                if let badge = store.state.shoppingPresentation.badge {
+                    Text("\(badge)")
+                        .font(KartaDesign.FontToken.filterBadge())
+                        .foregroundStyle(KartaDesign.ColorToken.card)
+                        .frame(
+                            width: KartaDesign.space.filterBadge,
+                            height: KartaDesign.space.filterBadge
+                        )
+                        .background(
+                            KartaDesign.ColorToken.brand,
+                            in: Circle()
+                        )
+                        .overlay(
+                            Circle().strokeBorder(
+                                KartaDesign.ColorToken.paper,
+                                lineWidth: KartaDesign.space.filterBadgeRing
                             )
+                        )
+                        .offset(
+                            x: KartaDesign.space.filterBadgeOutset,
+                            y: -KartaDesign.space.filterBadgeOutset
+                        )
+                }
+            }
+        }
+        .accessibilityLabel(pressed ? "Back to For You" : "Open your shopping list")
+    }
+
+    /// The cookbook door: pressed on the cookbook (tap → For You), resting
+    /// on the list (tap → back to the cookbook).
+    private var doorButton: some View {
+        let pressed = !store.state.showsShoppingList
+        return Button {
+            if pressed {
+                onClose()
+            } else {
+                store.send(.shopping(.closeList))
+            }
+        } label: {
+            CookbookBoxGlyph(
+                checked: false,
+                ink: pressed ? KartaDesign.ColorToken.card : KartaDesign.ColorToken.ink
+            )
+            .frame(width: KartaDesign.space.doorGlyph, height: KartaDesign.space.doorGlyph)
+            .frame(width: KartaDesign.space.doorButton, height: KartaDesign.space.doorButton)
+            .background {
+                if pressed {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.inkEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Circle()
+                        .fill(KartaDesign.ColorToken.ink)
+                    Circle()
+                        .strokeBorder(
+                            KartaDesign.ColorToken.ink,
+                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                        )
+                } else {
+                    Circle()
+                        .fill(KartaDesign.ColorToken.buttonEdge)
+                        .offset(y: KartaDesign.space.reverseButtonEdge)
+                    Circle()
+                        .fill(KartaDesign.ColorToken.card)
+                    Circle()
+                        .strokeBorder(
+                            KartaDesign.ColorToken.line,
+                            lineWidth: KartaDesign.elevation.backFrameLineWidth
+                        )
+                }
+            }
+        }
+        .accessibilityLabel(pressed ? "Back to For You" : "Back to your cookbook")
+    }
+
+    /// The floating ink bar of selection mode (`shopping-cookbook-select.png`):
+    /// "N selected" on the left, one cream Remove pill on the right — Remove
+    /// is the only action and sits at 45 % with nothing selected.
+    private var selectionBar: some View {
+        HStack(spacing: KartaDesign.space.toastPadding) {
+            Text(presentation.selectionBarText)
+                .font(KartaDesign.FontToken.toastTitle())
+                .foregroundStyle(KartaDesign.ColorToken.card)
+            Spacer(minLength: KartaDesign.space.toastPadding)
+            Button {
+                store.send(.removeCookbookSelection)
+            } label: {
+                Label("Remove", systemImage: "trash")
+                    .font(KartaDesign.FontToken.button())
+                    .foregroundStyle(KartaDesign.ColorToken.ink)
+                    .frame(height: KartaDesign.space.toastUndoHit)
+                    .padding(.horizontal, KartaDesign.space.saveButtonX)
+                    .background {
+                        Capsule()
+                            .fill(KartaDesign.ColorToken.mutedStroke)
+                            .offset(y: KartaDesign.space.reverseButtonEdge)
+                        Capsule()
+                            .fill(KartaDesign.ColorToken.card)
                     }
             }
-            .accessibilityLabel("Back to For You")
+            .disabled(!presentation.canRemoveSelection)
+            .opacity(presentation.canRemoveSelection ? 1 : KartaDesign.paywall.disabledOpacity)
+            .accessibilityLabel("Remove the selected recipes")
         }
+        .padding(.vertical, KartaDesign.space.toastPadding)
+        .padding(.leading, KartaDesign.space.toastLeading)
+        .padding(.trailing, KartaDesign.space.toastPadding)
+        .background(
+            KartaDesign.ColorToken.ink,
+            in: RoundedRectangle(
+                cornerRadius: KartaDesign.space.toastRadius,
+                style: .continuous
+            )
+        )
+        .shadow(
+            color: KartaDesign.ColorToken.frontShadow,
+            radius: KartaDesign.elevation.frontShadowRadius,
+            y: KartaDesign.elevation.buttonShadowY
+        )
+        .accessibilityElement(children: .contain)
     }
 
     private var switchView: some View {
@@ -208,26 +436,40 @@ struct CookbookScreen: View {
                 spacing: KartaDesign.space.cookbookGridGap
             ) {
                 ForEach(rows, id: \.recipeID) { row in
-                    CookbookGridCard(row: row, manifest: manifest)
-                        .onTapGesture {
+                    let selected = presentation.selectedRecipeIDs.contains(row.recipeID)
+                    CookbookGridCard(
+                        row: row,
+                        manifest: manifest,
+                        isSelecting: presentation.isSelecting,
+                        isSelected: selected
+                    )
+                    // The unselected drop to 75 % once something is picked.
+                    .opacity(presentation.isSelecting
+                             && !presentation.selectedRecipeIDs.isEmpty
+                             && !selected ? 0.75 : 1)
+                    .onTapGesture {
+                        if presentation.isSelecting {
+                            store.send(.toggleCookbookSelection(row.recipeID))
+                        } else {
                             onOpenRecipe(row)
                         }
-                        .contextMenu {
-                            // Share sits above Remove while the app has a
-                            // base URL; with none it never appears.
-                            if canShare(row) {
-                                Button {
-                                    onShare(row)
-                                } label: {
-                                    Label("Share", systemImage: "square.and.arrow.up")
-                                }
-                            }
-                            Button(role: .destructive) {
-                                onUnsaveFromGrid(row)
+                    }
+                    .contextMenu {
+                        // Share sits above Remove while the app has a
+                        // base URL; with none it never appears.
+                        if canShare(row) {
+                            Button {
+                                onShare(row)
                             } label: {
-                                Label("Remove from cookbook", systemImage: "trash")
+                                Label("Share", systemImage: "square.and.arrow.up")
                             }
                         }
+                        Button(role: .destructive) {
+                            onUnsaveFromGrid(row)
+                        } label: {
+                            Label("Remove from cookbook", systemImage: "trash")
+                        }
+                    }
                 }
             }
         }
@@ -262,10 +504,14 @@ struct CookbookScreen: View {
 }
 
 /// One saved recipe in the cookbook grid: photo, title, time, and the crimson
-/// intolerance tag when a saved recipe contains a new Intolerancia.
+/// intolerance tag when a saved recipe contains a new Intolerancia. In
+/// selection mode it carries the 26 pt check circle and, when selected,
+/// the ink ring (`shopping-cookbook-select.png`).
 private struct CookbookGridCard: View {
     let row: CookbookPresentation.Row
     let manifest: MediaAssetManifest
+    var isSelecting = false
+    var isSelected = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: KartaDesign.space.chipGap) {
@@ -318,7 +564,45 @@ private struct CookbookGridCard: View {
             y: KartaDesign.elevation.backShadowY
         )
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Double-tap to open. Touch and hold to remove from cookbook.")
+        .overlay(alignment: .topLeading) {
+            if isSelecting {
+                ZStack {
+                    if isSelected {
+                        Circle()
+                            .fill(KartaDesign.ColorToken.ink)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(KartaDesign.ColorToken.card)
+                    } else {
+                        Circle()
+                            .fill(KartaDesign.ColorToken.inkEdge.opacity(0.3))
+                        Circle()
+                            .strokeBorder(Color.white, lineWidth: 2)
+                    }
+                }
+                .frame(
+                    width: KartaDesign.space.selectionCircle,
+                    height: KartaDesign.space.selectionCircle
+                )
+                .padding(KartaDesign.space.selectionCircleInset)
+                .accessibilityHidden(true)
+            }
+        }
+        .overlay {
+            if isSelecting && isSelected {
+                RoundedRectangle(
+                    cornerRadius: KartaDesign.radius.photo,
+                    style: .continuous
+                )
+                .strokeBorder(
+                    KartaDesign.ColorToken.ink,
+                    lineWidth: KartaDesign.space.selectionRing
+                )
+            }
+        }
+        .accessibilityHint(isSelecting
+            ? (isSelected ? "Double-tap to unselect." : "Double-tap to select.")
+            : "Double-tap to open. Touch and hold to remove from cookbook.")
     }
 }
 

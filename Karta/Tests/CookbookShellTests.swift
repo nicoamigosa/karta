@@ -15,16 +15,6 @@ struct CookbookShellTests {
         #expect(CookbookHalf.reopening(stored: "bogus") == .wantToTry)
     }
 
-    @Test("Only a reverse opened in the cookbook closes and reopens on Undo")
-    func unsaveOriginFlow() {
-        #expect(UnsaveOrigin.cookbookReverse.closesReverse)
-        #expect(UnsaveOrigin.cookbookReverse.undoReopensReverse)
-        #expect(!UnsaveOrigin.feedReverse.closesReverse)
-        #expect(!UnsaveOrigin.feedReverse.undoReopensReverse)
-        #expect(!UnsaveOrigin.cookbookGrid.closesReverse)
-        #expect(!UnsaveOrigin.cookbookGrid.undoReopensReverse)
-    }
-
     @Test("A blocked save plays the cookbook-full sheet, a save the animation")
     func saveTapEffect() {
         #expect(SaveTap.effect(of: .saved) == .saved)

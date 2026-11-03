@@ -16,8 +16,6 @@ struct FeedScreen: View {
     @State private var isLoaded = false
     @State private var loadError: String?
     @State private var cookbookOpen = DebugSeeds.opensCookbook
-    @State private var reverseFromCookbook = false
-    @State private var unsaveOrigin: UnsaveOrigin = .feedReverse
     /// The payload currently in the native share sheet; nil while Share is
     /// switched off or no sheet is up.
     @State private var presentedShare: PresentedShare?
@@ -27,6 +25,17 @@ struct FeedScreen: View {
     @State private var pendingLink: URL?
     /// The onboarding's coldLaunch is sent once per process (#172).
     @State private var didColdLaunch = false
+
+    /// See list on a shopping toast: pop whatever covers the feed (a
+    /// reverse is the only route the toast can sit on) and open the list
+    /// inside the cookbook.
+    private func openShoppingList() {
+        if !store.state.navigation.routes.isEmpty {
+            store.send(.popRoute)
+        }
+        cookbookOpen = true
+        store.send(.shopping(.openList))
+    }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -57,11 +66,9 @@ struct FeedScreen: View {
                             cookbookOpen = false
                         },
                         onOpenRecipe: { row in
-                            reverseFromCookbook = true
                             store.send(.pushRoute(.recipeDetail(recipeID: row.recipeID)))
                         },
                         onUnsaveFromGrid: { row in
-                            unsaveOrigin = .cookbookGrid
                             store.send(.unsaveRecipe(row.recipeID))
                         },
                         onShare: { row in
@@ -70,16 +77,7 @@ struct FeedScreen: View {
                                 presentedShare = PresentedShare(payload: payload)
                             }
                         },
-                        onUndo: { toast in
-                            store.send(.undoUnsave)
-                            // Undo returns the card to its slot and opens the
-                            // reverse again — not an Apertura. Skipped when the
-                            // toast raced its own expiry and nothing was restored.
-                            if unsaveOrigin.undoReopensReverse,
-                               store.cookbook.isSaved(toast.recipeID) {
-                                store.send(.pushRoute(.recipeDetail(recipeID: toast.recipeID)))
-                            }
-                        },
+                        onSeeList: openShoppingList,
                         premium: premium
                     )
                     .transition(.opacity)
@@ -92,9 +90,7 @@ struct FeedScreen: View {
                         onOpenCookbook: {
                             cookbookOpen = true
                         },
-                        onOpenCard: {
-                            reverseFromCookbook = false
-                        },
+                        onOpenCard: {},
                         premium: premium
                     )
                     .transition(.opacity)
@@ -113,26 +109,34 @@ struct FeedScreen: View {
                     presentation: reverse,
                     manifest: manifest,
                     store: store,
-                    openedFromCookbook: reverseFromCookbook,
-                    onUnsave: {
-                        unsaveOrigin = reverseFromCookbook
-                            ? .cookbookReverse
-                            : .feedReverse
-                    },
-                    unsaveToast: store.unsaveToast(recipes: recipes),
-                    onUndo: {
-                        store.send(.undoUnsave)
-                    },
+                    onSeeList: openShoppingList,
                     premium: premium
                 )
                 .transition(reverseTransition)
             }
 
             // The paywall from the other three ways in rises over the feed;
-            // the K3 sheet grows into it inside the reverse instead.
+            // the K3 sheet grows into it inside the reverse, and the
+            // shopping invitation grows into it below, keeping one sheet.
             if let paywall = store.state.paywall,
-               case .cap = paywall.entry {} else if let paywall = store.state.paywall {
+               case .cap = paywall.entry {} else if let paywall = store.state.paywall,
+               case .shoppingList = paywall.entry {} else if let paywall = store.state.paywall {
                 PaywallView(paywall: paywall, store: store, premium: premium)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            // The shopping sheets: the add sheet over the reverse, the
+            // one-time auto-add question, and the invitation→paywall sheet.
+            if let sheet = store.state.shoppingSheet {
+                ShoppingAddSheetView(sheet: sheet, store: store)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            if store.state.showsAutoAddQuestion {
+                ShoppingAutoAddQuestionView(store: store)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            if store.state.shoppingEntryIsPresented {
+                ShoppingEntrySheet(store: store, premium: premium)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
@@ -243,9 +247,7 @@ private extension FeedScreen {
         case .gone:
             // "The app opens the Feed": close the cookbook over it.
             cookbookOpen = false
-        case .reverse:
-            reverseFromCookbook = cookbookOpen
-        case .notOffered, .ignored:
+        case .reverse, .notOffered, .ignored:
             break
         }
     }
@@ -257,7 +259,9 @@ private extension FeedScreen {
     }
 }
 
-private struct SystemClock: KartaClock {
+/// The wall clock the shell hands to the store so shopping and save
+/// actions reduce with `recipes`/`now` (docs/shopping-list-contract.md).
+struct SystemClock: KartaClock {
     var now: Date { Date() }
 }
 
@@ -1392,7 +1396,14 @@ struct RecipePhoto: View {
     let reference: MediaReference
     let manifest: MediaAssetManifest
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
+        feedBody
+    }
+
+    @ViewBuilder
+    private var feedBody: some View {
         Group {
             if let media = try? MediaResolver(manifest: manifest, baseURL: nil).resolve(reference) {
                 switch media {

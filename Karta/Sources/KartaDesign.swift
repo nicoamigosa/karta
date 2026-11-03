@@ -70,6 +70,10 @@ enum KartaDesign {
             blue: 8 / 255,
             opacity: 0.52
         )
+
+        /// The struck-through name and total of a ticked shopping row
+        /// (`#B39A86`, *Ticking and Done shopping*).
+        static let tickedInk = Color(hex: 0xB39A86)
     }
 
     enum FontToken {
@@ -450,6 +454,70 @@ enum KartaDesign {
                 .weight(.bold)
         }
 
+        /// The shopping list's title (Fraunces 700, 28 → `.title1`).
+        static func shoppingTitle() -> Font {
+            display(size: 28, relativeTo: .title1, weight: 700)
+        }
+
+        /// The add sheet's title — "Add to your list" (Fraunces 700, 26).
+        static func shoppingSheetTitle() -> Font {
+            display(size: 26, relativeTo: .title1, weight: 700)
+        }
+
+        /// Sheet subtitle (Figtree 600, 14 → subheadline).
+        static func shoppingSheetSubtitle() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .subheadline)
+                .weight(.semibold)
+        }
+
+        /// Aisle heading — PRODUCE (Figtree 800, 12 → caption, tracking 1.6).
+        static func aisleHeading() -> Font {
+            .custom("Figtree", size: 12, relativeTo: .caption)
+                .weight(.heavy)
+        }
+
+        /// Shopping row ingredient name (Figtree 700, 15 → body).
+        static func shoppingRowName() -> Font {
+            .custom("Figtree", size: 15, relativeTo: .body)
+                .weight(.bold)
+        }
+
+        /// The recipes a row comes from (Figtree 600, 11.5 → subheadline).
+        static func shoppingRowRecipes() -> Font {
+            .custom("Figtree", size: 11.5, relativeTo: .subheadline)
+                .weight(.semibold)
+        }
+
+        /// The row's total, never cut (Figtree 500, 14 → subheadline).
+        static func shoppingRowTotal() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .subheadline)
+                .weight(.medium)
+        }
+
+        /// Recipe chip label on the list (Figtree 700, 12.5 → subheadline).
+        static func shoppingChip() -> Font {
+            .custom("Figtree", size: 12.5, relativeTo: .subheadline)
+                .weight(.bold)
+        }
+
+        /// The switch row's title (Figtree 800, 14.5 → body).
+        static func autoAddTitle() -> Font {
+            .custom("Figtree", size: 14.5, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// The switch row's second line (Figtree 600, 12.5 → subheadline).
+        static func autoAddBody() -> Font {
+            .custom("Figtree", size: 12.5, relativeTo: .subheadline)
+                .weight(.semibold)
+        }
+
+        /// The "Got it · N" divider text (Figtree 700, 13 → footnote).
+        static func gotItLabel() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .footnote)
+                .weight(.bold)
+        }
+
         /// Share card message "Pass this card on" (Fraunces 700, 18/22,
         /// scales as `.title3`).
         static func shareMessage() -> Font {
@@ -652,6 +720,35 @@ enum KartaDesign {
         static let fanCardWidth: CGFloat = 26
         static let fanCardHeight: CGFloat = 34
         static let notNowHit: CGFloat = 48
+
+        /// The shopping list (#11): cookbook Select pill, selection chrome,
+        /// chips, switch row, aisles, rows and the Got it divider.
+        static let selectPillHeight: CGFloat = 34
+        static let selectPillX: CGFloat = 14
+        static let selectionCircle: CGFloat = 26
+        static let selectionCircleInset: CGFloat = 6
+        static let selectionRing: CGFloat = 2.5
+        static let selectionBarBottom: CGFloat = 12
+        static let listBlockGap: CGFloat = 10
+        static let shoppingChipHeight: CGFloat = 30
+        static let shoppingChipDot: CGFloat = 9
+        static let shoppingChipX: CGFloat = 11
+        static let listRowMin: CGFloat = 44
+        static let listCheckbox: CGFloat = 24
+        static let listCheckboxAX: CGFloat = 32
+        static let listCheckboxRadius: CGFloat = 7
+        static let listRowGap: CGFloat = 10
+        static let aisleHeadingTop: CGFloat = 12
+        static let aisleHeadingBottom: CGFloat = 4
+        static let aisleHeadingTracking: CGFloat = 1.6
+        static let gotItCheck: CGFloat = 14
+        static let autoAddRowRadius: CGFloat = 16
+        static let autoAddRowY: CGFloat = 10
+        static let autoAddRowX: CGFloat = 12
+        static let autoAddRowLeading: CGFloat = 14
+        static let sheetIconCircle: CGFloat = 72
+        static let doneShoppingBottom: CGFloat = 12
+        static let shoppingSheetRowGap: CGFloat = 14
     }
 
     /// The paywall sheet (`docs/design/karta-v1.md` → *Premium and the
