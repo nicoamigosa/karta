@@ -90,14 +90,16 @@ private struct CheckMark: Shape {
     }
 }
 
-/// The Save pill on a Card's reverse: default, saved (suit `chip` tint) and
-/// the "into the box" save animation — the only place Save lives
-/// (`docs/design/karta-v1.md` → *Save pill*, *Save animation*). The pill only
-/// sends `.saveRecipe` / `.unsaveRecipe`; the store owns the rules.
+/// The pill on a Card's reverse (`docs/design/karta-v1.md` → *Save pill*,
+/// *The shopping list* → *Adding a recipe*): unsaved it reads **Save** and
+/// plays the into-the-box animation; saved it tints to the suit's `chip`
+/// colours and becomes the way to the list — **Add to list** (list icon)
+/// or **On your list** (check). It never unsaves: it renders
+/// `RecipeReversePresentation.pillTitle` and sends `pillAction`.
 struct SavePill: View {
     let recipe: Recipe
+    let presentation: RecipeReversePresentation
     let store: KartaStore
-    let onUnsave: () -> Void
     let onCookbookFull: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -116,7 +118,7 @@ struct SavePill: View {
     }
 
     private var isSaved: Bool {
-        store.cookbook.isSaved(recipe.id)
+        presentation.isSaved
     }
 
     private var tinted: Bool {
@@ -126,23 +128,34 @@ struct SavePill: View {
     var body: some View {
         Button {
             if isSaved {
-                unsave()
+                // pillAction: openAdd or removeRecipe — never an unsave.
+                store.send(presentation.pillAction)
             } else {
                 save()
             }
         } label: {
             HStack(spacing: KartaDesign.space.saveIconGap) {
-                CookbookBoxGlyph(
-                    lidOpen: lidOpen,
-                    droppingCardColor: suit.back,
-                    cardProgress: cardProgress,
-                    checked: isSaved && (animating ? checkTrim > 0 : true),
-                    checkTrim: animating ? checkTrim : 1,
-                    ink: tinted ? suit.chipInk : KartaDesign.ColorToken.ink
-                )
-                .frame(width: KartaDesign.space.saveGlyph, height: KartaDesign.space.saveGlyph)
+                if tinted {
+                    savedGlyph
+                        .frame(
+                            width: KartaDesign.space.saveGlyph,
+                            height: KartaDesign.space.saveGlyph
+                        )
+                } else {
+                    CookbookBoxGlyph(
+                        lidOpen: lidOpen,
+                        droppingCardColor: suit.back,
+                        cardProgress: cardProgress,
+                        checked: false,
+                        ink: KartaDesign.ColorToken.ink
+                    )
+                    .frame(
+                        width: KartaDesign.space.saveGlyph,
+                        height: KartaDesign.space.saveGlyph
+                    )
+                }
 
-                Text(tinted ? "Saved" : "Save")
+                Text(tinted ? presentation.pillTitle : "Save")
                     .font(KartaDesign.FontToken.button())
             }
             .foregroundStyle(tinted ? suit.chipInk : KartaDesign.ColorToken.ink)
@@ -164,18 +177,33 @@ struct SavePill: View {
             .scaleEffect(bump ? KartaDesign.save.bumpScale : 1)
         }
         .disabled(animating)
-        .accessibilityLabel(tinted ? "Saved" : "Save")
+        .accessibilityLabel(tinted ? presentation.pillTitle : "Save")
         .accessibilityHint(
             tinted
-                ? "Removes the recipe from your cookbook"
+                ? (presentation.isOnList
+                    ? "Takes the recipe off your shopping list"
+                    : "Adds the recipe to your shopping list")
                 : "Saves the recipe to your cookbook"
         )
+    }
+
+    /// The 16 pt icon inside the tinted pill: a check once the recipe is on
+    /// the list, the list icon while it is not.
+    @ViewBuilder
+    private var savedGlyph: some View {
+        if presentation.isOnList {
+            Image(systemName: "checkmark")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(suit.chipInk)
+        } else {
+            ShoppingListGlyph(ink: suit.chipInk)
+        }
     }
 
     private func save() {
         if reduceMotion {
             // The saved change itself rides the animation so the pill
-            // cross-fades to Saved instead of jumping.
+            // cross-fades to the list pill instead of jumping.
             withAnimation(.easeInOut(duration: KartaDesign.deck.faceRevealDuration)) {
                 store.send(.saveRecipe(recipe.id))
             }
@@ -194,16 +222,6 @@ struct SavePill: View {
         case .none:
             break
         }
-    }
-
-    private func unsave() {
-        // Instant, no animation: the pill goes back to Save at once.
-        lidOpen = 0
-        cardProgress = 0
-        checkTrim = 0
-        tintApplied = false
-        store.send(.unsaveRecipe(recipe.id))
-        onUnsave()
     }
 
     private func playSaveAnimation() {

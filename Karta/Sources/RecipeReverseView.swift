@@ -11,15 +11,9 @@ struct RecipeReverseView: View {
     let presentation: RecipeReversePresentation
     let manifest: MediaAssetManifest
     let store: KartaStore
-    /// True when the reverse was opened from a cookbook grid slot: unsaving
-    /// flips the card back into the grid and Undo reopens the reverse.
-    let openedFromCookbook: Bool
-    /// Called after the pill unsaves, so the shell records the toast's origin.
-    let onUnsave: () -> Void
-    /// The Undo receipt projected by the parent from the full catalog.
-    let unsaveToast: UnsaveToast?
-    /// Called when the reverse's own Undo pill restores the removal.
-    let onUndo: () -> Void
+    /// See list on the shopping toast: the parent owns the cross-surface
+    /// part (pop the reverse, open the list in the cookbook).
+    let onSeeList: () -> Void
     /// The shell's StoreKit bridge: opens the paywall from K3 and See plans.
     let premium: PremiumController
 
@@ -112,13 +106,19 @@ struct RecipeReverseView: View {
                 )
                 .padding(.horizontal, KartaDesign.space.reverseCardX + KartaDesign.space.cardX)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if let toast = unsaveToast {
+            } else if let toast = store.state.shoppingToast {
+                // The shopping toast lives just above Start cooking, where
+                // the Undo toast used to sit (`shopping-reverse-on-list.png`).
                 VStack {
                     Spacer()
-                    UnsaveToastView(toast: toast, onUndo: {
-                        onUndo()
+                    ShoppingToastView(toast: toast, onAction: { action in
+                        switch action {
+                        case .seeList: onSeeList()
+                        case .undo: store.send(.shopping(.undo))
+                        case let .review(id): store.send(.shopping(.review(id)))
+                        }
                     }, onExpire: {
-                        store.send(.dismissUnsaveToast)
+                        store.send(.shopping(.dismissToast))
                     })
                 }
                 .padding(
@@ -149,7 +149,7 @@ struct RecipeReverseView: View {
                 )
             }
         }
-        .animation(.easeOut(duration: 0.25), value: store.state.pendingUnsave != nil)
+        .animation(.easeOut(duration: 0.25), value: store.state.shoppingToast)
         .animation(.easeOut(duration: 0.25), value: store.state.pendingSaveToast != nil)
         .animation(.easeOut(duration: 0.3), value: showFullSheet)
         .animation(.easeOut(duration: 0.3), value: store.state.paywall != nil)
@@ -203,7 +203,9 @@ struct RecipeReverseView: View {
                 Button {
                     // Closing the surface that hosts the toast dismisses it,
                     // so a stale receipt can't resurface elsewhere later.
-                    store.send(.dismissUnsaveToast)
+                    if store.state.shoppingToast != nil {
+                        store.send(.shopping(.dismissToast))
+                    }
                     store.send(.popRoute)
                 } label: {
                     Image(systemName: "xmark")
@@ -224,15 +226,8 @@ struct RecipeReverseView: View {
 
                 SavePill(
                     recipe: recipe,
+                    presentation: presentation,
                     store: store,
-                    onUnsave: {
-                        onUnsave()
-                        if openedFromCookbook {
-                            // The card flips back into its cookbook slot; the
-                            // Undo toast appears in the cookbook.
-                            store.send(.popRoute)
-                        }
-                    },
                     onCookbookFull: {
                         showFullSheet = true
                     }

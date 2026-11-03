@@ -18,11 +18,11 @@ enum DebugSeeds {
                 safetyProfile: SafetyProfile(intolerances: [])
             )
             plain.shareBaseURL = ShareLinks.baseURL
-            return KartaStore(state: plain)
+            return KartaStore(state: plain, recipes: shellRecipes(), clock: SystemClock())
         }
         var seeded = state(for: name)
         seeded.shareBaseURL = ShareLinks.baseURL
-        let store = KartaStore(state: seeded)
+        let store = KartaStore(state: seeded, recipes: shellRecipes(), clock: SystemClock())
         switch name {
         case "undo-ceiling":
             // Premium downgrade: a >7 ceiling dropping to the free floor, so
@@ -63,6 +63,15 @@ enum DebugSeeds {
             break
         }
         return store
+    }
+
+    /// The catalogue the store reduces shopping actions against — the same
+    /// recipes the feed shows (seed + debug extras, drops excluded). The
+    /// shopping contract requires both `recipes` and a clock at init.
+    static func shellRecipes() -> [Recipe] {
+        let loaded = (try? SeedResourceAdapter().loadRecipes()) ?? []
+        return (loaded + extraRecipes())
+            .filter { !droppedRecipeIDs.contains($0.id) }
     }
 
     /// Restore the user snapshot for a production launch; nil in test hosts
@@ -124,7 +133,11 @@ enum DebugSeeds {
     static var opensCookbook: Bool {
         [
             "premium-cookbook-go-unlimited", "premium-cookbook-trial",
-            "premium-cookbook-premium"
+            "premium-cookbook-premium",
+            // The shopping boards shot inside the cookbook (#177).
+            "shopping-cookbook-door", "shopping-cookbook-select",
+            "shopping-cookbook-removed", "shopping-list", "shopping-ax1",
+            "shopping-list-got-it", "shopping-list-done-undo", "shopping-empty"
         ].contains(ProcessInfo.processInfo.environment["KARTA_SEED"])
     }
 
@@ -143,7 +156,7 @@ enum DebugSeeds {
     @MainActor
     static func afterPremiumLaunch(into store: KartaStore) {
         let name = ProcessInfo.processInfo.environment["KARTA_SEED"] ?? ""
-        guard name.hasPrefix("premium-") else { return }
+        guard name.hasPrefix("premium-") || name.hasPrefix("shopping-") else { return }
 
         let plans = PremiumSeeds.plans
         let recipes = (try? SeedResourceAdapter().loadRecipes()) ?? []
@@ -250,6 +263,81 @@ enum DebugSeeds {
                     store.send(.paywall(.close))
                 }
             }
+        // The shopping boards (`shopping-*.png`, #177): premium on first,
+        // then the actions that draw each state.
+        case "shopping-cookbook-door":
+            store.send(.entitlementChanged(.premium))
+            addToList(["banana-pancakes", "caesar-salad"], to: store)
+        case "shopping-cookbook-select":
+            store.send(.entitlementChanged(.premium))
+            addToList(["banana-pancakes", "caesar-salad"], to: store)
+            store.send(.beginCookbookSelection)
+            store.send(.toggleCookbookSelection("banana-pancakes"))
+            store.send(.toggleCookbookSelection("spanish-tortilla"))
+        case "shopping-cookbook-removed":
+            store.send(.entitlementChanged(.premium))
+            addToList(["caesar-salad"], to: store)
+            // Two recipes removed through Select, like the board draws.
+            store.send(.beginCookbookSelection)
+            store.send(.toggleCookbookSelection("spanish-tortilla"))
+            store.send(.toggleCookbookSelection("pesto-pasta"))
+            store.send(.removeCookbookSelection)
+        case "shopping-list", "shopping-ax1":
+            store.send(.entitlementChanged(.premium))
+            addToList(
+                ["banana-pancakes", "caesar-salad", "spanish-tortilla"],
+                to: store
+            )
+            store.send(.shopping(.openList))
+        case "shopping-list-got-it":
+            // One recipe keeps the Got it divider on screen for the shot.
+            store.send(.entitlementChanged(.premium))
+            addToList(["spanish-tortilla"], to: store)
+            for key in store.state.shoppingPresentation.groups
+                .flatMap(\.rows).prefix(2).map(\.purchaseKey) {
+                store.send(.shopping(.toggleRow(key)))
+            }
+            store.send(.shopping(.openList))
+        case "shopping-list-done-undo":
+            store.send(.entitlementChanged(.premium))
+            addToList(["spanish-tortilla"], to: store)
+            for key in store.state.shoppingPresentation.groups
+                .flatMap(\.rows).prefix(2).map(\.purchaseKey) {
+                store.send(.shopping(.toggleRow(key)))
+            }
+            store.send(.shopping(.openList))
+            store.send(.shopping(.doneShopping))
+        case "shopping-empty":
+            store.send(.entitlementChanged(.premium))
+            store.send(.shopping(.openList))
+        case "shopping-reverse-add":
+            store.send(.entitlementChanged(.premium))
+            store.send(.pushRoute(.recipeDetail(recipeID: "spanish-tortilla")))
+        case "shopping-reverse-on-list":
+            store.send(.entitlementChanged(.premium))
+            store.send(.shopping(.openAdd("spanish-tortilla")))
+            store.send(.shopping(.confirm))
+            store.send(.pushRoute(.recipeDetail(recipeID: "spanish-tortilla")))
+        case "shopping-add-sheet":
+            store.send(.entitlementChanged(.premium))
+            store.send(.pushRoute(.recipeDetail(recipeID: "spanish-tortilla")))
+            store.send(.shopping(.openAdd("spanish-tortilla")))
+        case "shopping-ask-auto":
+            store.send(.entitlementChanged(.premium))
+            store.send(.pushRoute(.recipeDetail(recipeID: "spanish-tortilla")))
+            store.send(.shopping(.openAdd("spanish-tortilla")))
+            store.send(.shopping(.confirm))
+            store.send(.shopping(.dismissToast))
+        case "shopping-save-auto":
+            store.send(.entitlementChanged(.premium))
+            store.send(.shopping(.setAutoAdd(true)))
+            store.send(.saveRecipe("pesto-pasta"))
+            store.send(.pushRoute(.recipeDetail(recipeID: "pesto-pasta")))
+        case "shopping-free":
+            // Let Karta write your list: free plan, reverse open, the
+            // invitation the store opens instead of the add sheet.
+            store.send(.pushRoute(.recipeDetail(recipeID: "spanish-tortilla")))
+            store.send(.shopping(.openAdd("spanish-tortilla")))
         case "premium-cookbook-full-downgraded":
             // Premium dropped with more kept than the free floor: the cap
             // settles at 23 and the sheet quotes it (board *K3 downgraded*).
@@ -265,6 +353,18 @@ enum DebugSeeds {
         default:
             break
         }
+    }
+
+    /// Puts recipes on the shopping list for a seed: the store's own add
+    /// flow, then the toast and the one-time question dismissed.
+    @MainActor
+    private static func addToList(_ ids: [String], to store: KartaStore) {
+        for id in ids {
+            store.send(.shopping(.openAdd(id)))
+            store.send(.shopping(.confirm))
+        }
+        store.send(.shopping(.dismissToast))
+        store.send(.shopping(.answerAutoAdd(false)))
     }
 
     /// Play-app stand-ins for the two storefront products, shaped exactly
@@ -473,6 +573,49 @@ enum DebugSeeds {
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
             )
+        // The shopping boards (#177): three saved recipes behind every
+        // surface except the removed toast (two — one is gone) and the
+        // auto-save board (pesto-pasta stays unsaved to save on screen).
+        case "shopping-cookbook-door", "shopping-cookbook-select",
+             "shopping-list", "shopping-ax1", "shopping-list-got-it",
+             "shopping-list-done-undo", "shopping-reverse-add",
+             "shopping-reverse-on-list", "shopping-add-sheet",
+             "shopping-ask-auto":
+            return KartaState(
+                cookbook: Cookbook(savedIDs: [
+                    "banana-pancakes", "caesar-salad", "spanish-tortilla"
+                ]),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "shopping-cookbook-removed":
+            return KartaState(
+                cookbook: Cookbook(savedIDs: [
+                    "banana-pancakes", "caesar-salad", "spanish-tortilla",
+                    "pesto-pasta"
+                ]),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "shopping-save-auto":
+            return KartaState(
+                cookbook: Cookbook(savedIDs: ["banana-pancakes", "caesar-salad"]),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "shopping-free":
+            return KartaState(
+                cookbook: Cookbook(savedIDs: [
+                    "banana-pancakes", "caesar-salad", "spanish-tortilla"
+                ]),
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "shopping-empty":
+            return KartaState(
+                onboarding: Self.onboarded(),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
         case "filters-applied":
             // Two applied filters, for the badge on the filter button
             // (board `feed-filters-applied.png`): the badge counts the time
@@ -571,7 +714,7 @@ enum DebugSeeds {
                 safetyProfile: SafetyProfile(intolerances: [])
             )
         default:
-            if name.hasPrefix("premium-") {
+            if name.hasPrefix("premium-") || name.hasPrefix("shopping-") {
                 // The premium seeds drive every flow through store actions
                 // in `afterPremiumLaunch`; all they need is a past-onboarding
                 // state.
