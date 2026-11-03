@@ -6,7 +6,8 @@ board, each next to the board it matches, plus the list at AX1
 accessibility-medium` and read back before shooting).
 
 Environment: iPhone 17 simulator, Xcode 27.0 (27A266a).
-Tested commit: see below (the PR head — regenerated on the final code).
+Tested commit: `308858c` — the code the screenshots were generated on;
+the PR head differs only by this documentation directory.
 
 Each state is seeded through the `KARTA_SEED` debug environment variable
 (`DebugSeeds`); the shots are named after the seed, which matches the board
