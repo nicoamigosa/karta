@@ -1423,6 +1423,8 @@ the same share sheet. This is the only way to share a recipe outside the cooking
 
 ### Opening a link
 
+The Core / Presentation API is documented in [the shared-link contract](../recipe-link-contract.md).
+
 - **With Karta installed**, the link opens the app on the reverse of that recipe, over the
   current Mundo. It counts as an **Apertura**, like a tap on a Card.
 - **Without Karta**, the link goes straight to Karta's App Store page. After installing, the
@@ -1480,9 +1482,6 @@ counts it (*More below*).
 - #155: confirm `karta.app`, the minimal page per recipe with the link image that redirects
   to the App Store, the universal-links file and Associated Domains. Until then Share stays off.
 - The frequency rule above is a default the founder has not confirmed.
-- `RecipeLinkOpening.notOffered` (KartaPresentation) carries no reason. The shell needs the
-  reason and the allergen names to show these toasts, so the contract has to grow first (see
-  #157).
 - To check on a device: that iOS shows the two-line title in the sheet header. If it cuts it to
   one line, ask before dropping the servings line.
 

@@ -12,9 +12,9 @@ public struct LeftoversToast: Equatable, Sendable {
 }
 
 extension KartaState {
-    /// Shares the For You toast slot with recipe-gone, which always wins.
+    /// Shares the For You toast slot with shared-link notices, which always win.
     public var leftoversToast: LeftoversToast? {
-        guard recipeGoneNotice == nil, navigation.world == .forYou,
+        guard recipeGoneNotice == nil, recipeNotOfferedNotice == nil, navigation.world == .forYou,
               navigation.routes.isEmpty else { return nil }
         return pendingLeftoversToast
     }
@@ -22,7 +22,8 @@ extension KartaState {
 
 extension KartaReducer {
     static func offerLeftoversToast(_ state: inout KartaState, recipes: [Recipe], now: Date) {
-        guard state.recipeGoneNotice == nil, let session = state.session, session.isExited,
+        guard state.recipeGoneNotice == nil, state.recipeNotOfferedNotice == nil,
+              let session = state.session, session.isExited,
               let event = session.cookedEvent, !event.wasInferred,
               let source = recipes.first(where: { $0.id == event.recipeID }) else { return }
         let entry = CookEntry(recipeID: source.id, date: now)

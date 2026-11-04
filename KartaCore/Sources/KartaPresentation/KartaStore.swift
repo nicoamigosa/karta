@@ -46,6 +46,8 @@ public struct KartaState: Equatable, Sendable {
     public var cookHistory: [CookEntry]
     /// Transient Feed notice, cleared by the shell after showing it.
     public fileprivate(set) var recipeGoneNotice: RecipeGoneNotice?
+    /// A shared-link explanation, mutually exclusive with the recipe-gone notice.
+    public fileprivate(set) var recipeNotOfferedNotice: RecipeNotOfferedNotice?
     /// Include this value when saving or restoring UserSnapshot.
     public var shareCardHistory: ShareCardHistory
     /// Injected configuration, never persisted; nil disables Share everywhere.
@@ -253,6 +255,7 @@ public enum KartaAction: Sendable {
     case startCooking(Recipe, startedAt: TimeInterval)
     case nextStep(now: TimeInterval)
     case previousStep
+    case dismissRecipeNotOfferedNotice
     case dismissRecipeGoneNotice
     /// Shared means tapping Share, regardless of what happens in the native sheet.
     /// Swipe, timeout and VoiceOver dismissal all send dismissed.
@@ -384,6 +387,9 @@ public enum KartaReducer {
             case .trial, .premium: state.cookbook.liftCupo()
             }
         case let .onboarding(action):
+            if case .setMine = action, state.recipeNotOfferedNotice?.hasAction == true {
+                state.recipeNotOfferedNotice = nil
+            }
             let previousFilters = state.effectiveFeedFilters
             let submitsFirstRun: Bool
             if case .showMyCards = action {
@@ -423,6 +429,8 @@ public enum KartaReducer {
             }
         case .previousStep:
             state.session?.previous()
+        case .dismissRecipeNotOfferedNotice:
+            state.recipeNotOfferedNotice = nil
         case .dismissRecipeGoneNotice:
             state.recipeGoneNotice = nil
         case let .closeShareCard(action):
@@ -586,13 +594,26 @@ public final class KartaStore {
         guard let recipe = recipes.first(where: { $0.id == id }) else {
             state.navigation = AppNavigationState()
             state.pendingLeftoversToast = nil
+            state.recipeNotOfferedNotice = nil
             state.recipeGoneNotice = RecipeGoneNotice()
             return .gone
         }
         // A shared link proposes a recipe, so saved-recipe warning exceptions
         // never weaken the receiver's Intolerancias guarantee.
-        guard FeedFilters(intolerances: state.safetyProfile.intolerances).allows(recipe),
-              let reverse = state.reversePresentation(for: recipe) else { return .notOffered }
+        let hasAnswered = state.onboarding.intoleranceAnswer != .unanswered
+        // Restored unanswered snapshots may store the all-five protective
+        // profile. Those are not declared Intolerancias and must not be named as such.
+        if let reason = RecipeLinkNotOfferedReason.reason(
+            for: recipe, intolerances: hasAnswered ? state.safetyProfile.intolerances : [],
+            hasAnsweredIntolerances: hasAnswered
+        ) {
+            state.navigation = AppNavigationState()
+            state.pendingLeftoversToast = nil
+            state.recipeGoneNotice = nil
+            state.recipeNotOfferedNotice = RecipeNotOfferedNotice(reason: reason)
+            return .notOffered(reason)
+        }
+        guard let reverse = state.reversePresentation(for: recipe) else { return .ignored }
         send(.recordOpen(recipeID: id, at: date))
         send(.pushRoute(.recipeDetail(recipeID: id)))
         return .reverse(reverse)

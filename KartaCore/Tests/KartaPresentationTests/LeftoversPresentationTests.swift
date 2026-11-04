@@ -186,6 +186,37 @@ struct LeftoversPresentationTests {
         #expect(store.state.leftoversToast == nil)
     }
 
+    @Test("Not-offered wins the toast slot and discards See before and after a cook", arguments: [false, true])
+    @MainActor
+    func recipeNotOfferedWins(beforeCook: Bool) throws {
+        let source = recipe("source", keys: ["onion"])
+        let catalog = [source, recipe("target", keys: ["onion"]),
+                       recipe("blocked", keys: ["onion"], allergens: [.dairy])]
+        var initial = state()
+        initial.shareBaseURL = URL(string: "https://karta.app/r")
+        KartaReducer.reduce(&initial, action: .filter(.setSafetyProfile(SafetyProfile(intolerances: [.dairy]))))
+        let store = KartaStore(state: initial, recipes: catalog, clock: clock)
+        func notOffered() {
+            _ = store.openRecipeLink(URL(string: "https://karta.app/r/blocked")!, recipes: catalog, at: now)
+        }
+        if beforeCook { notOffered() }
+        store.send(.startCooking(source, startedAt: now.timeIntervalSince1970 - 100))
+        store.send(.nextStep(now: now.timeIntervalSince1970 - 1))
+        store.send(.respond(.thumbsUp))
+        store.send(.exitCooking)
+        if !beforeCook {
+            #expect(store.state.leftoversToast != nil)
+            notOffered()
+        }
+        #expect(store.state.recipeNotOfferedNotice != nil)
+        #expect(store.state.recipeGoneNotice == nil)
+        #expect(store.state.leftoversToast == nil)
+        store.send(.closeLeftoversToast(.see))
+        #expect(store.state.navigation == AppNavigationState())
+        store.send(.dismissRecipeNotOfferedNotice)
+        #expect(store.state.leftoversToast == nil)
+    }
+
     @Test("See requires an explicit cook and an offered idea under the active safety and filters",
           arguments: ["inferred", "no-match", "filtered", "unanswered", "cooked"])
     @MainActor
