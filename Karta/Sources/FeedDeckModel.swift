@@ -90,3 +90,34 @@ enum DeckNavigator {
         return index
     }
 }
+
+extension DeckNavigator {
+    /// A release that asks for the next Card: vertical, and flung or dragged
+    /// up past the threshold. On the last Card it rebounds instead.
+    static func isForwardSwipe(translation: CGSize, predictedTranslation: CGSize) -> Bool {
+        abs(translation.height) > abs(translation.width)
+            && predictedTranslation.height <= -KartaDesign.deck.swipeThreshold
+    }
+}
+
+/// The store actions behind the See toast: See and the timeout or swipe.
+enum LeftoversToastResponse {
+    static let see: KartaAction = .closeLeftoversToast(.see)
+    static let dismissed: KartaAction = .closeLeftoversToast(.dismissed)
+}
+
+/// What a button of a Leftovers empty state does: send the store's action,
+/// or open the shell's own filter panel (Change filters).
+enum LeftoversEmptyStateAction {
+    case send(KartaAction)
+    case openFilters
+
+    static func primary(for state: LeftoversEmptyState) -> LeftoversEmptyStateAction? {
+        if case .noMatchForFilters = state { return .openFilters }
+        return state.primaryAction.map(LeftoversEmptyStateAction.send)
+    }
+
+    static func secondary(for state: LeftoversEmptyState) -> LeftoversEmptyStateAction? {
+        state.secondaryAction.map(LeftoversEmptyStateAction.send)
+    }
+}
