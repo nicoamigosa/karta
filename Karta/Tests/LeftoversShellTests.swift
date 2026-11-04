@@ -129,4 +129,11 @@ struct LeftoversShellTests {
             predictedTranslation: CGSize(width: -threshold * 2, height: -threshold)
         ))
     }
+
+    @Test("Swiping down on the last Card still goes back")
+    func swipeDownFromLastCardGoesBack() {
+        let down = CGSize(width: 0, height: KartaDesign.deck.swipeThreshold)
+        #expect(!DeckNavigator.isForwardSwipe(translation: down, predictedTranslation: down))
+        #expect(DeckNavigator.destination(from: 4, translation: down, predictedTranslation: down, cardCount: 5) == 3)
+    }
 }
