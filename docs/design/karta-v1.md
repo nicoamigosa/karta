@@ -1336,7 +1336,9 @@ Cabecera B), *round 3* (<https://claude.ai/artifact/6J16SJPWMctYJ3YVWo5Yob>), *r
 (<https://claude.ai/artifact/Kkt6HaCzTYQb9DcBJxR7Gq>, row Retirada A), *round 5*
 (<https://claude.ai/artifact/USNAKZxrg1ZDUxZxnGMjgb>) and *round 6*
 (<https://claude.ai/artifact/WpvZh8qN3EQcpQkeQnxJFE>, Tarjeta A and Mensaje 1, with its AX1
-board). Copies sit on the canvas page *Signed off*. Product context: PRD story 46;
+board). What the receiver sees when the recipe is not offered to her was signed on 2026-11-03
+in *Karta · No ofrecida ronda 1* (<https://claude.ai/artifact/BMnDss19oB4ddF867RsynL>, rows
+Intolerancia A, Sin revisar A, Sin responder A and AX1). Copies sit on the canvas page *Signed off*. Product context: PRD story 46;
 `CONTEXT.md` → **Apertura**, **Intolerancia**; ADR 0010, 0011. Built in #156 (the KartaCore contract) and #157
 (iOS).
 
@@ -1356,6 +1358,11 @@ All boards are drawn on an iPhone 17 (402 × 874 pt) with the safe areas hatched
 | `share-link-messages.png`, `share-link-whatsapp.png` | the link as it arrives in Messages and WhatsApp |
 | `share-link-image.png` | the link image itself, 1200 × 630 |
 | `share-recipe-gone.png` | opening the link of a recipe that is no longer in the catalogue |
+| `share-link-not-offered-intolerance.png` | opening the link of a recipe with one of the receiver's Intolerancias |
+| `share-link-not-offered-intolerances.png` | the same with two of them |
+| `share-link-not-offered-unreviewed.png` | opening the link of a recipe whose allergens are not checked yet |
+| `share-link-not-offered-unanswered.png` | opening the link before answering the Intolerancias, with **Set mine** |
+| `share-link-not-offered-intolerances-ax1.png`, `share-link-not-offered-unreviewed-ax1.png`, `share-link-not-offered-unanswered-ax1.png` | the three at Dynamic Type AX1 |
 
 There is no share button on the Card or on the reverse.
 
@@ -1425,6 +1432,38 @@ the same share sheet. This is the only way to share a recipe outside the cooking
   the cookbook* without a button, the box icon in `card`, **This recipe is no longer on Karta**
   over *Here's your deck instead.* It leaves on its own after 5 s. Without Karta the link goes
   to the App Store as above, with no notice.
+- **A recipe that is not offered to the receiver** (`share-link-not-offered-*.png`): the recipe
+  is in the catalogue, but Karta does not show it to whoever opens the link. A link proposes a
+  recipe, so nothing here loosens the Baraja segura or an Intolerancia, not even for a recipe
+  she saved. The app does what it does for a withdrawn recipe: it opens the Feed, records no
+  Apertura and shows the same toast 12 pt below the header row, 22 pt from the sides (`ink`
+  fill, radius 18, 12 pt padding with 16 pt on the left, the toast shadow, a 28 pt icon in
+  `card`, the first line in Figtree 800 15 pt `card`, the second in Figtree 600 13 pt
+  `#EADDC7`). The toast always says why:
+  - **It has one or more of her Intolerancias** (`share-link-not-offered-intolerance.png`,
+    `share-link-not-offered-intolerances.png`). Icon: the shield of *Never show me*. **This
+    recipe has gluten, which you avoid** over *Here's your deck instead.* It names only the
+    Intolerancias the recipe has, in lowercase, joined with commas and *and*: *dairy and
+    gluten*, *dairy, gluten and nuts*. It leaves on its own after 5 s.
+  - **Its allergens are not checked yet** (`contains: null`,
+    `share-link-not-offered-unreviewed.png`). Icon: a magnifier. **We haven't checked this
+    recipe's allergens yet** over *Here's your deck instead.* It leaves on its own after 5 s.
+  - **She has not answered the Intolerancias yet** and the recipe is not in the Baraja segura
+    (`share-link-not-offered-unanswered.png`). Icon: the shield. **This recipe has egg** (every
+    allergen of the recipe, joined the same way) over *Tell Karta what you avoid to open it.*,
+    and on the right a cream **Set mine** pill, the **Undo** pill of *Save and the cookbook*.
+    It covers the Baraja segura banner while it shows. **Set mine** closes the toast and opens
+    the first-run panel (*First open and onboarding*). After she answers, the link is not
+    opened again: she stays on her feed. Because it has a button, it leaves on its own after
+    8 s, not 5.
+  - **When more than one reason applies**, the first one wins: allergens not checked, then
+    Intolerancias, then not answered.
+  - **VoiceOver:** the toast is announced when it appears. The **Set mine** toast never leaves
+    on its own while VoiceOver is running; it offers a *Dismiss* action and the escape gesture.
+  - **Text size:** the first line follows `.subheadline` and the second `.footnote`; the icon
+    keeps its size. At AX1 (`share-link-not-offered-*-ax1.png`) the lines are 25 and 23 pt,
+    **Set mine** moves under the text, aligned with it, 52 pt high, and the toast grows
+    downwards over the Card.
 
 ### Text size
 
@@ -1441,9 +1480,9 @@ counts it (*More below*).
 - #155: confirm `karta.app`, the minimal page per recipe with the link image that redirects
   to the App Store, the universal-links file and Associated Domains. Until then Share stays off.
 - The frequency rule above is a default the founder has not confirmed.
-- Not drawn: opening the link of a recipe that contains one of the receiver's Intolerancias.
-  Karta never offers it (`CONTEXT.md` → Intolerancia); ask before choosing what the receiver
-  sees.
+- `RecipeLinkOpening.notOffered` (KartaPresentation) carries no reason. The shell needs the
+  reason and the allergen names to show these toasts, so the contract has to grow first (see
+  #157).
 - To check on a device: that iOS shows the two-line title in the sheet header. If it cuts it to
   one line, ask before dropping the servings line.
 

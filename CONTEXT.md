@@ -153,6 +153,8 @@ que lo contenga aparece en el Feed, en Leftovers ni en ninguna otra superficie d
 propone. Es una garantía dura, nunca de pago y nunca relajable por un filtro. La única
 excepción es lo que ella guardó antes de declararla: esas recetas siguen en su Cookbook, con
 un aviso de que contienen la Intolerancia, porque las eligió ella y puede cocinarlas para otros.
+Un enlace compartido tampoco la abre, aunque la tenga guardada: Karta enseña su Feed y dice
+por qué no puede abrirla.
 _Avoid_: preferencia, restricción blanda
 
 **Baraja segura**:
