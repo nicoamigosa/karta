@@ -3,7 +3,7 @@
 Simulator: iPhone 17 (`EDD9B083-63F1-44E6-9A7B-0A6964CC2561`, iOS simulator
 runtime from Xcode 27.0 RC; `/Applications/Xcode-27.0-RC.app`).
 Xcode: 27.0 (27A266a).
-Tested commit: `fa48637b94edcc930514f3cfaee0f46f5ffb920c` (the shots were
+Tested commit: `e05f92d85a9c3417e4db8b7ea4ada06552a0e079` (the shots were
 taken against that build; this README was added afterwards, with no code
 change).
 
