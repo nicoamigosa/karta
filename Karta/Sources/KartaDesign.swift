@@ -367,6 +367,24 @@ enum KartaDesign {
                 .weight(.semibold)
         }
 
+        /// The Leftovers pill on the Card (Figtree 800 13.5, the chips' role).
+        static func leftoversPill() -> Font {
+            .custom("Figtree", size: 13.5, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// The note on a reverse opened from Leftovers (Figtree 800 14 / 19).
+        static func leftoversNote() -> Font {
+            .custom("Figtree", size: 14, relativeTo: .body)
+                .weight(.heavy)
+        }
+
+        /// The last-card hint under the deck (Figtree 700 13 `inkMuted`).
+        static func lastCardHint() -> Font {
+            .custom("Figtree", size: 13, relativeTo: .caption)
+                .weight(.bold)
+        }
+
         /// Sheet count under "Your cookbook is full" (Figtree 800, 13, tracked).
         static func sheetCount() -> Font {
             .custom("Figtree", size: 13, relativeTo: .footnote)
@@ -647,6 +665,26 @@ enum KartaDesign {
         static let toastSideMargin: CGFloat = 22
         static let toastBottomInset: CGFloat = 40
         static let toastDuration: TimeInterval = 5
+        /// Card chips: the signed 8 pt insets of the Leftovers fit contract.
+        static let cardChipX: CGFloat = 8
+        /// The Leftovers pill: 9 pt left, 13 pt right, 16 pt bowl, 6 pt gap,
+        /// 1.5 pt border, radius 24 once it wraps, 8 pt under the chips on
+        /// its own line.
+        static let pillLeading: CGFloat = 9
+        static let pillTrailing: CGFloat = 13
+        static let pillGlyph: CGFloat = 16
+        static let pillGlyphGap: CGFloat = 6
+        static let pillBorder: CGFloat = 1.5
+        static let pillWrappedRadius: CGFloat = 24
+        static let pillOwnLineGap: CGFloat = 8
+        /// The reverse note: radius 14, 10 × 12 padding, 20 pt bowl.
+        static let noteRadius: CGFloat = 14
+        static let noteY: CGFloat = 10
+        static let noteX: CGFloat = 12
+        static let noteGlyph: CGFloat = 20
+        static let noteLineSpacing: CGFloat = 2
+        /// The See toast's bowl icon.
+        static let toastGlyph: CGFloat = 22
         /// Feed header controls and the Mundo menu (boards *A* of Ronda 1).
         static let headerButtonGap: CGFloat = 10
         static let filterGlyph: CGFloat = 18

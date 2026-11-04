@@ -451,7 +451,7 @@ private struct MundoGlyph: View {
 }
 
 /// Two cards fanned, the front one solid so it covers the card behind.
-private struct FannedCardsGlyph: View {
+struct FannedCardsGlyph: View {
     var ink: Color = KartaDesign.ColorToken.ink
     var field: Color = KartaDesign.ColorToken.card
 

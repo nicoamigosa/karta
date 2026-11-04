@@ -34,6 +34,9 @@ struct RecipeReverseView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: KartaDesign.space.cardGap) {
                             titleRow
+                            if let note = presentation.leftoversNote {
+                                LeftoversReverseNote(note: note, suit: suit)
+                            }
                             intoleranceNote
                             ingredientsSection
                             stepsSection

@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 import KartaCore
 import KartaPresentation
 
@@ -48,6 +49,33 @@ enum DebugSeeds {
                     recipes: [],
                     at: Date()
                 )
+            }
+        case "leftovers-reverse":
+            store.send(.pushRoute(.recipeDetail(recipeID: "lentil-stew")))
+        case "leftovers-see-toast":
+            // A real explicit Cocinado of the Spanish Tortilla, then back
+            // on For You: the store offers the See toast.
+            if let tortilla = shellRecipes().first(where: { $0.id == "spanish-tortilla" }) {
+                let now = Date().timeIntervalSince1970
+                store.send(.startCooking(tortilla, startedAt: now - 1800))
+                while store.session?.isOnFinish == false {
+                    store.send(.nextStep(now: now - 60))
+                }
+                store.send(.respond(.thumbsUp))
+                store.send(.exitCooking)
+            }
+        case "leftovers-empty-filters":
+            store.send(.filter(.apply(FilterDraft(maxMinutes: 20))))
+        case "leftovers-last-card", "leftovers-last-card-bounce", "leftovers-last-card-hint":
+            let feed = store.leftoversFeed(recipes: shellRecipes(), clock: SystemClock())
+            if let last = feed.recipes.last {
+                store.send(.setFeedAnchor(ScrollAnchor(recipeID: last.id, relativeOffset: 0), world: .leftovers))
+            }
+        case "foryou-lentil":
+            store.send(.setFeedAnchor(ScrollAnchor(recipeID: "lentil-stew", relativeOffset: 0), world: .forYou))
+        case "foryou-last-card":
+            if let last = store.feed(recipes: shellRecipes(), clock: SystemClock())?.recipes.last {
+                store.send(.setFeedAnchor(ScrollAnchor(recipeID: last.id, relativeOffset: 0), world: .forYou))
             }
         case "cooking-first", "cooking-timer", "cooking-step",
              "cooking-last", "cooking-answered", "cooking-timer-running",
@@ -688,11 +716,40 @@ enum DebugSeeds {
                 onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
             )
-        case "leftovers":
-            // The Leftovers Mundo open on its placeholder until #9 lands.
+        case "leftovers", "leftovers-empty-nothing-cooked":
+            // The Leftovers Mundo with no explicit Cocinado yet.
             return KartaState(
                 onboarding: Self.onboarded(),
                 navigation: AppNavigationState(world: .leftovers),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "leftovers-deck", "leftovers-reverse", "leftovers-last-card",
+             "leftovers-last-card-bounce", "leftovers-last-card-hint",
+             "foryou-lentil", "foryou-last-card", "leftovers-empty-no-match":
+            // The Spanish Tortilla cooked yesterday (`leftovers-*.png`).
+            return KartaState(
+                onboarding: Self.onboarded(),
+                cookHistory: [CookEntry(recipeID: "spanish-tortilla", date: Date().addingTimeInterval(-86_400))],
+                navigation: AppNavigationState(world: name.hasPrefix("foryou") ? .forYou : .leftovers),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "leftovers-empty-out-of-window":
+            return KartaState(
+                onboarding: Self.onboarded(),
+                cookHistory: [CookEntry(recipeID: "spanish-tortilla", date: Date().addingTimeInterval(-9 * 86_400))],
+                navigation: AppNavigationState(world: .leftovers),
+                safetyProfile: SafetyProfile(intolerances: [])
+            )
+        case "leftovers-empty-filters":
+            return KartaState(
+                onboarding: Self.onboarded(intolerances: [.dairy]),
+                cookHistory: [CookEntry(recipeID: "spanish-tortilla", date: Date().addingTimeInterval(-86_400))],
+                navigation: AppNavigationState(world: .leftovers),
+                safetyProfile: SafetyProfile(intolerances: [.dairy])
+            )
+        case "leftovers-see-toast":
+            return KartaState(
+                onboarding: Self.onboarded(),
                 safetyProfile: SafetyProfile(intolerances: [])
             )
         case "world-menu":
@@ -731,10 +788,32 @@ enum DebugSeeds {
     /// `feed-empty-profile` board only shows when nothing reviewed is free of
     /// the declared Intolerancias, and the bundled catalog always keeps two
     /// allergen-free recipes.
+    /// The Mundo the seeded reverse was opened from.
+    static var reverseOrigin: World? {
+        ProcessInfo.processInfo.environment["KARTA_SEED"] == "leftovers-reverse" ? .leftovers : nil
+    }
+
+    /// A try at passing the last Card on launch: held mid-drag for the
+    /// bounce board, or released (the hint, and Reduce Motion's hint only).
+    struct LastCardAttempt {
+        let heldOffset: CGFloat?
+    }
+
+    static var lastCardAttempt: LastCardAttempt? {
+        switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
+        case "leftovers-last-card-bounce": LastCardAttempt(heldOffset: -64)
+        case "leftovers-last-card-hint", "foryou-last-card": LastCardAttempt(heldOffset: nil)
+        default: nil
+        }
+    }
+
     static var droppedRecipeIDs: Set<String> {
         switch ProcessInfo.processInfo.environment["KARTA_SEED"] {
         case "empty-profile":
             return ["quick-chicken-curry", "lentil-stew"]
+        case "leftovers-empty-no-match":
+            // No other recipe shares what the Spanish Tortilla left over.
+            return ["lentil-stew", "banana-pancakes", "quick-chicken-curry"]
         default:
             return []
         }

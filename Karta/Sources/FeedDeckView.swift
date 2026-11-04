@@ -25,6 +25,9 @@ struct FeedScreen: View {
     @State private var pendingLink: URL?
     /// The onboarding's coldLaunch is sent once per process (#172).
     @State private var didColdLaunch = false
+    /// The Mundo a reverse was opened from, captured at Apertura; nil for a
+    /// reverse opened from the cookbook or a shared link.
+    @State private var reverseOrigin: World? = DebugSeeds.reverseOrigin
 
     /// See list on a shopping toast: pop whatever covers the feed (a
     /// reverse is the only route the toast can sit on) and open the list
@@ -67,6 +70,7 @@ struct FeedScreen: View {
                             cookbookOpen = false
                         },
                         onOpenRecipe: { row in
+                            reverseOrigin = nil
                             store.send(.pushRoute(.recipeDetail(recipeID: row.recipeID)))
                         },
                         onUnsaveFromGrid: { row in
@@ -91,7 +95,9 @@ struct FeedScreen: View {
                         onOpenCookbook: {
                             cookbookOpen = true
                         },
-                        onOpenCard: {},
+                        onOpenCard: {
+                            reverseOrigin = store.state.navigation.world
+                        },
                         premium: premium
                     )
                     .transition(.opacity)
@@ -104,7 +110,12 @@ struct FeedScreen: View {
             if let recipe = RecipeReverseRoute.recipe(
                 for: store.state.navigation.routes,
                 in: recipes
-            ), let reverse = store.reversePresentation(for: recipe) {
+            ), let reverse = store.reversePresentation(
+                for: recipe,
+                openedFrom: reverseOrigin,
+                recipes: recipes,
+                clock: SystemClock()
+            ) {
                 RecipeReverseView(
                     recipe: recipe,
                     presentation: reverse,
@@ -252,6 +263,7 @@ private extension FeedScreen {
             pendingLink = url
             return
         }
+        reverseOrigin = nil
         switch store.openRecipeLink(url, recipes: recipes, at: Date()) {
         case .gone:
             // "The app opens the Feed": close the cookbook over it.
@@ -421,12 +433,38 @@ private struct FeedSurface: View {
                                     cards: cards,
                                     manifest: manifest,
                                     store: store,
+                                    world: .forYou,
+                                    recipes: recipes,
                                     topGap: deckTopGap,
                                     onOpenCard: onOpenCard
                                 )
                             }
                         case .leftovers:
-                            LeftoversPlaceholder()
+                            let emptyState = store.leftoversEmptyState(
+                                recipes: recipes,
+                                clock: SystemClock()
+                            )
+                            if emptyState == .none {
+                                FeedDeck(
+                                    cards: FeedDeckCard.cards(in: store.leftoversFeed(
+                                        recipes: recipes,
+                                        clock: SystemClock()
+                                    )),
+                                    manifest: manifest,
+                                    store: store,
+                                    world: .leftovers,
+                                    recipes: recipes,
+                                    topGap: deckTopGap,
+                                    onOpenCard: onOpenCard
+                                )
+                            } else {
+                                LeftoversEmptyStateView(state: emptyState) { action in
+                                    switch action {
+                                    case .send(let action): store.send(action)
+                                    case .openFilters: openPanel()
+                                    }
+                                }
+                            }
                         }
                     }
                     // A Mundo switch or any change to the effective filters
@@ -446,6 +484,24 @@ private struct FeedSurface: View {
                         RecipeGoneToastView(
                             notice: notice,
                             onExpire: { store.send(.dismissRecipeGoneNotice) }
+                        )
+                        .padding(.top, headerClearance(in: geometry)
+                                 + KartaDesign.space.cardGap)
+                        .padding(.horizontal, KartaDesign.space.toastSideMargin)
+                        Spacer(minLength: 0)
+                    }
+                    .ignoresSafeArea()
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                // The See toast after an explicit Cocinado, in the same
+                // place; the store never offers it beside recipe-gone.
+                if let toast = store.state.leftoversToast {
+                    VStack(spacing: 0) {
+                        LeftoversToastView(
+                            toast: toast,
+                            onSee: { store.send(LeftoversToastResponse.see) },
+                            onDismiss: { store.send(LeftoversToastResponse.dismissed) }
                         )
                         .padding(.top, headerClearance(in: geometry)
                                  + KartaDesign.space.cardGap)
@@ -755,31 +811,12 @@ struct TactileCardButton: View {
     }
 }
 
-/// Leftovers is reachable from the Mundo menu but its feed is issue #9: the
-/// store has no Leftovers seam yet, so the Mundo shows a placeholder in the
-/// established empty-state style.
-private struct LeftoversPlaceholder: View {
-    var body: some View {
-        VStack(spacing: KartaDesign.space.chipGap) {
-            BowlGlyph(ink: KartaDesign.ColorToken.mutedStroke)
-                .frame(
-                    width: KartaDesign.space.emptyIcon,
-                    height: KartaDesign.space.emptyIcon
-                )
-            Text("Leftovers")
-                .font(KartaDesign.FontToken.emptyTitle())
-                .foregroundStyle(KartaDesign.ColorToken.ink)
-            Text("Reuse what you cooked")
-                .font(KartaDesign.FontToken.emptyBody())
-                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
 private struct FeedDeck: View {
     let manifest: MediaAssetManifest
     let store: KartaStore
+    /// The Mundo this deck shows and the catalogue its projections read.
+    let world: World
+    let recipes: [Recipe]
     /// Gap between the deck and what sits above it (20 pt below the header
     /// row, 14 below the Baraja segura banner).
     var topGap: CGFloat = KartaDesign.space.headerToDeck
@@ -795,16 +832,25 @@ private struct FeedDeck: View {
     @State private var entryRotation: Double = 0
     @State private var hintVisible = true
     @State private var transitionDirection = 0
+    /// The last-card hint (fades in on a rebound past the end, out after
+    /// the store's duration) and the light haptic's trigger.
+    @State private var endHintVisible = false
+    @State private var endBounces = 0
+    @State private var endHintTask: Task<Void, Never>?
 
     init(
         cards: [FeedDeckCard],
         manifest: MediaAssetManifest,
         store: KartaStore,
+        world: World,
+        recipes: [Recipe],
         topGap: CGFloat = KartaDesign.space.headerToDeck,
         onOpenCard: @escaping () -> Void
     ) {
         self.manifest = manifest
         self.store = store
+        self.world = world
+        self.recipes = recipes
         self.topGap = topGap
         self.onOpenCard = onOpenCard
         _cards = State(initialValue: cards)
@@ -834,18 +880,35 @@ private struct FeedDeck: View {
             .padding(.top, topGap)
             .padding(.horizontal, KartaDesign.space.screenX)
 
-            Text("Swipe up or down")
-                .font(KartaDesign.FontToken.hint())
-                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
-                .frame(height: KartaDesign.deck.hintHeight)
-                .opacity(hintVisible ? 1 : 0)
-                .animation(
-                    .easeOut(duration: KartaDesign.deck.hintFadeDuration),
-                    value: hintVisible
-                )
+            ZStack {
+                Text("Swipe up or down")
+                    .font(KartaDesign.FontToken.hint())
+                    .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+                    .opacity(hintVisible ? 1 : 0)
+                    .animation(
+                        .easeOut(duration: KartaDesign.deck.hintFadeDuration),
+                        value: hintVisible
+                    )
+                if let lastCard {
+                    LastCardHintView(hint: lastCard.hint, world: world)
+                        .opacity(endHintVisible ? 1 : 0)
+                        .animation(
+                            .easeOut(duration: KartaDesign.deck.hintFadeDuration),
+                            value: endHintVisible
+                        )
+                        .accessibilityHidden(!endHintVisible)
+                }
+            }
+            .frame(height: KartaDesign.deck.hintHeight)
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: endBounces)
         .onAppear {
             recordSettledCard()
+            if let attempt = DebugSeeds.lastCardAttempt, lastCard != nil {
+                stopEntryNudge()
+                bouncePastEnd(heldOffset: attempt.heldOffset)
+                return
+            }
             Task { @MainActor in
                 await runEntryNudge()
             }
@@ -856,9 +919,23 @@ private struct FeedDeck: View {
         }
     }
 
+    /// Non-nil on the deck's last Card: the store's end-of-deck hint, and
+    /// whether cards show behind it.
+    private var lastCard: LastCardPresentation? {
+        guard cards.indices.contains(currentIndex) else { return nil }
+        return store.lastCard(
+            recipeID: cards[currentIndex].id,
+            world: world,
+            recipes: recipes,
+            clock: SystemClock()
+        )
+    }
+
     private var visibleCards: [VisibleDeckCard] {
         guard !cards.isEmpty else { return [] }
-        return (0...KartaDesign.deck.backCardCount).compactMap { relativeIndex in
+        let behind = lastCard.map { $0.showsCardsBehind ? KartaDesign.deck.backCardCount : 0 }
+            ?? KartaDesign.deck.backCardCount
+        return (0...behind).compactMap { relativeIndex in
             let index = currentIndex + relativeIndex
             guard cards.indices.contains(index) else { return nil }
             return VisibleDeckCard(card: cards[index], relativeIndex: relativeIndex)
@@ -871,8 +948,11 @@ private struct FeedDeck: View {
 
         Group {
             if visible.relativeIndex == 0 {
-                if let presentation = store.state.cardPresentation(
-                    for: visible.card.recipe
+                if let presentation = store.cardPresentation(
+                    for: visible.card.recipe,
+                    world: world,
+                    recipes: recipes,
+                    clock: SystemClock()
                 ) {
                     RecipeCardView(
                         card: visible.card,
@@ -921,6 +1001,11 @@ private struct FeedDeck: View {
                     dragOffset = 0
                     return
                 }
+                // Reduce Motion: the last Card does not move forward.
+                if reduceMotion, vertical < 0, lastCard != nil {
+                    dragOffset = 0
+                    return
+                }
                 dragOffset = vertical
             }
             .onEnded { value in
@@ -931,8 +1016,15 @@ private struct FeedDeck: View {
                     cardCount: cards.count
                 )
                 guard destination != currentIndex else {
-                    withAnimation(KartaDesign.deckAnimation) {
-                        dragOffset = 0
+                    if lastCard != nil, DeckNavigator.isForwardSwipe(
+                        translation: value.translation,
+                        predictedTranslation: value.predictedEndTranslation
+                    ) {
+                        bouncePastEnd(heldOffset: nil)
+                    } else {
+                        withAnimation(KartaDesign.deckAnimation) {
+                            dragOffset = 0
+                        }
                     }
                     return
                 }
@@ -949,6 +1041,27 @@ private struct FeedDeck: View {
                     recordSettledCard()
                 }
             }
+    }
+
+    /// Trying to pass the last Card: it comes back with the deck's rebound
+    /// and a light haptic, and the store's hint fades in, then out after its
+    /// duration. Reduce Motion keeps the hint only. A debug seed can hold
+    /// the Card mid-drag to photograph the bounce.
+    private func bouncePastEnd(heldOffset: CGFloat?) {
+        guard let lastCard else { return }
+        if !reduceMotion {
+            endBounces += 1
+            withAnimation(KartaDesign.deckAnimation) {
+                dragOffset = heldOffset ?? 0
+            }
+        }
+        endHintVisible = true
+        endHintTask?.cancel()
+        endHintTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(lastCard.hintDuration))
+            guard !Task.isCancelled else { return }
+            endHintVisible = false
+        }
     }
 
     private func cardTransition(height: CGFloat) -> AnyTransition {
@@ -1165,6 +1278,65 @@ private struct RecipeCardView: View {
     let presentation: RecipeCardPresentation
     let manifest: MediaAssetManifest
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// The chips, plus the Leftovers pill when the store gives one: in the
+    /// same row when it fits, else (and always from AX1) on its own line
+    /// 8 pt under the chips.
+    @ViewBuilder
+    private var chipsRow: some View {
+        if let pill = presentation.leftoversPill {
+            if dynamicTypeSize >= .accessibility1 {
+                pillOnOwnLine(pill)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: KartaDesign.space.chipGap) {
+                        chips
+                        LeftoversPill(text: pill, suit: suit)
+                            .fixedSize()
+                        Spacer(minLength: 0)
+                        seenLabel
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    pillOnOwnLine(pill)
+                }
+            }
+        } else {
+            HStack(spacing: KartaDesign.space.chipGap) {
+                chips
+                Spacer(minLength: 0)
+                seenLabel
+            }
+        }
+    }
+
+    private func pillOnOwnLine(_ pill: String) -> some View {
+        VStack(alignment: .leading, spacing: KartaDesign.space.pillOwnLineGap) {
+            HStack(spacing: KartaDesign.space.chipGap) {
+                chips
+                Spacer(minLength: 0)
+                seenLabel
+            }
+            LeftoversPill(text: pill, suit: suit)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private var chips: some View {
+        CardChip(label: presentation.servingsLabel, suit: suit)
+        CardChip(label: presentation.difficultyLabel.capitalized, suit: suit)
+    }
+
+    @ViewBuilder
+    private var seenLabel: some View {
+        if card.alreadySeen {
+            Text("seen")
+                .font(KartaDesign.FontToken.hint())
+                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
+        }
+    }
+
     private var suit: SuitTokens {
         KartaDesign.suit(presentation.primaryCourse)
     }
@@ -1205,16 +1377,7 @@ private struct RecipeCardView: View {
                         .lineLimit(KartaDesign.type.cardTitleLineLimit)
                         .minimumScaleFactor(KartaDesign.type.cardTitleMinimumScale)
 
-                    HStack(spacing: KartaDesign.space.chipGap) {
-                        CardChip(label: presentation.servingsLabel, suit: suit)
-                        CardChip(label: presentation.difficultyLabel.capitalized, suit: suit)
-                        Spacer(minLength: 0)
-                        if card.alreadySeen {
-                            Text("seen")
-                                .font(KartaDesign.FontToken.hint())
-                                .foregroundStyle(KartaDesign.ColorToken.inkMuted)
-                        }
-                    }
+                    chipsRow
                 }
                 .foregroundStyle(KartaDesign.ColorToken.ink)
                 .padding(.horizontal, KartaDesign.space.cardTextInset)
@@ -1242,7 +1405,7 @@ private struct CardChip: View {
             .font(KartaDesign.FontToken.chip())
             .foregroundStyle(suit.chipInk)
             .padding(.vertical, KartaDesign.space.chipY)
-            .padding(.horizontal, KartaDesign.space.chipX)
+            .padding(.horizontal, KartaDesign.space.cardChipX)
             .background(
                 suit.chip,
                 in: RoundedRectangle(
